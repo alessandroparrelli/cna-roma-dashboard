@@ -4140,10 +4140,33 @@ async function openAnagraficaModal(anaIdx) {
   
   console.log('=== APERTURA SCHEDA ANAGRAFICA ===');
   console.log('Codiceanagrafica:', ana.codiceanagrafica);
+  console.log('Partita IVA:', ana.partitaiva);
+  
+  // ⭐ CARICA DATI CCIAA SUBITO (PRIMA di usarli nel BOX)
+  var cciaaData = null;
+  try {
+    console.log('⏳ Caricamento CCIAA per partita_iva:', ana.partitaiva);
+    var cciaaResp = await fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), {
+      headers: H()
+    });
+    if (cciaaResp.ok) {
+      var cciaaResults = await cciaaResp.json();
+      if (cciaaResults && cciaaResults.length > 0) {
+        cciaaData = cciaaResults[0];
+        console.log('✅ CCIAA dati caricati:', cciaaData);
+      } else {
+        console.log('⚠️ Nessun record CCIAA trovato per partita_iva:', ana.partitaiva);
+      }
+    } else {
+      console.error('❌ Errore HTTP CCIAA:', cciaaResp.status);
+    }
+  } catch(cciaaErr) {
+    console.error('❌ Errore caricamento CCIAA:', cciaaErr);
+  }
   
   // Query Supabase: carica i dati di questa anagrafica usando fetch (come nel resto dell'app)
   try {
-    console.log('Caricamento dati per codiceanagrafica:', ana.codiceanagrafica);
+    console.log('Caricamento dati diretti per codiceanagrafica:', ana.codiceanagrafica);
     
     // Usa fetch come le altre funzioni sbGet/sbGetAll
     var dirResp = await fetch(SB + '/rest/v1/diretti?codiceanagrafica=eq.' + encodeURIComponent(ana.codiceanagrafica), {
@@ -4186,26 +4209,7 @@ async function openAnagraficaModal(anaIdx) {
       html += '</div>';
     }
     
-    html += '</div>';
-    html += '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:16px;border-radius:8px">×</button>';
 
-  // CARICA DATI CCIAA PER STATO ATTIVITÀ E DIPENDENTI
-  var cciaaData = null;
-  try {
-    var cciaaResp = await fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), {
-      headers: H()
-    });
-    if (cciaaResp.ok) {
-      var cciaaResults = await cciaaResp.json();
-      if (cciaaResults && cciaaResults.length > 0) {
-        cciaaData = cciaaResults[0];
-        console.log('✅ CCIAA dati caricati:', cciaaData);
-      }
-    }
-  } catch(cciaaErr) {
-    console.error('⚠️ Errore caricamento CCIAA:', cciaaErr);
-  }
-    html += '</div>';
     
     // Contenuto
     html += '<div style="padding:25px">';
