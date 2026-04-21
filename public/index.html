@@ -4134,15 +4134,23 @@ function syncMobileAdmin(){
 // SCHEDA ANAGRAFICA MODAL
 // ══════════════════════════════════════════════════════════════════════════════
 
+function traduciStatoAttivita(codice) {
+  var statMap = {
+    '0': { testo: 'ATTIVA', color: '#10B981' },
+    '1': { testo: 'IN LIQUIDAZIONE', color: '#F59E0B' },
+    '2': { testo: 'FALLITA', color: '#EF4444' },
+    '3': { testo: 'SOSPESA', color: '#F59E0B' },
+    '4': { testo: 'INATTIVA', color: '#9CA3AF' },
+    '5': { testo: 'CESSATA', color: '#EF4444' }
+  };
+  return statMap[String(codice)] || { testo: 'SCONOSCIUTO', color: '#6B7280' };
+}
+
 async function openAnagraficaModal(anaIdx) {
   var ana = anaFiltered[anaIdx];
   if (!ana) return;
   
-  console.log('=== APERTURA SCHEDA ANAGRAFICA ===');
-  console.log('Codiceanagrafica:', ana.codiceanagrafica);
-  console.log('Partita IVA:', ana.partitaiva);
-  
-  // ⭐ CARICA DATI CCIAA SUBITO (PRIMA di usarli nel BOX)
+  // ⭐ CARICA CCIAA SUBITO (Prima di usare i dati)
   var cciaaData = null;
   try {
     console.log('⏳ Caricamento CCIAA per partita_iva:', ana.partitaiva);
@@ -4154,19 +4162,18 @@ async function openAnagraficaModal(anaIdx) {
       if (cciaaResults && cciaaResults.length > 0) {
         cciaaData = cciaaResults[0];
         console.log('✅ CCIAA dati caricati:', cciaaData);
-      } else {
-        console.log('⚠️ Nessun record CCIAA trovato per partita_iva:', ana.partitaiva);
       }
-    } else {
-      console.error('❌ Errore HTTP CCIAA:', cciaaResp.status);
     }
   } catch(cciaaErr) {
     console.error('❌ Errore caricamento CCIAA:', cciaaErr);
   }
   
+  console.log('=== APERTURA SCHEDA ANAGRAFICA ===');
+  console.log('Codiceanagrafica:', ana.codiceanagrafica);
+  
   // Query Supabase: carica i dati di questa anagrafica usando fetch (come nel resto dell'app)
   try {
-    console.log('Caricamento dati diretti per codiceanagrafica:', ana.codiceanagrafica);
+    console.log('Caricamento dati per codiceanagrafica:', ana.codiceanagrafica);
     
     // Usa fetch come le altre funzioni sbGet/sbGetAll
     var dirResp = await fetch(SB + '/rest/v1/diretti?codiceanagrafica=eq.' + encodeURIComponent(ana.codiceanagrafica), {
@@ -4195,25 +4202,10 @@ async function openAnagraficaModal(anaIdx) {
     html += '<div style="background:var(--surface);border-radius:16px;width:100%;max-width:720px;max-height:85vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.25)">';
     
     // Header con gradient indigo
-    html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);padding:22px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;gap:20px">';
-    html += '<img src="https://customer31551.img.musvc2.net/static/31551/images/1/CNARoma%20NEGATIVO%20COLORE%20SOLO%20ROMA.png" alt="CNA" style="height:60px;width:auto;flex-shrink:0">';
-    
-    // Nome azienda al centro
-    html += '<h2 style="margin:0;color:white;font-size:18px;font-weight:800;letter-spacing:-0.02em;flex:1;text-align:center">' + (ana.ragionesociale || "Senza nome") + '</h2>';
-    
-    // BOX STATO ATTIVITÀ (a destra)
-    if (cciaaData && cciaaData.stato_attivita !== null && cciaaData.stato_attivita !== undefined) {
-      var statoInfo = traduciStatoAttivita(cciaaData.stato_attivita);
-      html += '<div style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:8px 14px;text-align:center;min-width:130px;flex-shrink:0">';
-      html += '<div style="font-size:9px;color:rgba(255,255,255,0.7);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Stato</div>';
-      html += '<div style="font-size:12px;font-weight:700;color:white">' + statoInfo.testo + '</div>';
-      html += '</div>';
-    } else {
-      html += '<div style="min-width:130px;flex-shrink:0"></div>';
-    }
-    
-    // Bottone chiudi
-    html += '<button onclick="document.getElementById(\\'modal-scheda-bg\\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0">×</button>';
+    html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);padding:22px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">';
+    html += '<img src="https://customer31551.img.musvc2.net/static/31551/images/1/CNARoma%20NEGATIVO%20COLORE%20SOLO%20ROMA.png" alt="CNA" style="height:60px;width:auto">';
+    html += '<h2 style="margin:0;color:white;font-size:18px;font-weight:800;text-align:right;flex:1;margin-left:20px;letter-spacing:-0.02em">' + (ana.ragionesociale || "Senza nome") + '</h2>';
+    html += '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:16px;border-radius:8px">×</button>';
     html += '</div>';
     
     // Contenuto
@@ -4271,39 +4263,6 @@ async function openAnagraficaModal(anaIdx) {
     });
     
     html += '</div></div>';
-
-    // SEZIONE: DIPENDENTI E ADDETTI (da CCIAA)
-    if (cciaaData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari)) {
-      html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
-      html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
-      
-      var addSubordinati = parseInt(cciaaData.addetti_subordinati) || 0;
-      var addFamiliari = parseInt(cciaaData.addetti_familiari) || 0;
-      var totaleAddetti = addSubordinati + addFamiliari;
-      
-      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:13px">';
-      
-      // Addetti Subordinati
-      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
-      html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Subordinati</div>';
-      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addSubordinati + '</div>';
-      html += '</div>';
-      
-      // Addetti Familiari
-      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
-      html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Familiari</div>';
-      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addFamiliari + '</div>';
-      html += '</div>';
-      
-      // Totale Addetti
-      html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);border-radius:8px;padding:12px;text-align:center">';
-      html += '<div style="color:rgba(255,255,255,0.8);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Totale Addetti</div>';
-      html += '<div style="color:white;font-size:18px;font-weight:700">' + totaleAddetti + '</div>';
-      html += '</div>';
-      
-      html += '</div>';
-      html += '</div>';
-    }
     
     // SEZIONE 1.5: STATO ASSOCIATIVO (caricato dalla query)
     html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
@@ -4500,19 +4459,6 @@ async function openAnagraficaModal(anaIdx) {
   html += '</div></div></div>';
   
   document.body.insertAdjacentHTML('beforeend', html);
-}
-
-
-function traduciStatoAttivita(codice) {
-  var statMap = {
-    '0': { testo: 'ATTIVA', color: '#10B981' },
-    '1': { testo: 'IN LIQUIDAZIONE', color: '#F59E0B' },
-    '2': { testo: 'FALLITA', color: '#EF4444' },
-    '3': { testo: 'SOSPESA', color: '#F59E0B' },
-    '4': { testo: 'INATTIVA', color: '#9CA3AF' },
-    '5': { testo: 'CESSATA', color: '#EF4444' }
-  };
-  return statMap[String(codice)] || { testo: 'SCONOSCIUTO', color: '#6B7280' };
 }
 
 function exportAnaToExcel(anaIdx) {
