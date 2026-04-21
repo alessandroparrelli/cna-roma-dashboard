@@ -1,0 +1,8 @@
+{
+  "registro_imprese": "https://accessoallebanchedati.registroimprese.it/abdo/download-file-api",
+  "supabase": "https://ohahuqlfzqckaevaffbt.supabase.co",
+  "backend": {
+    "local": "http://localhost:3000",
+    "production": "https://api.cnadoroma.it"
+  }
+}

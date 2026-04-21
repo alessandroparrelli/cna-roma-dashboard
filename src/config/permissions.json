@@ -1,0 +1,23 @@
+{
+  "admin": {
+    "tesseramento": true,
+    "interroga": true,
+    "carica": true,
+    "esporta": true,
+    "verifica_anagrafica": true
+  },
+  "manager": {
+    "tesseramento": true,
+    "interroga": true,
+    "carica": false,
+    "esporta": true,
+    "verifica_anagrafica": true
+  },
+  "operatore": {
+    "tesseramento": true,
+    "interroga": true,
+    "carica": false,
+    "esporta": false,
+    "verifica_anagrafica": false
+  }
+}

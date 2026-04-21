@@ -1,0 +1,15 @@
+{
+  "primary": "#005CA9",
+  "primary_dark": "#003D7A",
+  "primary_light": "#0078D4",
+  "success": "#388e3c",
+  "error": "#c62828",
+  "warning": "#f57c00",
+  "info": "#1976d2",
+  "text_primary": "#333",
+  "text_secondary": "#666",
+  "bg_light": "#f5f7fa",
+  "border": "#e0e0e0",
+  "row_alt": "#F9F9F9",
+  "header_bg": "#005CA9"
+}

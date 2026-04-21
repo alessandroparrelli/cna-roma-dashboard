@@ -1,0 +1,24 @@
+{
+  "version": "78",
+  "app_name": "Dashboard Tesseramento CNA Roma",
+  "description": "Sistema di gestione tesseramento e contratti CNA Roma",
+  "author": "Alessandro Parrelli",
+  "releaseDate": "20 Aprile 2026",
+  "supabase": {
+    "url": "https://ohahuqlfzqckaevaffbt.supabase.co",
+    "key": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9oYWh1cWxmenFja2FldmFmZmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQxODI4NzQsImV4cCI6MjA4OTc1ODg3NH0.MG1N3UUIfISDAi_ArFjxN6ZlHJfk5D77vSeE7qZr020"
+  },
+  "backend_url": "/.netlify/functions",
+  "api_endpoints": {
+    "registro_impresa": "/api-impresa",
+    "contratti": "/api-contratti",
+    "anagrafiche": "/api-anagrafiche"
+  },
+  "features": {
+    "tesseramento": true,
+    "archivio_contratti": true,
+    "archivio_imprese": true,
+    "verifica_registro_imprese": true,
+    "export_excel": true
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "cna-roma-dashboard",
+  "version": "78",
+  "description": "Dashboard Tesseramento CNA Roma",
+  "author": "Alessandro Parrelli",
+  "license": "MIT",
+  "scripts": {
+    "install-all": "npm install",
+    "dev": "http-server public -p 8080",
+    "build": "echo 'Build ready for Netlify'",
+    "test": "echo 'Tests not configured yet'"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "xml2js": "^0.6.2"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}

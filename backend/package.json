@@ -1,0 +1,22 @@
+{
+  "name": "registro-imprese-proxy",
+  "version": "1.0.0",
+  "description": "Backend proxy per API Registro Imprese",
+  "main": "server_registro_imprese.js",
+  "scripts": {
+    "start": "node server_registro_imprese.js",
+    "dev": "nodemon server_registro_imprese.js"
+  },
+  "keywords": ["registro", "imprese", "api", "proxy"],
+  "author": "CNA Roma",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2",
+    "axios": "^1.4.0",
+    "xml2js": "^0.6.2",
+    "cors": "^2.8.5"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
