@@ -3840,28 +3840,28 @@ function showImportResults(results) {
   
   if (results.diretti) {
     html += '<div style="margin:15px 0;padding:10px;background:rgba(34,197,94,0.1);border-left:3px solid var(--green);border-radius:4px">';
-    html += '<strong style="color:var(--green)">✓ DIRETTI</strong><br>';
+    html += '<strong style="color:var(--green)">[OK] DIRETTI</strong><br>';
     html += 'Righe caricate: <strong>' + results.diretti.righe + '</strong>';
     html += '</div>';
   }
   
   if (results.anagrafiche) {
     html += '<div style="margin:15px 0;padding:10px;background:rgba(34,197,94,0.1);border-left:3px solid var(--green);border-radius:4px">';
-    html += '<strong style="color:var(--green)">✓ ANAGRAFICHE</strong><br>';
+    html += '<strong style="color:var(--green)">[OK] ANAGRAFICHE</strong><br>';
     html += 'Righe caricate: <strong>' + results.anagrafiche.righe + '</strong>';
     html += '</div>';
   }
   
   if (results.contrattiservizio) {
     html += '<div style="margin:15px 0;padding:10px;background:rgba(34,197,94,0.1);border-left:3px solid var(--green);border-radius:4px">';
-    html += '<strong style="color:var(--green)">✓ CONTRATTISERVIZIO</strong><br>';
+    html += '<strong style="color:var(--green)">[OK] CONTRATTISERVIZIO</strong><br>';
     html += 'Righe caricate: <strong>' + results.contrattiservizio.righe + '</strong>';
     html += '</div>';
   }
   
   if (results.errors && results.errors.length > 0) {
     html += '<div style="margin:15px 0;padding:10px;background:rgba(220,38,38,0.1);border-left:3px solid #dc2626;border-radius:4px">';
-    html += '<strong style="color:#dc2626">❌ ERRORI</strong><br>';
+    html += '<strong style="color:#dc2626">[ERRORE] ERRORI</strong><br>';
     results.errors.forEach(function(err) {
       html += '<span style="font-size:12px;color:var(--text-sub);display:block;margin:5px 0">' + escapeHtml(err) + '</span>';
     });
