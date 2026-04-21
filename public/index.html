@@ -4171,11 +4171,53 @@ async function openAnagraficaModal(anaIdx) {
     var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px" id="modal-scheda-bg">';
     html += '<div style="background:var(--surface);border-radius:16px;width:100%;max-width:720px;max-height:85vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.25)">';
     
+    // Carica dati CCIAA per stato attività e dipendenti
+    var cciaData = null;
+    try {
+      var cciaResp = await fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), {
+        headers: H()
+      });
+      if (cciaResp.ok) {
+        var cciaArr = await cciaResp.json();
+        if (cciaArr && cciaArr.length > 0) {
+          cciaData = cciaArr[0];
+          console.log('Dati CCIAA trovati:', cciaData);
+        }
+      }
+    } catch (e) {
+      console.log('Errore caricamento CCIAA:', e.message);
+    }
+    
+    // Funzione per tradurre stato attività
+    function getStatoAttivita(codice) {
+      var stati = {
+        0: { text: 'ATTIVA', color: '#10B981' },
+        1: { text: 'IN LIQUIDAZIONE', color: '#F59E0B' },
+        2: { text: 'FALLITA', color: '#EF4444' },
+        3: { text: 'SOSPESA', color: '#F59E0B' },
+        4: { text: 'INATTIVA', color: '#9CA3AF' },
+        5: { text: 'CESSATA', color: '#EF4444' }
+      };
+      return stati[codice] || { text: 'SCONOSCIUTO', color: '#6B7280' };
+    }
+    
     // Header con gradient indigo
+    var statoBox = '';
+    if (cciaData && cciaData.stato_attivita !== undefined) {
+      var statoInfo = getStatoAttivita(cciaData.stato_attivita);
+      statoBox = '<div style="background:' + statoInfo.color + ';color:white;padding:8px 12px;border-radius:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px">';
+      statoBox += '<div style="font-size:10px;opacity:0.9">Stato Attività</div>';
+      statoBox += statoInfo.text;
+      statoBox += '</div>';
+    }
+    
     html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);padding:22px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">';
     html += '<img src="https://customer31551.img.musvc2.net/static/31551/images/1/CNARoma%20NEGATIVO%20COLORE%20SOLO%20ROMA.png" alt="CNA" style="height:60px;width:auto">';
-    html += '<h2 style="margin:0;color:white;font-size:18px;font-weight:800;text-align:right;flex:1;margin-left:20px;letter-spacing:-0.02em">' + (ana.ragionesociale || "Senza nome") + '</h2>';
-    html += '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:16px;border-radius:8px">×</button>';
+    html += '<div style="flex:1;margin-left:20px">';
+    html += '<h2 style="margin:0 0 8px 0;color:white;font-size:18px;font-weight:800;text-align:left;letter-spacing:-0.02em">' + (ana.ragionesociale || "Senza nome") + '</h2>';
+    if (statoBox) html += statoBox;
+    html += '</div>';
+    html += '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:16px;border-radius:8px;flex-shrink:0">×</button>';
     html += '</div>';
     
     // Contenuto
@@ -4233,6 +4275,39 @@ async function openAnagraficaModal(anaIdx) {
     });
     
     html += '</div></div>';
+    
+    // SEZIONE 1.3: DIPENDENTI E ADDETTI (da CCIAA)
+    if (cciaData) {
+      html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
+      html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Dipendenti e Addetti</h3>';
+      
+      var addSubordinati = cciaData.addetti_subordinati || 0;
+      var addFamiliari = cciaData.addetti_familiari || 0;
+      var totAddetti = addSubordinati + addFamiliari;
+      
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;font-size:13px">';
+      
+      // Box Addetti Subordinati
+      html += '<div style="padding:12px 15px;background:#f3f4f6;border-left:3px solid #005CA9;border-radius:4px">';
+      html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px">Addetti Subordinati</div>';
+      html += '<div style="color:#005CA9;font-weight:700;font-size:16px">' + addSubordinati + '</div>';
+      html += '</div>';
+      
+      // Box Addetti Familiari
+      html += '<div style="padding:12px 15px;background:#f3f4f6;border-left:3px solid #005CA9;border-radius:4px">';
+      html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px">Addetti Familiari</div>';
+      html += '<div style="color:#005CA9;font-weight:700;font-size:16px">' + addFamiliari + '</div>';
+      html += '</div>';
+      
+      // Box Totale Addetti (evidenziato)
+      html += '<div style="padding:12px 15px;background:rgba(0,92,169,0.12);border-left:3px solid #005CA9;border-radius:4px;font-weight:700">';
+      html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px">Totale Addetti</div>';
+      html += '<div style="color:#005CA9;font-weight:700;font-size:16px">' + totAddetti + '</div>';
+      html += '</div>';
+      
+      html += '</div>';
+      html += '</div>';
+    }
     
     // SEZIONE 1.5: STATO ASSOCIATIVO (caricato dalla query)
     html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
