@@ -4265,7 +4265,16 @@ async function openAnagraficaModal(anaIdx) {
     }
     
     // SEZIONE DIPENDENTI E ADDETTI
+    console.log('🔍 DEBUG DIPENDENTI:');
+    console.log('cciaaData:', cciaaData);
+    if (cciaaData) {
+      console.log('  - addetti_subordinati:', cciaaData.addetti_subordinati, 'tipo:', typeof cciaaData.addetti_subordinati);
+      console.log('  - addetti_familiari:', cciaaData.addetti_familiari, 'tipo:', typeof cciaaData.addetti_familiari);
+    }
+    console.log('Condition result:', cciaaData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari));
+    
     if (cciaaData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari)) {
+      console.log('✅ SEZIONE DIPENDENTI RENDERIZZATA');
       html += '<div style="margin-bottom:25px;padding:15px;background:#F8F9FA;border-left:3px solid #005CA9;border-radius:4px">';
       html += '<h3 style="color:#005CA9;font-size:13px;font-weight:700;margin:0 0 12px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
       
