@@ -4262,37 +4262,36 @@ async function openAnagraficaModal(anaIdx) {
       html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px">Titolare</div>';
       html += '<div style="color:#005CA9;font-weight:700;font-size:14px">' + nomeCompleto + '</div>';
       html += '</div>';
+    }
     
     // SEZIONE DIPENDENTI E ADDETTI
     if (cciaaData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari)) {
-      html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
-      html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
+      html += '<div style="margin-bottom:25px;padding:15px;background:#F8F9FA;border-left:3px solid #005CA9;border-radius:4px">';
+      html += '<h3 style="color:#005CA9;font-size:13px;font-weight:700;margin:0 0 12px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
       
       var addSub = parseInt(cciaaData.addetti_subordinati) || 0;
       var addFam = parseInt(cciaaData.addetti_familiari) || 0;
       var totale = addSub + addFam;
       
-      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">';
       
-      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
-      html += '<div style="color:#666;font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase">Subordinati</div>';
-      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addSub + '</div>';
-      html += '</div>';
-      
-      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
-      html += '<div style="color:#666;font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase">Familiari</div>';
-      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addFam + '</div>';
+      html += '<div style="background:white;border:1px solid #D1E0FF;border-radius:6px;padding:10px;text-align:center">';
+      html += '<div style="color:#666;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase">Subordinati</div>';
+      html += '<div style="color:#005CA9;font-size:16px;font-weight:700">' + addSub + '</div>';
       html += '</div>';
       
-      html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);border-radius:8px;padding:12px;text-align:center">';
-      html += '<div style="color:rgba(255,255,255,0.8);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase">Totale Addetti</div>';
-      html += '<div style="color:white;font-size:18px;font-weight:700">' + totale + '</div>';
+      html += '<div style="background:white;border:1px solid #D1E0FF;border-radius:6px;padding:10px;text-align:center">';
+      html += '<div style="color:#666;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase">Familiari</div>';
+      html += '<div style="color:#005CA9;font-size:16px;font-weight:700">' + addFam + '</div>';
+      html += '</div>';
+      
+      html += '<div style="background:#005CA9;border-radius:6px;padding:10px;text-align:center">';
+      html += '<div style="color:rgba(255,255,255,0.8);font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase">Totale</div>';
+      html += '<div style="color:white;font-size:16px;font-weight:700">' + totale + '</div>';
       html += '</div>';
       
       html += '</div>';
       html += '</div>';
-    }
-
     }
     
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;font-size:13px">';
