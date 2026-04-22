@@ -4313,6 +4313,39 @@ async function openAnagraficaModal(anaIdx) {
     });
     
     html += '</div></div>';
+
+    // SEZIONE: DIPENDENTI E ADDETTI (da CCIAA)
+    if (cciaaData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari)) {
+      html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
+      html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
+      
+      var addSubordinati = parseInt(cciaaData.addetti_subordinati) || 0;
+      var addFamiliari = parseInt(cciaaData.addetti_familiari) || 0;
+      var totaleAddetti = addSubordinati + addFamiliari;
+      
+      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;font-size:13px">';
+      
+      // Addetti Subordinati
+      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
+      html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Subordinati</div>';
+      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addSubordinati + '</div>';
+      html += '</div>';
+      
+      // Addetti Familiari
+      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
+      html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Familiari</div>';
+      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addFamiliari + '</div>';
+      html += '</div>';
+      
+      // Totale Addetti
+      html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);border-radius:8px;padding:12px;text-align:center">';
+      html += '<div style="color:rgba(255,255,255,0.8);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.3px">Totale Addetti</div>';
+      html += '<div style="color:white;font-size:18px;font-weight:700">' + totaleAddetti + '</div>';
+      html += '</div>';
+      
+      html += '</div>';
+      html += '</div>';
+    }
   }
   
   // SEZIONE 3: ASSOCIAZIONI (forme associative - raggruppate per codice)
