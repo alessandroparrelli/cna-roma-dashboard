@@ -4155,6 +4155,7 @@ function traduciStatoAttivita(codice) {
 }
 
 var currentAnaIdx = 0;
+var currentCCIAAData = null;
 
 async function openAnagraficaModal(anaIdx) {
   currentAnaIdx = anaIdx;
@@ -4251,7 +4252,7 @@ async function openAnagraficaModal(anaIdx) {
     html += '<div style="display:flex;gap:0;align-items:center">';
     
     // BOX STATO ATTIVITÀ
-    if (cciaaData && cciaaData.stato_attivita !== null && cciaaData.stato_attivita !== undefined) {
+    if (currentCCIAAData && cciaaData.stato_attivita !== null && cciaaData.stato_attivita !== undefined) {
       var statoInfo = traduciStatoAttivita(cciaaData.stato_attivita);
       html += '<div style="background:' + statoInfo.color + ';border-radius:6px 0 0 6px;padding:6px 12px;text-align:center;min-width:100px;flex-shrink:0">';
       html += '<div style="font-size:9px;color:white;font-weight:600;text-transform:uppercase;letter-spacing:0.3px">Stato</div>';
@@ -4260,7 +4261,7 @@ async function openAnagraficaModal(anaIdx) {
     }
     
     // BOX TIPO IMPRESA (attaccato a Stato, senza margin)
-    if (cciaaData && cciaaData.art_com_tur) {
+    if (currentCCIAAData && cciaaData.art_com_tur) {
       var tipoInfo = traduciTipoImpresa(cciaaData.art_com_tur);
       html += '<div style="background:' + tipoInfo.bgColor + ';border-radius:0 6px 6px 0;padding:6px 12px;text-align:center;min-width:110px;flex-shrink:0">';
       html += '<div style="font-size:9px;color:' + tipoInfo.textColor + ';font-weight:600;text-transform:uppercase;letter-spacing:0.3px;opacity:0.9">Tipo</div>';
@@ -4289,7 +4290,7 @@ async function openAnagraficaModal(anaIdx) {
     }
     
     // SEZIONE DIPENDENTI E ADDETTI
-    if (cciaaData && (cciaaData.num_addetti_sub || cciaaData.num_addetti_fam_ul)) {
+    if (currentCCIAAData && (cciaaData.num_addetti_sub || cciaaData.num_addetti_fam_ul)) {
       html += '<div style="margin-bottom:25px;padding:15px;background:#F8F9FA;border-left:3px solid #005CA9;border-radius:4px">';
       html += '<h3 style="color:#005CA9;font-size:13px;font-weight:700;margin:0 0 12px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
       
@@ -4348,7 +4349,7 @@ async function openAnagraficaModal(anaIdx) {
 
     
     // SEZIONE DIPENDENTI
-    if (cciaaData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari)) {
+    if (currentCCIAAData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari)) {
       html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
       html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
       
