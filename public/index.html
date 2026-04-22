@@ -1437,26 +1437,66 @@ function fmt(n,d){if(d===undefined)d=2;return Number(n).toLocaleString('it-IT',{
 
 // LOGIN
 async function doLogin(){
+  console.log('🔐 doLogin() CHIAMATA');
   var email=G('inp-email').value.trim().toLowerCase();
   var pwd=G('inp-pwd').value;
+  console.log('📧 Email:', email);
+  console.log('🔑 Password:', pwd.length + ' caratteri');
+  
   var errEl=G('login-error');
   errEl.style.display='none';
-  if(!email||!pwd){errEl.textContent='Inserisci email e password';errEl.style.display='block';return;}
-  var btn=G('btn-login');btn.disabled=true;btn.textContent='Accesso in corso…';
+  if(!email||!pwd){
+    console.log('❌ Email o password vuota');
+    errEl.textContent='Inserisci email e password';
+    errEl.style.display='block';
+    return;
+  }
+  
+  var btn=G('btn-login');
+  btn.disabled=true;
+  btn.textContent='Accesso in corso…';
   showLoad('Verifica credenziali…');
+  
   try{
+    console.log('⏳ Hashing password...');
     var hash=await sha256hex(pwd);
-    var rows=await sbGet('cna_users?select=id,nome,cognome,email,ruolo&email=eq.'+encodeURIComponent(email)+'&password_sha256=eq.'+hash+'&attivo=eq.true');
+    console.log('✅ Hash generato:', hash.substring(0,10) + '...');
+    
+    var query='cna_users?select=id,nome,cognome,email,ruolo&email=eq.'+encodeURIComponent(email)+'&password_sha256=eq.'+hash+'&attivo=eq.true';
+    console.log('📝 Query:', query);
+    
+    var rows=await sbGet(query);
+    console.log('📊 Risultato query:', rows);
+    
     if(!rows||!rows.length){
+      console.log('❌ Login fallito - Utente non trovato');
       writeLog(null, email, null, 'fallito');
-      errEl.textContent='Email o password non corretti';errEl.style.display='block';return;
+      errEl.textContent='Email o password non corretti';
+      errEl.style.display='block';
+      return;
     }
+    
+    console.log('✅ Utente trovato:', rows[0].nome + ' ' + rows[0].cognome);
+    
     sbPatch('cna_users?email=eq.'+encodeURIComponent(email),{last_login:new Date().toISOString()}).catch(function(){});
     writeLog(rows[0].id, email, rows[0].nome+' '+rows[0].cognome, 'successo');
+    
+    console.log('💾 Salvando session...');
     saveSession(rows[0]);
+    
+    console.log('🎉 Mostrando app...');
     showApp();
-  }catch(e){errEl.textContent='Errore di connessione. Riprova.';errEl.style.display='block';console.error(e);}
-  finally{hideLoad();btn.disabled=false;btn.textContent='Accedi';}
+  }catch(e){
+    console.error('❌ ERRORE LOGIN:', e);
+    errEl.textContent='Errore di connessione. Riprova.';
+    errEl.style.display='block';
+  }
+  finally{
+    hideLoad();
+    btn.disabled=false;
+    btn.textContent='Accedi';
+    console.log('✅ Login process finito');
+  }
 }
 function doLogout(){clearSession();location.reload();}
 
@@ -3950,17 +3990,74 @@ function cleanTablesSQL() {
 
 
 
-// EVENTS - SPOSTATI IN DOMContentLoaded
-/*
-G('btn-login').addEventListener('click',doLogin);
-G('inp-pwd').addEventListener('keypress',function(e){if(e.key==='Enter')doLogin();});
-G('inp-email').addEventListener('keypress',function(e){if(e.key==='Enter')doLogin();});
-G('btn-logout').addEventListener('click',doLogout);
-G('btn-info').addEventListener('click',function(){document.getElementById('modal-info').style.display='flex';});
-G('btn-darkmode').addEventListener('click',toggleDarkMode);
-G('btn-darkmode-mob').addEventListener('click',function(){toggleDarkMode();closeDrawer();});
-G('btn-info-mob').addEventListener('click',function(){document.getElementById('modal-info').style.display='flex';});
-*/
+// EVENTS - ATTACHMENT GARANTITO
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🎯 DOMContentLoaded - Attaccando event listeners...');
+  
+  setTimeout(function() {
+    console.log('⏱️  setTimeout 100ms - Cercando elementi...');
+    
+    var btnLogin = document.getElementById('btn-login');
+    console.log('btn-login trovato?', !!btnLogin);
+    if (btnLogin) {
+      btnLogin.addEventListener('click', function(e) {
+        console.log('🖱️  btn-login CLICCATO!');
+        e.preventDefault();
+        doLogin();
+      });
+      console.log('✅ btn-login listener attaccato');
+    }
+    
+    var inpPwd = document.getElementById('inp-pwd');
+    if (inpPwd) {
+      inpPwd.addEventListener('keypress', function(e){
+        console.log('⌨️  inp-pwd KEYPRESS:', e.key);
+        if(e.key==='Enter') doLogin();
+      });
+      console.log('✅ inp-pwd listener attaccato');
+    }
+    
+    var inpEmail = document.getElementById('inp-email');
+    if (inpEmail) {
+      inpEmail.addEventListener('keypress', function(e){
+        if(e.key==='Enter') doLogin();
+      });
+      console.log('✅ inp-email listener attaccato');
+    }
+    
+    var btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+      btnLogout.addEventListener('click', doLogout);
+      console.log('✅ btn-logout listener attaccato');
+    }
+    
+    var btnInfo = document.getElementById('btn-info');
+    if (btnInfo) {
+      btnInfo.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
+      console.log('✅ btn-info listener attaccato');
+    }
+    
+    var btnDarkmode = document.getElementById('btn-darkmode');
+    if (btnDarkmode) {
+      btnDarkmode.addEventListener('click', toggleDarkMode);
+      console.log('✅ btn-darkmode listener attaccato');
+    }
+    
+    var btnDarkmodeMob = document.getElementById('btn-darkmode-mob');
+    if (btnDarkmodeMob) {
+      btnDarkmodeMob.addEventListener('click', function(){toggleDarkMode();closeDrawer();});
+      console.log('✅ btn-darkmode-mob listener attaccato');
+    }
+    
+    var btnInfoMob = document.getElementById('btn-info-mob');
+    if (btnInfoMob) {
+      btnInfoMob.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
+      console.log('✅ btn-info-mob listener attaccato');
+    }
+    
+    console.log('🎉 TUTTI i listener attaccati!');
+  }, 100);
+});
 G('file-input').addEventListener('change',function(e){handleFile(e.target.files[0],false);e.target.value='';});
 G('file-add').addEventListener('change',function(e){handleFile(e.target.files[0],true);e.target.value='';});
 G('btn-reset').addEventListener('click',async function(){
