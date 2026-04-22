@@ -4148,7 +4148,13 @@ function traduciStatoAttivita(codice) {
 
 async function openAnagraficaModal(anaIdx) {
   var ana = anaFiltered[anaIdx];
-  if (!ana) return;
+  if (!ana) {
+    console.error('❌ ERRORE: anaFiltered[' + anaIdx + '] è null!');
+    console.log('anaFiltered:', anaFiltered);
+    return;
+  }
+  
+  console.log('✅ APRI SCHEDA:', ana.codiceanagrafica, ana.ragionesociale);
   
   // ⭐ CARICA CCIAA SUBITO (Prima di usare i dati)
   var cciaaData = null;
@@ -4162,7 +4168,11 @@ async function openAnagraficaModal(anaIdx) {
       if (cciaaResults && cciaaResults.length > 0) {
         cciaaData = cciaaResults[0];
         console.log('✅ CCIAA dati caricati:', cciaaData);
+      } else {
+        console.log('⚠️ CCIAA: Nessun record trovato per partita_iva:', ana.partitaiva);
       }
+    } else {
+      console.error('❌ CCIAA HTTP error:', cciaaResp.status);
     }
   } catch(cciaaErr) {
     console.error('❌ Errore caricamento CCIAA:', cciaaErr);
