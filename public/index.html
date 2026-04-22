@@ -4220,22 +4220,10 @@ async function openAnagraficaModal(anaIdx) {
     html += '<div style="background:var(--surface);border-radius:16px;width:100%;max-width:720px;max-height:85vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.25)">';
     
     // Header con gradient indigo
-    html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);padding:22px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between;gap:20px">';
-    html += '<img src="https://customer31551.img.musvc2.net/static/31551/images/1/CNARoma%20NEGATIVO%20COLORE%20SOLO%20ROMA.png" alt="CNA" style="height:60px;width:auto;flex-shrink:0">';
-    html += '<h2 style="margin:0;color:white;font-size:18px;font-weight:800;letter-spacing:-0.02em;flex:1;text-align:center">' + (ana.ragionesociale || "Senza nome") + '</h2>';
-    
-    // BOX STATO ATTIVITÀ
-    if (cciaaData && cciaaData.stato_attivita !== null && cciaaData.stato_attivita !== undefined) {
-      var statoInfo = traduciStatoAttivita(cciaaData.stato_attivita);
-      html += '<div style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:8px 14px;text-align:center;min-width:130px;flex-shrink:0">';
-      html += '<div style="font-size:9px;color:rgba(255,255,255,0.7);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:3px">Stato</div>';
-      html += '<div style="font-size:12px;font-weight:700;color:white">' + statoInfo.testo + '</div>';
-      html += '</div>';
-    } else {
-      html += '<div style="min-width:130px;flex-shrink:0"></div>';
-    }
-    
-    html += '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0">×</button>';
+    html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);padding:22px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">';
+    html += '<img src="https://customer31551.img.musvc2.net/static/31551/images/1/CNARoma%20NEGATIVO%20COLORE%20SOLO%20ROMA.png" alt="CNA" style="height:60px;width:auto">';
+    html += '<h2 style="margin:0;color:white;font-size:18px;font-weight:800;text-align:center;flex:1">' + (ana.ragionesociale || "Senza nome") + '</h2>';
+    html += '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:16px;border-radius:8px">×</button>';
     html += '</div>';
     
     // Contenuto
@@ -4260,6 +4248,46 @@ async function openAnagraficaModal(anaIdx) {
       html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px">Titolare</div>';
       html += '<div style="color:#005CA9;font-weight:700;font-size:14px">' + nomeCompleto + '</div>';
       html += '</div>';
+    
+    // BOX STATO ATTIVITÀ (accanto ai dati anagrafici)
+    if (cciaaData && cciaaData.stato_attivita !== null && cciaaData.stato_attivita !== undefined) {
+      var statoInfo = traduciStatoAttivita(cciaaData.stato_attivita);
+      html += '<div style="margin-bottom:25px;padding:15px;background:' + statoInfo.color + ';border-radius:8px;text-align:center">';
+      html += '<div style="font-size:11px;color:rgba(255,255,255,0.8);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Stato Attività</div>';
+      html += '<div style="font-size:14px;font-weight:700;color:white">' + statoInfo.testo + '</div>';
+      html += '</div>';
+    }
+    
+    // SEZIONE DIPENDENTI E ADDETTI
+    if (cciaaData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari)) {
+      html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
+      html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
+      
+      var addSub = parseInt(cciaaData.addetti_subordinati) || 0;
+      var addFam = parseInt(cciaaData.addetti_familiari) || 0;
+      var totale = addSub + addFam;
+      
+      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+      
+      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
+      html += '<div style="color:#666;font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase">Subordinati</div>';
+      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addSub + '</div>';
+      html += '</div>';
+      
+      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
+      html += '<div style="color:#666;font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase">Familiari</div>';
+      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addFam + '</div>';
+      html += '</div>';
+      
+      html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);border-radius:8px;padding:12px;text-align:center">';
+      html += '<div style="color:rgba(255,255,255,0.8);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase">Totale Addetti</div>';
+      html += '<div style="color:white;font-size:18px;font-weight:700">' + totale + '</div>';
+      html += '</div>';
+      
+      html += '</div>';
+      html += '</div>';
+    }
+
     }
     
     html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;font-size:13px">';
