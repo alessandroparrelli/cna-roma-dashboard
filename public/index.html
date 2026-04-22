@@ -1357,7 +1357,7 @@ var currentCCIAAData=null;
 var TR='tesseramento_records';
 var MESI=['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 var COLORS_PROMO=['#2563EB','#EA580C','#0D9488','#7C3AED','#CA8A04','#DC2626','#059669','#0284C7','#C2410C','#9333EA'];
-var allData=[],charts={},sortState={},session=null;
+var charts={},sortState={};
 
 // SHA-256
 async function sha256hex(s){var b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return Array.from(new Uint8Array(b)).map(function(x){return x.toString(16).padStart(2,'0');}).join('');}
@@ -4285,8 +4285,7 @@ function traduciStatoAttivita(codice) {
   return statMap[String(codice)] || { testo: 'SCONOSCIUTO', color: '#6B7280' };
 }
 
-var currentAnaIdx = 0;
-var currentCCIAAData = null;
+// currentAnaIdx e currentCCIAAData sono già dichiarate in alto
 
 async function openAnagraficaModal(anaIdx) {
   currentAnaIdx = anaIdx;
@@ -4672,99 +4671,140 @@ async function openAnagraficaModal(anaIdx) {
 // ============================================
 // PDF DA SCREENSHOT - Stampa scheda anagrafica come immagine
 async function exportSchemaPDF() {
-  console.log('📄 PDF Screenshot - START');
+  console.log('📄 PDF Screenshot v2 - START');
   
   var ana = anaFiltered[currentAnaIdx];
   if (!ana) {
-    alert('❌ Anagrafica non trovata');
+    alert('Anagrafica non trovata');
     return;
   }
   
-  // Nascondi la mappa se esiste
-  var mapElement = document.getElementById('ana-mappa');
-  var wasMapVisible = false;
-  if (mapElement) {
-    wasMapVisible = mapElement.style.display !== 'none';
-    mapElement.style.display = 'none';
+  // Trova il modal della scheda anagrafica
+  var modalBg = document.getElementById('modal-scheda-bg');
+  if (!modalBg) {
+    alert('Apri prima la scheda anagrafica');
+    return;
   }
   
-  // Nascondi il pulsante PDF durante lo screenshot
-  var btnPDF = document.querySelector('button:contains("Download PDF")') || 
-               Array.from(document.querySelectorAll('button')).find(b => b.textContent.includes('Download PDF'));
-  var wasBtnVisible = false;
-  if (btnPDF) {
-    wasBtnVisible = btnPDF.style.display !== 'none';
-    btnPDF.style.display = 'none';
+  // Il contenuto della scheda è il primo figlio div del modal
+  var cardElement = modalBg.querySelector('div');
+  if (!cardElement) {
+    alert('Elemento scheda non trovato');
+    return;
   }
+  
+  console.log('📄 Elemento trovato:', cardElement.tagName, cardElement.style.width);
+  
+  // Nascondi elementi da NON stampare
+  var hideEls = [];
+  
+  // Nascondi mappa
+  var mapEls = cardElement.querySelectorAll('iframe, [id*="map"], [class*="map"]');
+  mapEls.forEach(function(el) {
+    if (el.style.display !== 'none') {
+      hideEls.push({el: el, old: el.style.display});
+      el.style.display = 'none';
+    }
+  });
+  
+  // Nascondi bottoni (PDF, Excel, Chiudi)
+  var btns = cardElement.querySelectorAll('button');
+  btns.forEach(function(btn) {
+    var txt = btn.textContent || '';
+    if (txt.includes('PDF') || txt.includes('Excel') || txt.includes('Chiudi') || txt.includes('Esporta')) {
+      hideEls.push({el: btn, old: btn.style.display});
+      btn.style.display = 'none';
+    }
+  });
+  
+  showLoad('Generazione PDF in corso...');
   
   try {
-    // Ottieni l'elemento della scheda anagrafica
-    var cardElement = document.getElementById('anagrafica-card') || 
-                      document.querySelector('.modal-body') ||
-                      document.querySelector('[id*="modal"]');
+    // Temporaneamente rendi il card senza max-height per catturare TUTTO
+    var oldMaxH = cardElement.style.maxHeight;
+    var oldOverflow = cardElement.style.overflow;
+    cardElement.style.maxHeight = 'none';
+    cardElement.style.overflow = 'visible';
     
-    if (!cardElement) {
-      alert('❌ Elemento scheda non trovato');
-      return;
-    }
-    
-    showLoad('Generazione PDF...');
-    
-    // Usa html2canvas per catturare la scheda
+    // Cattura con html2canvas
     var canvas = await html2canvas(cardElement, {
       scale: 2,
       useCORS: true,
+      allowTaint: true,
       logging: false,
-      backgroundColor: '#ffffff'
+      backgroundColor: '#ffffff',
+      width: cardElement.scrollWidth,
+      height: cardElement.scrollHeight,
+      windowWidth: cardElement.scrollWidth,
+      windowHeight: cardElement.scrollHeight
     });
     
+    // Ripristina stili
+    cardElement.style.maxHeight = oldMaxH;
+    cardElement.style.overflow = oldOverflow;
+    
+    console.log('📄 Canvas:', canvas.width, 'x', canvas.height);
+    
     // Converti in immagine
-    var imgData = canvas.toDataURL('image/png');
+    var imgData = canvas.toDataURL('image/jpeg', 0.95);
     
-    // Crea PDF
-    const { jsPDF } = window.jspdf;
+    // Crea PDF A4
+    var { jsPDF } = window.jspdf;
     var pdf = new jsPDF('p', 'mm', 'a4');
-    var pageWidth = 210;
-    var pageHeight = 297;
+    var pw = 210;
+    var ph = 297;
+    var margin = 5;
     
-    // Calcola le dimensioni dell'immagine per farla entrare in A4
-    var imgWidth = pageWidth - 10;
-    var imgHeight = (canvas.height * imgWidth) / canvas.width;
+    // Calcola dimensioni per entrare in A4
+    var imgW = pw - (margin * 2);
+    var imgH = (canvas.height * imgW) / canvas.width;
     
-    // Se l'immagine è più alta di una pagina, scalala
-    if (imgHeight > pageHeight - 10) {
-      imgHeight = pageHeight - 10;
-      imgWidth = (canvas.width * imgHeight) / canvas.height;
+    // Se troppo alto, multi-page
+    if (imgH <= ph - (margin * 2)) {
+      // Entra in 1 pagina
+      var x = margin;
+      var y = margin;
+      pdf.addImage(imgData, 'JPEG', x, y, imgW, imgH);
+    } else {
+      // Multi-page: taglia in sezioni
+      var pageImgH = ph - (margin * 2);
+      var srcH = (pageImgH / imgW) * canvas.width;
+      var pages = Math.ceil(canvas.height / srcH);
+      
+      for (var p = 0; p < pages; p++) {
+        if (p > 0) pdf.addPage();
+        
+        // Crea canvas per questa pagina
+        var pageCanvas = document.createElement('canvas');
+        pageCanvas.width = canvas.width;
+        var thisH = Math.min(srcH, canvas.height - (p * srcH));
+        pageCanvas.height = thisH;
+        
+        var ctx = pageCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, p * srcH, canvas.width, thisH, 0, 0, canvas.width, thisH);
+        
+        var pageImg = pageCanvas.toDataURL('image/jpeg', 0.95);
+        var thisImgH = (thisH * imgW) / canvas.width;
+        pdf.addImage(pageImg, 'JPEG', margin, margin, imgW, thisImgH);
+      }
     }
-    
-    // Centra l'immagine nella pagina
-    var x = (pageWidth - imgWidth) / 2;
-    var y = 5;
-    
-    pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
     
     // Salva
     var fname = 'Scheda_' + (ana.ragionesociale || 'impresa').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.pdf';
     pdf.save(fname);
     
-    console.log('✅ PDF salvato: ' + fname);
-    alert('✅ PDF scaricato: ' + fname);
+    console.log('PDF salvato:', fname);
     
   } catch(e) {
-    console.error('❌ Errore generazione PDF:', e);
-    alert('❌ Errore durante la generazione del PDF: ' + e.message);
+    console.error('Errore PDF:', e);
+    alert('Errore generazione PDF: ' + e.message);
   } finally {
     hideLoad();
     
-    // Ripristina mappa
-    if (mapElement && wasMapVisible) {
-      mapElement.style.display = 'block';
-    }
-    
-    // Ripristina bottone PDF
-    if (btnPDF && wasBtnVisible) {
-      btnPDF.style.display = 'block';
-    }
+    // Ripristina elementi nascosti
+    hideEls.forEach(function(h) {
+      h.el.style.display = h.old || '';
+    });
   }
 }
 
