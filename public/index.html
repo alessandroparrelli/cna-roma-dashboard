@@ -4576,6 +4576,152 @@ async function openAnagraficaModal(anaIdx) {
   document.body.insertAdjacentHTML('beforeend', html);
 }
 
+
+function exportSchemaPDF() {
+  console.log('📄 Esportazione PDF in corso...');
+  
+  var ana = anaFiltered[currentAnaIdx];
+  if (!ana) {
+    alert('❌ Errore: anagrafica non trovata');
+    return;
+  }
+  
+  // Carica jsPDF
+  const { jsPDF } = window.jspdf;
+  var doc = new jsPDF('p', 'mm', 'a4');
+  
+  // HEADER
+  doc.setDrawColor(0, 92, 169);
+  doc.setLineWidth(1);
+  doc.line(10, 10, 200, 10);
+  
+  // Logo/Titolo
+  doc.setFont('Helvetica', 'bold');
+  doc.setFontSize(16);
+  doc.setTextColor(0, 92, 169);
+  doc.text('CNA ROMA', 15, 22);
+  
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(11);
+  doc.setTextColor(80, 80, 80);
+  doc.text('Scheda Anagrafica Impresa', 15, 31);
+  
+  // Data stampa
+  var today = new Date();
+  var dateStr = today.toLocaleDateString('it-IT');
+  doc.setFontSize(9);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Data stampa: ' + dateStr, 170, 31, {align: 'right'});
+  
+  var yPos = 42;
+  
+  // SEZIONE 1: DATI PRINCIPALI
+  doc.setFont('Helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(0, 92, 169);
+  doc.text('DATI PRINCIPALI', 15, yPos);
+  
+  yPos += 8;
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(200, 200, 200);
+  doc.line(15, yPos - 1, 195, yPos - 1);
+  
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(10);
+  doc.setTextColor(0, 0, 0);
+  yPos += 3;
+  
+  // Dati
+  var datiPrincipali = [
+    ['Ragione Sociale:', ana.ragionesociale || 'N.D.'],
+    ['Partita IVA:', ana.partitaiva || 'N.D.'],
+    ['Codice Cliente:', ana.codicecliente || 'N.D.'],
+    ['Codice Anagrafica:', ana.codiceanagrafica || 'N.D.'],
+    ['Indirizzo:', ana.indirizzo || 'N.D.'],
+    ['CAP / Comune:', (ana.cap || 'N.D.') + ' - ' + (ana.comune || 'N.D.')]
+  ];
+  
+  datiPrincipali.forEach(function(item) {
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(50, 50, 50);
+    doc.text(item[0], 15, yPos);
+    
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(9);
+    doc.setTextColor(0, 0, 0);
+    doc.text(item[1], 50, yPos);
+    
+    yPos += 6;
+  });
+  
+  // SEZIONE 2: DATI CCIAA
+  if (cciaaData) {
+    yPos += 6;
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.setTextColor(0, 92, 169);
+    doc.text('DATI CCIAA', 15, yPos);
+    
+    yPos += 8;
+    doc.setLineWidth(0.3);
+    doc.setDrawColor(200, 200, 200);
+    doc.line(15, yPos - 1, 195, yPos - 1);
+    
+    doc.setFont('Helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.setTextColor(0, 0, 0);
+    yPos += 3;
+    
+    var statoInfo = traduciStatoAttivita(cciaaData.stato_attivita || 0);
+    var tipoInfo = traduciTipoImpresa(cciaaData.art_com_tur);
+    var addSub = parseInt(cciaaData.num_addetti_sub) || 0;
+    var addFam = parseInt(cciaaData.num_addetti_fam_ul) || 0;
+    var totale = addSub + addFam;
+    
+    var datiCCIAA = [
+      ['Stato Attività:', statoInfo.testo],
+      ['Tipo Impresa:', tipoInfo.testo],
+      ['Addetti Subordinati:', addSub.toString()],
+      ['Addetti Familiari:', addFam.toString()],
+      ['Totale Addetti:', totale.toString()]
+    ];
+    
+    datiCCIAA.forEach(function(item) {
+      doc.setFont('Helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.setTextColor(50, 50, 50);
+      doc.text(item[0], 15, yPos);
+      
+      doc.setFont('Helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.text(item[1], 50, yPos);
+      
+      yPos += 6;
+    });
+  }
+  
+  // FOOTER
+  yPos = 280;
+  doc.setDrawColor(0, 92, 169);
+  doc.setLineWidth(1);
+  doc.line(10, yPos, 200, yPos);
+  
+  doc.setFont('Helvetica', 'normal');
+  doc.setFontSize(8);
+  doc.setTextColor(150, 150, 150);
+  doc.text('CNA Roma - Confederazione Nazionale dell\'Artigianato', 15, yPos + 5);
+  doc.text('www.cnaroma.it', 170, yPos + 5, {align: 'right'});
+  
+  // Salva PDF
+  var filename = 'Scheda_' + (ana.ragionesociale || 'impresa').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '_' + new Date().getTime() + '.pdf';
+  doc.save(filename);
+  
+  console.log('✅ PDF salvato: ' + filename);
+  alert('✅ PDF scaricato: ' + filename);
+}
+
 function exportAnaToExcel(anaIdx) {
   // BLOCCO DOPPIO DI SICUREZZA - Impedisce fughe di dati
   if (!hasPermission('export')) {
