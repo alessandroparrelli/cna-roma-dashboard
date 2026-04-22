@@ -4163,7 +4163,7 @@ async function openAnagraficaModal(anaIdx) {
   if (!ana) return;
   
   // ⭐ CARICA CCIAA SUBITO
-  var cciaaData = null;
+  currentCCIAAData = null;
   try {
     console.log('⏳ Caricamento CCIAA per partita_iva:', ana.partitaiva);
     var cciaaResp = await fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), {
@@ -4172,31 +4172,14 @@ async function openAnagraficaModal(anaIdx) {
     if (cciaaResp.ok) {
       var cciaaResults = await cciaaResp.json();
       if (cciaaResults && cciaaResults.length > 0) {
-        cciaaData = cciaaResults[0];
-        console.log('✅ CCIAA dati caricati - Stato:', cciaaData.stato_attivita, 'Addetti:', cciaaData.addetti_subordinati + cciaaData.addetti_familiari);
+        currentCCIAAData = cciaaResults[0];
+        console.log('✅ CCIAA OK - Stato:', currentCCIAAData.stato_attivita, 'Sub:', currentCCIAAData.num_addetti_sub, 'Fam:', currentCCIAAData.num_addetti_fam_ul);
       }
     }
   } catch(e) {
     console.error('❌ Errore CCIAA:', e);
   }
-  
-  // ⭐ CARICA CCIAA SUBITO (Prima di usare i dati)
-  var cciaaData = null;
-  try {
-    console.log('⏳ Caricamento CCIAA per partita_iva:', ana.partitaiva);
-    var cciaaResp = await fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), {
-      headers: H()
-    });
-    if (cciaaResp.ok) {
-      var cciaaResults = await cciaaResp.json();
-      if (cciaaResults && cciaaResults.length > 0) {
-        cciaaData = cciaaResults[0];
-        console.log('✅ CCIAA dati caricati:', cciaaData);
-      }
-    }
-  } catch(cciaaErr) {
-    console.error('❌ Errore caricamento CCIAA:', cciaaErr);
-  }
+  var cciaaData = currentCCIAAData;
   
   console.log('=== APERTURA SCHEDA ANAGRAFICA ===');
   console.log('Codiceanagrafica:', ana.codiceanagrafica);
@@ -4348,33 +4331,6 @@ async function openAnagraficaModal(anaIdx) {
         html += '</div>';
 
     
-    // SEZIONE DIPENDENTI
-    if (currentCCIAAData && (currentCCIAAData.num_addetti_sub || cciaaData.addetti_familiari)) {
-      html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
-      html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
-      
-      var addSub = parseInt(cciaaData.addetti_subordinati) || 0;
-      var addFam = parseInt(cciaaData.addetti_familiari) || 0;
-      var totale = addSub + addFam;
-      
-      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
-      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
-      html += '<div style="color:#666;font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase">Subordinati</div>';
-      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addSub + '</div>';
-      html += '</div>';
-      
-      html += '<div style="background:#F0F4FF;border:1px solid #D1E0FF;border-radius:8px;padding:12px;text-align:center">';
-      html += '<div style="color:#666;font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase">Familiari</div>';
-      html += '<div style="color:#005CA9;font-size:18px;font-weight:700">' + addFam + '</div>';
-      html += '</div>';
-      
-      html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);border-radius:8px;padding:12px;text-align:center">';
-      html += '<div style="color:rgba(255,255,255,0.8);font-size:11px;font-weight:600;margin-bottom:6px;text-transform:uppercase">Totale</div>';
-      html += '<div style="color:white;font-size:18px;font-weight:700">' + totale + '</div>';
-      html += '</div>';
-      html += '</div>';
-      html += '</div>';
-    }
       }
     });
     
