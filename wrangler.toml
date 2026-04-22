@@ -1,7 +1,10 @@
 name = "cna-roma-dashboard"
-main = "index.js"
-site = { bucket = "public" }
 
 [env.production]
-route = "cna-roma-dashboard.pages.dev"
-zone_id = ""
+routes = [
+  { pattern = "cna-roma-dashboard.pages.dev", zone_name = "pages.dev" }
+]
+
+[build]
+command = "echo 'No build needed'"
+cwd = "."
