@@ -48,3 +48,10 @@ function getCurrentCCIAAData() {
 }
 
 export { loadCCIAAData, traduciStatoAttivita, traduciTipoImpresa, getCurrentCCIAAData };
+
+// Esponi currentCCIAAData a livello globale per compatibilità con HTML monolite
+window.currentCCIAAData = null;
+function updateGlobalCCIAAData(data) {
+  window.currentCCIAAData = data;
+  currentCCIAAData = data;
+}
