@@ -4231,7 +4231,21 @@ async function openAnagraficaModal(anaIdx) {
     
     // SEZIONE 1: DATI ANAGRAFICI
     html += '<div style="margin-bottom:25px">';
-    html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">📋 Dati Anagrafici</h3>';
+    
+    // Header con titolo + BOX Stato a destra
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px">';
+    html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:0.5px">📋 Dati Anagrafici</h3>';
+    
+    // BOX STATO ATTIVITÀ (piccolo, a destra)
+    if (cciaaData && cciaaData.stato_attivita !== null && cciaaData.stato_attivita !== undefined) {
+      var statoInfo = traduciStatoAttivita(cciaaData.stato_attivita);
+      html += '<div style="background:' + statoInfo.color + ';border-radius:6px;padding:6px 12px;text-align:center;min-width:100px;flex-shrink:0">';
+      html += '<div style="font-size:9px;color:white;font-weight:600;text-transform:uppercase;letter-spacing:0.3px">Stato</div>';
+      html += '<div style="font-size:11px;font-weight:700;color:white">' + statoInfo.testo + '</div>';
+      html += '</div>';
+    }
+    
+    html += '</div>';
     
     // Nome e Cognome Titolare - Box sfumata su intera riga
     var nomeCompleto = '';
@@ -4248,15 +4262,6 @@ async function openAnagraficaModal(anaIdx) {
       html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px">Titolare</div>';
       html += '<div style="color:#005CA9;font-weight:700;font-size:14px">' + nomeCompleto + '</div>';
       html += '</div>';
-    
-    // BOX STATO ATTIVITÀ (accanto ai dati anagrafici)
-    if (cciaaData && cciaaData.stato_attivita !== null && cciaaData.stato_attivita !== undefined) {
-      var statoInfo = traduciStatoAttivita(cciaaData.stato_attivita);
-      html += '<div style="margin-bottom:25px;padding:15px;background:' + statoInfo.color + ';border-radius:8px;text-align:center">';
-      html += '<div style="font-size:11px;color:rgba(255,255,255,0.8);font-weight:600;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Stato Attività</div>';
-      html += '<div style="font-size:14px;font-weight:700;color:white">' + statoInfo.testo + '</div>';
-      html += '</div>';
-    }
     
     // SEZIONE DIPENDENTI E ADDETTI
     if (cciaaData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari)) {
