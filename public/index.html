@@ -4268,8 +4268,13 @@ async function openAnagraficaModal(anaIdx) {
     console.log('🔍 DEBUG DIPENDENTI:');
     console.log('cciaaData:', cciaaData);
     if (cciaaData) {
-      console.log('  - addetti_subordinati:', cciaaData.addetti_subordinati, 'tipo:', typeof cciaaData.addetti_subordinati);
-      console.log('  - addetti_familiari:', cciaaData.addetti_familiari, 'tipo:', typeof cciaaData.addetti_familiari);
+      console.log('📋 TUTTI I CAMPI CCIAA:');
+      console.log(Object.keys(cciaaData));
+      console.log('  - addetti_subordinati:', cciaaData.addetti_subordinati);
+      console.log('  - addetti_familiari:', cciaaData.addetti_familiari);
+      console.log('  - num_addetti_sub:', cciaaData.num_addetti_sub);
+      console.log('  - num_addetti_fam_ul:', cciaaData.num_addetti_fam_ul);
+      console.log('  - num_addetti:', cciaaData.num_addetti);
     }
     console.log('Condition result:', cciaaData && (cciaaData.addetti_subordinati || cciaaData.addetti_familiari));
     
