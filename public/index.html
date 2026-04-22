@@ -3696,7 +3696,33 @@ document.addEventListener('DOMContentLoaded', function() {
   if (inputCS) {
     inputCS.addEventListener('change', function(e) {
       handleFileSelect(e, 'contrattiservizio');
-    });
+    
+  
+  // LOGIN E NAVIGAZIONE LISTENERS
+  setTimeout(function() {
+    var btnLogin = G('btn-login');
+    if (btnLogin) btnLogin.addEventListener('click', doLogin);
+    var inpPwd = G('inp-pwd');
+    if (inpPwd) inpPwd.addEventListener('keypress', function(e){if(e.key==='Enter')doLogin();});
+    var inpEmail = G('inp-email');
+    if (inpEmail) inpEmail.addEventListener('keypress', function(e){if(e.key==='Enter')doLogin();});
+    
+    var btnLogout = G('btn-logout');
+    if (btnLogout) btnLogout.addEventListener('click', doLogout);
+    
+    var btnInfo = G('btn-info');
+    if (btnInfo) btnInfo.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
+    
+    var btnDarkmode = G('btn-darkmode');
+    if (btnDarkmode) btnDarkmode.addEventListener('click', toggleDarkMode);
+    
+    var btnDarkmodeMob = G('btn-darkmode-mob');
+    if (btnDarkmodeMob) btnDarkmodeMob.addEventListener('click', function(){toggleDarkMode();closeDrawer();});
+    
+    var btnInfoMob = G('btn-info-mob');
+    if (btnInfoMob) btnInfoMob.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
+  }, 100);
+});
   }
   
   var dropCS = G('upload-contrattiservizio-drop');
@@ -3919,7 +3945,8 @@ function cleanTablesSQL() {
 
 
 
-// EVENTS
+// EVENTS - SPOSTATI IN DOMContentLoaded
+/*
 G('btn-login').addEventListener('click',doLogin);
 G('inp-pwd').addEventListener('keypress',function(e){if(e.key==='Enter')doLogin();});
 G('inp-email').addEventListener('keypress',function(e){if(e.key==='Enter')doLogin();});
@@ -3928,6 +3955,7 @@ G('btn-info').addEventListener('click',function(){document.getElementById('modal
 G('btn-darkmode').addEventListener('click',toggleDarkMode);
 G('btn-darkmode-mob').addEventListener('click',function(){toggleDarkMode();closeDrawer();});
 G('btn-info-mob').addEventListener('click',function(){document.getElementById('modal-info').style.display='flex';});
+*/
 G('file-input').addEventListener('change',function(e){handleFile(e.target.files[0],false);e.target.value='';});
 G('file-add').addEventListener('change',function(e){handleFile(e.target.files[0],true);e.target.value='';});
 G('btn-reset').addEventListener('click',async function(){
