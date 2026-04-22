@@ -1,0 +1,7 @@
+name = "cna-roma-dashboard"
+main = "index.js"
+site = { bucket = "public" }
+
+[env.production]
+route = "cna-roma-dashboard.pages.dev"
+zone_id = ""
