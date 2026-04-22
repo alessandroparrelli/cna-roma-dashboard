@@ -4670,8 +4670,9 @@ async function openAnagraficaModal(anaIdx) {
 // PDF EXPORT - VERSIONE COMPLETA E GRAFICA
 // ============================================
 // NUOVA FUNZIONE PDF - REWRITE COMPLETO
+// PDF MIGLIORATO - v96.1
 function exportSchemaPDF() {
-  console.log('📄 PDF - START');
+  console.log('📄 PDF v96.1 - START');
   
   var ana = anaFiltered[currentAnaIdx];
   if (!ana) {
@@ -4680,39 +4681,46 @@ function exportSchemaPDF() {
   }
   
   var cciaa = currentCCIAAData;
-  console.log('📄 Dati:', ana.ragionesociale);
+  console.log('📄 Anagrafica:', ana.ragionesociale);
   console.log('📄 CCIAA:', cciaa);
   
   const { jsPDF } = window.jspdf;
   var doc = new jsPDF('p', 'mm', 'a4');
-  var w = 210; // A4 width
-  var h = 297; // A4 height
-  var m = 12;  // margin
+  var w = 210;
+  var h = 297;
+  var m = 15;
   var y = m;
   
-  // ===== HEADER BLU =====
+  // ===== HEADER BLU CON LOGO E NOME AZIENDA =====
   doc.setFillColor(0, 92, 169);
-  doc.rect(0, 0, w, 22, 'F');
+  doc.rect(0, 0, w, 28, 'F');
   
-  // Logo text (alto a destra)
+  // Logo CNA (semplice - rettangolo con bordo bianco)
+  doc.setDrawColor(255, 255, 255);
+  doc.setLineWidth(0.5);
+  doc.setFillColor(0, 92, 169);
+  doc.rect(m, 5, 18, 18, 'FD');
+  
   doc.setTextColor(255, 255, 255);
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(13);
-  doc.text('CNA ROMA', w - m - 50, 8);
+  doc.setFont('Arial', 'bold');
+  doc.setFontSize(10);
+  doc.text('CNA', m + 9, 16, {align: 'center'});
   
-  // Data (sotto logo)
-  doc.setFontSize(8);
-  var today = new Date().toLocaleDateString('it-IT');
-  doc.text('Data: ' + today, w - m - 50, 14);
+  // Nome Azienda a destra (grande e visibile)
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('Arial', 'bold');
+  doc.setFontSize(12);
+  var nomeAzienda = ana.ragionesociale || 'Azienda';
+  doc.text(nomeAzienda.substring(0, 40), w - m, 12, {align: 'right'});
   
-  y = 28;
+  y = 32;
   
   // ===== TITOLO =====
   doc.setTextColor(0, 92, 169);
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(14);
-  doc.text('Scheda Anagrafica', m, y);
-  y += 8;
+  doc.setFont('Arial', 'bold');
+  doc.setFontSize(16);
+  doc.text('Scheda Anagrafica Impresa', m, y);
+  y += 10;
   
   // ===== BOX STATO E TIPO (INLINE) =====
   if (cciaa) {
@@ -4726,11 +4734,11 @@ function exportSchemaPDF() {
     var b1 = parseInt(statoCol.substring(5, 7), 16);
     
     doc.setFillColor(r1, g1, b1);
-    doc.rect(m, y - 2, 55, 8, 'F');
+    doc.rect(m, y - 2, 58, 9, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(8);
-    doc.text('STATO: ' + stato.testo, m + 2, y + 3);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(9);
+    doc.text('● STATO: ' + stato.testo, m + 3, y + 4);
     
     // BOX TIPO
     var tipoCol = tipo.bgColor || '#F97316';
@@ -4739,31 +4747,32 @@ function exportSchemaPDF() {
     var b2 = parseInt(tipoCol.substring(5, 7), 16);
     
     doc.setFillColor(r2, g2, b2);
-    doc.rect(m + 58, y - 2, 55, 8, 'F');
+    doc.rect(m + 62, y - 2, 58, 9, 'F');
     var textCol = tipo.textColor === 'white' ? [255, 255, 255] : [0, 0, 0];
     doc.setTextColor(textCol[0], textCol[1], textCol[2]);
-    doc.setFont('Helvetica', 'bold');
-    doc.text('TIPO: ' + tipo.testo, m + 60, y + 3);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(9);
+    doc.text('● TIPO: ' + tipo.testo, m + 65, y + 4);
     
-    y += 12;
+    y += 14;
   }
   
   y += 2;
   
   // ===== SEZIONE: DATI PRINCIPALI =====
-  doc.setFont('Helvetica', 'bold');
-  doc.setFontSize(10);
+  doc.setFont('Arial', 'bold');
+  doc.setFontSize(11);
   doc.setTextColor(0, 92, 169);
   doc.text('📋 DATI PRINCIPALI', m, y);
-  y += 6;
+  y += 7;
   
   doc.setDrawColor(0, 92, 169);
-  doc.setLineWidth(0.4);
+  doc.setLineWidth(0.5);
   doc.line(m, y - 1, w - m, y - 1);
-  y += 3;
+  y += 4;
   
-  doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.setFont('Arial', 'normal');
+  doc.setFontSize(9);
   doc.setTextColor(0, 0, 0);
   
   var dati1 = [
@@ -4780,41 +4789,41 @@ function exportSchemaPDF() {
   ];
   
   dati1.forEach(function(d) {
-    if (y > h - 35) {
+    if (y > h - 45) {
       doc.addPage();
       y = m;
     }
-    doc.setFont('Helvetica', 'bold');
+    doc.setFont('Arial', 'bold');
     doc.setTextColor(50, 50, 50);
     doc.text(d[0], m, y);
-    doc.setFont('Helvetica', 'normal');
+    doc.setFont('Arial', 'normal');
     doc.setTextColor(0, 0, 0);
-    doc.text(d[1], m + 50, y);
-    y += 4;
+    doc.text(d[1], m + 52, y);
+    y += 5;
   });
   
-  y += 2;
+  y += 3;
   
   // ===== SEZIONE: CCIAA =====
   if (cciaa) {
-    if (y > h - 50) {
+    if (y > h - 55) {
       doc.addPage();
       y = m;
     }
     
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(11);
     doc.setTextColor(0, 92, 169);
     doc.text('🏢 DATI CCIAA', m, y);
-    y += 6;
+    y += 7;
     
     doc.setDrawColor(0, 92, 169);
-    doc.setLineWidth(0.4);
+    doc.setLineWidth(0.5);
     doc.line(m, y - 1, w - m, y - 1);
-    y += 3;
+    y += 4;
     
-    doc.setFont('Helvetica', 'normal');
-    doc.setFontSize(8);
+    doc.setFont('Arial', 'normal');
+    doc.setFontSize(9);
     doc.setTextColor(0, 0, 0);
     
     var dati2 = [
@@ -4824,105 +4833,197 @@ function exportSchemaPDF() {
     ];
     
     dati2.forEach(function(d) {
-      if (y > h - 20) {
+      if (y > h - 25) {
         doc.addPage();
         y = m;
       }
-      doc.setFont('Helvetica', 'bold');
+      doc.setFont('Arial', 'bold');
       doc.setTextColor(50, 50, 50);
       doc.text(d[0], m, y);
-      doc.setFont('Helvetica', 'normal');
+      doc.setFont('Arial', 'normal');
       doc.setTextColor(0, 0, 0);
-      doc.text(d[1], m + 50, y);
-      y += 4;
+      doc.text(d[1], m + 52, y);
+      y += 5;
     });
     
-    y += 2;
+    y += 3;
     
     // ===== SEZIONE: ADDETTI (3 BOX COLORATI) =====
-    if (y > h - 50) {
+    if (y > h - 55) {
       doc.addPage();
       y = m;
     }
     
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(11);
     doc.setTextColor(0, 92, 169);
     doc.text('👥 ADDETTI E DIPENDENTI', m, y);
-    y += 6;
+    y += 7;
     
     doc.setDrawColor(0, 92, 169);
-    doc.setLineWidth(0.4);
+    doc.setLineWidth(0.5);
     doc.line(m, y - 1, w - m, y - 1);
-    y += 5;
+    y += 6;
     
     var addSub = parseInt(cciaa.num_addetti_sub) || 0;
     var addFam = parseInt(cciaa.num_addetti_fam_ul) || 0;
     var addTot = addSub + addFam;
     
-    var boxW = 45;
-    var boxH = 14;
-    var spacing = 5;
+    var boxW = 48;
+    var boxH = 16;
+    var spacing = 6;
     
-    // BOX 1: SUBORDINATI (BLU CHIARO)
+    // BOX 1: SUBORDINATI
     doc.setFillColor(240, 244, 255);
-    doc.rect(m, y - 2, boxW, boxH, 'F');
-    doc.setDrawColor(209, 224, 255);
-    doc.setLineWidth(0.3);
-    doc.rect(m, y - 2, boxW, boxH);
+    doc.rect(m, y, boxW, boxH, 'F');
+    doc.setDrawColor(0, 92, 169);
+    doc.setLineWidth(0.4);
+    doc.rect(m, y, boxW, boxH);
     
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(102, 102, 102);
-    doc.text('SUBORDINATI', m + 2, y + 2);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(50, 50, 50);
+    doc.text('SUBORDINATI', m + boxW/2, y + 3, {align: 'center'});
     
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(12);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(13);
     doc.setTextColor(0, 92, 169);
-    doc.text(addSub.toString(), m + boxW/2, y + 9, {align: 'center'});
+    doc.text(addSub.toString(), m + boxW/2, y + 11, {align: 'center'});
     
-    // BOX 2: FAMILIARI (BLU CHIARO)
+    // BOX 2: FAMILIARI
     doc.setFillColor(240, 244, 255);
-    doc.rect(m + boxW + spacing, y - 2, boxW, boxH, 'F');
-    doc.setDrawColor(209, 224, 255);
-    doc.setLineWidth(0.3);
-    doc.rect(m + boxW + spacing, y - 2, boxW, boxH);
+    doc.rect(m + boxW + spacing, y, boxW, boxH, 'F');
+    doc.setDrawColor(0, 92, 169);
+    doc.setLineWidth(0.4);
+    doc.rect(m + boxW + spacing, y, boxW, boxH);
     
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(7);
-    doc.setTextColor(102, 102, 102);
-    doc.text('FAMILIARI', m + boxW + spacing + 2, y + 2);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(50, 50, 50);
+    doc.text('FAMILIARI', m + boxW + spacing + boxW/2, y + 3, {align: 'center'});
     
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(12);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(13);
     doc.setTextColor(0, 92, 169);
-    doc.text(addFam.toString(), m + boxW + spacing + boxW/2, y + 9, {align: 'center'});
+    doc.text(addFam.toString(), m + boxW + spacing + boxW/2, y + 11, {align: 'center'});
     
-    // BOX 3: TOTALE (BLU SCURO)
+    // BOX 3: TOTALE
     doc.setFillColor(0, 92, 169);
-    doc.rect(m + (boxW + spacing) * 2, y - 2, boxW, boxH, 'F');
+    doc.rect(m + (boxW + spacing) * 2, y, boxW, boxH, 'F');
     
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(7);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(8);
     doc.setTextColor(255, 255, 255);
-    doc.text('TOTALE', m + (boxW + spacing) * 2 + 2, y + 2);
+    doc.text('TOTALE', m + (boxW + spacing) * 2 + boxW/2, y + 3, {align: 'center'});
     
-    doc.setFont('Helvetica', 'bold');
-    doc.setFontSize(12);
+    doc.setFont('Arial', 'bold');
+    doc.setFontSize(13);
     doc.setTextColor(255, 255, 255);
-    doc.text(addTot.toString(), m + (boxW + spacing) * 2 + boxW/2, y + 9, {align: 'center'});
+    doc.text(addTot.toString(), m + (boxW + spacing) * 2 + boxW/2, y + 11, {align: 'center'});
     
     y += boxH + 8;
+  }
+  
+  // ===== SEZIONE: SERVIZI ATTIVI =====
+  if (y > h - 45) {
+    doc.addPage();
+    y = m;
+  }
+  
+  doc.setFont('Arial', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(0, 92, 169);
+  doc.text('⚙️ SERVIZI ATTIVI', m, y);
+  y += 7;
+  
+  doc.setDrawColor(0, 92, 169);
+  doc.setLineWidth(0.5);
+  doc.line(m, y - 1, w - m, y - 1);
+  y += 4;
+  
+  doc.setFont('Arial', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  
+  // Carica servizi da diretti
+  try {
+    var serviziText = 'Caricamento servizi...';
+    if (window.serviziUnique && window.serviziUnique.length > 0) {
+      serviziText = window.serviziUnique.join(', ');
+    } else {
+      serviziText = 'Nessun servizio attivo';
+    }
+    
+    var lines = doc.splitTextToSize(serviziText, w - (2 * m));
+    lines.forEach(function(line) {
+      if (y > h - 25) {
+        doc.addPage();
+        y = m;
+      }
+      doc.text(line, m, y);
+      y += 5;
+    });
+  } catch(e) {
+    doc.text('Nessun servizio disponibile', m, y);
+    y += 5;
+  }
+  
+  y += 3;
+  
+  // ===== SEZIONE: CONTRATTI ATTIVI =====
+  if (y > h - 45) {
+    doc.addPage();
+    y = m;
+  }
+  
+  doc.setFont('Arial', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(0, 92, 169);
+  doc.text('📋 CONTRATTI ATTIVI', m, y);
+  y += 7;
+  
+  doc.setDrawColor(0, 92, 169);
+  doc.setLineWidth(0.5);
+  doc.line(m, y - 1, w - m, y - 1);
+  y += 4;
+  
+  doc.setFont('Arial', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  
+  try {
+    var contrattiText = 'Caricamento contratti...';
+    if (window.contratti && window.contratti.length > 0) {
+      var contrattiList = window.contratti.map(function(c) {
+        return (c.descrizione || 'Contratto senza descrizione') + ' (' + (c.stato || 'attivo') + ')';
+      }).join(', ');
+      contrattiText = contrattiList;
+    } else {
+      contrattiText = 'Nessun contratto attivo';
+    }
+    
+    var lines = doc.splitTextToSize(contrattiText, w - (2 * m));
+    lines.forEach(function(line) {
+      if (y > h - 20) {
+        doc.addPage();
+        y = m;
+      }
+      doc.text(line, m, y);
+      y += 5;
+    });
+  } catch(e) {
+    doc.text('Nessun contratto disponibile', m, y);
+    y += 5;
   }
   
   // ===== FOOTER =====
   y = h - 10;
   doc.setDrawColor(0, 92, 169);
-  doc.setLineWidth(0.3);
+  doc.setLineWidth(0.4);
   doc.line(m, y - 2, w - m, y - 2);
   
-  doc.setFont('Helvetica', 'normal');
-  doc.setFontSize(7);
+  doc.setFont('Arial', 'normal');
+  doc.setFontSize(8);
   doc.setTextColor(150, 150, 150);
   doc.text('CNA Roma - Confederazione Nazionale dell\'Artigianato | www.cnaroma.it', m, y + 3);
   
@@ -4930,7 +5031,7 @@ function exportSchemaPDF() {
   var fname = 'Scheda_' + (ana.ragionesociale || 'impresa').replace(/[^a-z0-9]/gi, '_').toLowerCase() + '.pdf';
   doc.save(fname);
   
-  console.log('✅ PDF salvato: ' + fname);
+  console.log('✅ PDF v96.1 salvato: ' + fname);
   alert('✅ PDF scaricato: ' + fname);
 }
 
