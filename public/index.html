@@ -4150,6 +4150,24 @@ async function openAnagraficaModal(anaIdx) {
   var ana = anaFiltered[anaIdx];
   if (!ana) return;
   
+  // ⭐ CARICA CCIAA SUBITO
+  var cciaaData = null;
+  try {
+    console.log('⏳ Caricamento CCIAA per partita_iva:', ana.partitaiva);
+    var cciaaResp = await fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), {
+      headers: H()
+    });
+    if (cciaaResp.ok) {
+      var cciaaResults = await cciaaResp.json();
+      if (cciaaResults && cciaaResults.length > 0) {
+        cciaaData = cciaaResults[0];
+        console.log('✅ CCIAA dati caricati - Stato:', cciaaData.stato_attivita, 'Addetti:', cciaaData.addetti_subordinati + cciaaData.addetti_familiari);
+      }
+    }
+  } catch(e) {
+    console.error('❌ Errore CCIAA:', e);
+  }
+  
   // ⭐ CARICA CCIAA SUBITO (Prima di usare i dati)
   var cciaaData = null;
   try {
