@@ -4136,10 +4136,10 @@ function syncMobileAdmin(){
 
 function traduciTipoImpresa(codice) {
   var tipoMap = {
-    'A': 'Artigiano',
-    'C': 'Commerciante'
+    'A': { testo: 'Artigiano', bgColor: '#EF4444', textColor: 'white' },
+    'C': { testo: 'Commerciante', bgColor: '#FBBF24', textColor: 'black' }
   };
-  return tipoMap[codice] || 'Varie';
+  return tipoMap[codice] || { testo: 'Varie', bgColor: '#F97316', textColor: 'black' };
 }
 
 function traduciStatoAttivita(codice) {
@@ -4244,12 +4244,12 @@ async function openAnagraficaModal(anaIdx) {
     html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px">';
     html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:0.5px">📋 Dati Anagrafici</h3>';
     
-    // BOX TIPO IMPRESA (piccolo, a destra)
+    // BOX TIPO IMPRESA (colorato, a destra dello stato)
     if (cciaaData && cciaaData.art_com_tur) {
-      var tipoImpresa = traduciTipoImpresa(cciaaData.art_com_tur);
-      html += '<div style="background:#E8F4F8;border-radius:6px;padding:6px 12px;text-align:center;min-width:100px;flex-shrink:0">';
-      html += '<div style="font-size:9px;color:#005CA9;font-weight:600;text-transform:uppercase;letter-spacing:0.3px">Tipo</div>';
-      html += '<div style="font-size:11px;font-weight:700;color:#005CA9">' + tipoImpresa + '</div>';
+      var tipoInfo = traduciTipoImpresa(cciaaData.art_com_tur);
+      html += '<div style="background:' + tipoInfo.bgColor + ';border-radius:6px;padding:6px 12px;text-align:center;min-width:110px;flex-shrink:0;margin-left:4px">';
+      html += '<div style="font-size:9px;color:' + tipoInfo.textColor + ';font-weight:600;text-transform:uppercase;letter-spacing:0.3px;opacity:0.9">Tipo</div>';
+      html += '<div style="font-size:11px;font-weight:700;color:' + tipoInfo.textColor + '">' + tipoInfo.testo + '</div>';
       html += '</div>';
     }
     
