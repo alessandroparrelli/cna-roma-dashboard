@@ -4581,6 +4581,8 @@ async function openAnagraficaModal(anaIdx) {
 
 function exportSchemaPDF() {
   console.log('📄 Esportazione PDF in corso...');
+  console.log('currentAnaIdx:', currentAnaIdx);
+  console.log('currentCCIAAData:', currentCCIAAData);
   
   var ana = anaFiltered[currentAnaIdx];
   if (!ana) {
@@ -4658,7 +4660,7 @@ function exportSchemaPDF() {
   });
   
   // SEZIONE 2: DATI CCIAA
-  if (cciaaData) {
+  if (currentCCIAAData) {
     yPos += 6;
     doc.setFont('Helvetica', 'bold');
     doc.setFontSize(11);
@@ -4675,10 +4677,10 @@ function exportSchemaPDF() {
     doc.setTextColor(0, 0, 0);
     yPos += 3;
     
-    var statoInfo = traduciStatoAttivita(cciaaData.stato_attivita || 0);
-    var tipoInfo = traduciTipoImpresa(cciaaData.art_com_tur);
-    var addSub = parseInt(cciaaData.num_addetti_sub) || 0;
-    var addFam = parseInt(cciaaData.num_addetti_fam_ul) || 0;
+    var statoInfo = traduciStatoAttivita(currentCCIAAData.stato_attivita || 0);
+    var tipoInfo = traduciTipoImpresa(currentCCIAAData.art_com_tur);
+    var addSub = parseInt(currentCCIAAData.num_addetti_sub) || 0;
+    var addFam = parseInt(currentCCIAAData.num_addetti_fam_ul) || 0;
     var totale = addSub + addFam;
     
     var datiCCIAA = [
