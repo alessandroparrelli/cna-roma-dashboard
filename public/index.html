@@ -4755,38 +4755,46 @@ async function exportSchemaPDF() {
     var ph = 297;
     var margin = 5;
     
-    // Calcola dimensioni per entrare in A4
+    // FORZA TUTTO IN 1 PAGINA A4
     var imgW = pw - (margin * 2);
     var imgH = (canvas.height * imgW) / canvas.width;
     
-    // Se troppo alto, multi-page
-    if (imgH <= ph - (margin * 2)) {
-      // Entra in 1 pagina
-      var x = margin;
-      var y = margin;
-      pdf.addImage(imgData, 'JPEG', x, y, imgW, imgH);
-    } else {
-      // Multi-page: taglia in sezioni
-      var pageImgH = ph - (margin * 2);
-      var srcH = (pageImgH / imgW) * canvas.width;
-      var pages = Math.ceil(canvas.height / srcH);
+    // Se troppo alto, scala per entrare in 1 pagina
+    var maxH = ph - (margin * 2);
+    if (imgH > maxH) {
+      imgH = maxH;
+      imgW = (canvas.width * imgH) / canvas.height;
+    }
+    
+    // Centra orizzontalmente
+    var x = (pw - imgW) / 2;
+    var y = margin;
+    
+    pdf.addImage(imgData, 'JPEG', x, y, imgW, imgH);
+    
+    // LOGO CNA in alto a sinistra (sopra l'immagine, nell'header)
+    try {
+      var logoImg = new Image();
+      logoImg.crossOrigin = 'anonymous';
+      await new Promise(function(resolve, reject) {
+        logoImg.onload = resolve;
+        logoImg.onerror = reject;
+        logoImg.src = 'https://customer31551.img.musvc2.net/static/31551/images/1/CNARoma%20NEGATIVO%20COLORE%20SOLO%20ROMA.png';
+      });
       
-      for (var p = 0; p < pages; p++) {
-        if (p > 0) pdf.addPage();
-        
-        // Crea canvas per questa pagina
-        var pageCanvas = document.createElement('canvas');
-        pageCanvas.width = canvas.width;
-        var thisH = Math.min(srcH, canvas.height - (p * srcH));
-        pageCanvas.height = thisH;
-        
-        var ctx = pageCanvas.getContext('2d');
-        ctx.drawImage(canvas, 0, p * srcH, canvas.width, thisH, 0, 0, canvas.width, thisH);
-        
-        var pageImg = pageCanvas.toDataURL('image/jpeg', 0.95);
-        var thisImgH = (thisH * imgW) / canvas.width;
-        pdf.addImage(pageImg, 'JPEG', margin, margin, imgW, thisImgH);
-      }
+      // Crea canvas per il logo
+      var logoCanvas = document.createElement('canvas');
+      logoCanvas.width = logoImg.naturalWidth;
+      logoCanvas.height = logoImg.naturalHeight;
+      var logoCtx = logoCanvas.getContext('2d');
+      logoCtx.drawImage(logoImg, 0, 0);
+      var logoData = logoCanvas.toDataURL('image/png');
+      
+      // Logo 30mm x 10mm in alto a sinistra nell'header
+      pdf.addImage(logoData, 'PNG', x + 3, y + 3, 30, 10);
+      console.log('Logo CNA aggiunto');
+    } catch(logoErr) {
+      console.warn('Logo non caricato (CORS):', logoErr);
     }
     
     // Salva
