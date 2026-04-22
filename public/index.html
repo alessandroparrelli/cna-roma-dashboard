@@ -4349,7 +4349,7 @@ async function openAnagraficaModal(anaIdx) {
 
     
     // SEZIONE DIPENDENTI
-    if (currentCCIAAData && (currentCCIAAData.addetti_subordinati || cciaaData.addetti_familiari)) {
+    if (currentCCIAAData && (currentCCIAAData.num_addetti_sub || cciaaData.addetti_familiari)) {
       html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
       html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
       
