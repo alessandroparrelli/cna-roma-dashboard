@@ -1,4 +1,9 @@
-[[headers]]
-for = "/*"
-[headers.values]
-Cache-Control = "public, max-age=3600"
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+
+/js/*
+  Content-Type: application/javascript
+
+/css/*
+  Content-Type: text/css
