@@ -24,7 +24,7 @@ async function doLogin(){
     var hash=await sha256hex(pwd);
     console.log('✅ Hash generato:', hash.substring(0,10) + '...');
     
-    var query='cna_users?select=id,nome,cognome,email,ruolo&email=eq.'+encodeURIComponent(email)+'&password_sha256=eq.'+hash+'&attivo=eq.true';
+    var query='cna_users?select=id,nome,cognome,email,ruolo,avatar_base64&email=eq.'+encodeURIComponent(email)+'&password_sha256=eq.'+hash+'&attivo=eq.true';
     console.log('📝 Query:', query);
     
     var rows=await sbGet(query);
@@ -165,10 +165,145 @@ function showApp(){
   G('app').style.display='block';
   
   G('chip-name').textContent=session.nome+' '+session.cognome;
+  
+  // Avatar nel chip
+  updateChipAvatar();
+  
   if(isAdmin())G('admin-actions').style.display='flex';
-  loadUserPermissions(); // Carica i permessi dell'utente e aggiorna UI
+  loadUserPermissions();
   syncMobileAdmin();
   loadDashboard();
+}
+
+// === AVATAR / PROFILO ===
+
+function getInitials() {
+  var n = (session.nome || '').charAt(0).toUpperCase();
+  var c = (session.cognome || '').charAt(0).toUpperCase();
+  return n + c || '–';
+}
+
+function updateChipAvatar() {
+  var initials = getInitials();
+  G('chip-initials').textContent = initials;
+  
+  var img = G('chip-avatar-img');
+  if (session.avatar_base64) {
+    img.src = session.avatar_base64;
+    img.style.display = 'block';
+    G('chip-initials').style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    G('chip-initials').style.display = 'block';
+  }
+}
+
+function openProfilo() {
+  var modal = G('modal-profilo-bg');
+  modal.style.display = 'flex';
+  
+  var initials = getInitials();
+  G('profilo-initials').textContent = initials;
+  G('profilo-nome').textContent = session.nome + ' ' + session.cognome;
+  G('profilo-email').textContent = session.email;
+  G('profilo-ruolo').textContent = session.ruolo;
+  
+  var img = G('profilo-avatar-img');
+  var btnRimuovi = G('btn-rimuovi-avatar');
+  if (session.avatar_base64) {
+    img.src = session.avatar_base64;
+    img.style.display = 'block';
+    G('profilo-initials').style.display = 'none';
+    btnRimuovi.style.display = 'block';
+  } else {
+    img.style.display = 'none';
+    G('profilo-initials').style.display = 'block';
+    btnRimuovi.style.display = 'none';
+  }
+}
+
+async function uploadAvatar(file) {
+  if (!file || !file.type.startsWith('image/')) {
+    toast('Seleziona un file immagine', 'error');
+    return;
+  }
+  
+  if (file.size > 500000) {
+    toast('Immagine troppo grande (max 500KB)', 'error');
+    return;
+  }
+  
+  showLoad('Caricamento foto...');
+  
+  try {
+    var reader = new FileReader();
+    var base64 = await new Promise(function(resolve, reject) {
+      reader.onload = function() { resolve(reader.result); };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    
+    // Ridimensiona a 200x200 max
+    var resized = await resizeImage(base64, 200);
+    
+    // Salva in Supabase
+    await sbPatch('cna_users?id=eq.' + session.id, { avatar_base64: resized });
+    
+    // Aggiorna session
+    session.avatar_base64 = resized;
+    saveSession(session);
+    
+    // Aggiorna UI
+    updateChipAvatar();
+    openProfilo();
+    
+    toast('Foto profilo aggiornata!', 'success');
+  } catch(e) {
+    console.error('Errore upload avatar:', e);
+    toast('Errore caricamento foto', 'error');
+  } finally {
+    hideLoad();
+  }
+}
+
+function resizeImage(base64, maxSize) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var canvas = document.createElement('canvas');
+      var w = img.width;
+      var h = img.height;
+      
+      if (w > h) {
+        if (w > maxSize) { h = h * maxSize / w; w = maxSize; }
+      } else {
+        if (h > maxSize) { w = w * maxSize / h; h = maxSize; }
+      }
+      
+      canvas.width = w;
+      canvas.height = h;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', 0.85));
+    };
+    img.src = base64;
+  });
+}
+
+async function rimuoviAvatar() {
+  showLoad('Rimozione foto...');
+  try {
+    await sbPatch('cna_users?id=eq.' + session.id, { avatar_base64: null });
+    session.avatar_base64 = null;
+    saveSession(session);
+    updateChipAvatar();
+    openProfilo();
+    toast('Foto profilo rimossa', 'success');
+  } catch(e) {
+    toast('Errore rimozione foto', 'error');
+  } finally {
+    hideLoad();
+  }
 }
 
 // DASHBOARD LOAD — senza limite

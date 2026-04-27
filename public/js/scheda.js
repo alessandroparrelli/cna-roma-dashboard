@@ -1454,3 +1454,29 @@ function hexToRgb(hex) {
 // INIT
 initDarkMode();
 if(loadSession())showApp();
+
+// === PROFILO EVENT LISTENERS ===
+document.addEventListener('DOMContentLoaded', function() {
+  // Click su chip utente → apri profilo
+  var chip = document.getElementById('user-chip');
+  if (chip) chip.addEventListener('click', openProfilo);
+  
+  // Click su avatar nel modal → apri file picker
+  var avatarContainer = document.getElementById('profilo-avatar-container');
+  if (avatarContainer) {
+    avatarContainer.addEventListener('click', function() {
+      document.getElementById('avatar-file-input').click();
+    });
+  }
+  
+  // File selezionato → upload
+  var fileInput = document.getElementById('avatar-file-input');
+  if (fileInput) {
+    fileInput.addEventListener('change', function(e) {
+      if (e.target.files && e.target.files[0]) {
+        uploadAvatar(e.target.files[0]);
+        e.target.value = '';
+      }
+    });
+  }
+});
