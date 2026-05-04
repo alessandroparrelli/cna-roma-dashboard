@@ -940,6 +940,15 @@ tfoot tr td{font-weight:800;font-size:13px;border-top:2px solid var(--primary);b
               • 🔒 NO export dati
             </span>
           </div>
+          <div style="border:1px solid var(--border);border-radius:8px;padding:12px;background:var(--surface2)">
+            <strong style="color:#fd7e14;display:block;margin-bottom:8px">💼 Commerciale</strong>
+            <span style="font-size:12px;color:var(--text-sub);display:block">
+              • Vede solo propri clienti<br>
+              • Provvigioni personali<br>
+              • Accesso CRM e Signature<br>
+              • 🔒 NO approvazione contratti
+            </span>
+          </div>
         </div>
         
         <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:20px">
@@ -2174,7 +2183,7 @@ async function loadUsers(){
     if(cnt) cnt.textContent=us.length+' utenti';
     if(!us.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Nessun utente</td></tr>';return;}
     tb.innerHTML=us.map(function(u){
-      var rb=u.ruolo==='admin'?'<span class="badge badge-admin">Admin</span>':'<span class="badge badge-user">Utente</span>';
+      var rb=u.ruolo==='admin'?'<span class="badge badge-admin">Admin</span>':u.ruolo==='supervisore'?'<span class="badge" style="background:rgba(111,66,193,0.15);color:#6f42c1">Supervisore</span>':u.ruolo==='commerciale'?'<span class="badge" style="background:rgba(253,126,20,0.15);color:#fd7e14">Commerciale</span>':u.ruolo==='readonly'?'<span class="badge" style="background:rgba(108,117,125,0.15);color:#6c757d">Readonly</span>':'<span class="badge badge-user">Utente</span>';
       var sb=u.attivo?'<span class="badge badge-on">● Attivo</span>':'<span class="badge badge-off">● Inattivo</span>';
       var ll=u.last_login?fmtDate(u.last_login):'<span style="color:var(--gray-400)">Mai</span>';
       var actions='<div class="user-actions">';
@@ -2315,6 +2324,12 @@ async function loadRuoli(){
       } else if(u.ruolo === 'supervisore') {
         roleBadge = '👤 Supervisore';
         roleColor = 'var(--accent2)';
+      } else if(u.ruolo === 'commerciale') {
+        roleBadge = '💼 Commerciale';
+        roleColor = '#fd7e14';
+      } else if(u.ruolo === 'readonly') {
+        roleBadge = '🔒 Readonly';
+        roleColor = '#6c757d';
       } else {
         roleBadge = '👁️ Utente';
         roleColor = 'var(--green)';
@@ -2332,7 +2347,9 @@ async function loadRuoli(){
         '<select class="role-select" data-user-id="' + u.id + '" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:11px">' +
         '<option value="admin"' + (u.ruolo === 'admin' ? ' selected' : '') + '>Admin</option>' +
         '<option value="supervisore"' + (u.ruolo === 'supervisore' ? ' selected' : '') + '>Supervisore</option>' +
+        '<option value="commerciale"' + (u.ruolo === 'commerciale' ? ' selected' : '') + '>Commerciale</option>' +
         '<option value="utente"' + (u.ruolo === 'utente' ? ' selected' : '') + '>Utente</option>' +
+        '<option value="readonly"' + (u.ruolo === 'readonly' ? ' selected' : '') + '>Readonly</option>' +
         '</select>' +
         '</td></tr>';
     }).join('');
