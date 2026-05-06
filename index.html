@@ -609,6 +609,7 @@ tfoot tr td{font-weight:800;font-size:13px;border-top:2px solid var(--primary);b
   <button class="tab-btn" data-tab="tab-promotori">📈 Tesseramento | Analisi</button>
   <button class="tab-btn" data-tab="tab-anagrafiche">🗂️ Archivio Imprese CNA</button>
   <button class="tab-btn" data-tab="tab-contratti">📋 Archivio Contratti</button>
+  <button class="tab-btn" data-tab="tab-statistiche" id="tab-stat-btn" style="display:none">📊 Statistiche Utenti</button>
   <button class="tab-btn" data-tab="tab-import">⬆️ Carica Dati</button>
 </div>
 
@@ -1174,6 +1175,56 @@ tfoot tr td{font-weight:800;font-size:13px;border-top:2px solid var(--primary);b
   </div>
 </div>
 
+<!-- TAB: STATISTICHE UTENTI -->
+<div class="page" id="tab-statistiche" style="display:none">
+  <div class="filters-bar">
+    <h2 style="margin:0;display:flex;gap:10px;align-items:center"><span>📊</span> Statistiche Utenti</h2>
+    <p style="margin:8px 0 0 0;color:var(--text-sub);font-size:13px">Visualizza statistiche di contratti, valore e performance per ogni utente (commerciali e non)</p>
+  </div>
+  
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;padding:20px">
+    <div style="border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--surface2)">
+      <div style="font-size:11px;color:var(--text-sub);text-transform:uppercase;font-weight:700;margin-bottom:8px">Utenti Totali</div>
+      <div style="font-size:32px;font-weight:700;color:var(--blue)" id="stat-utenti-tot">0</div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--surface2)">
+      <div style="font-size:11px;color:var(--text-sub);text-transform:uppercase;font-weight:700;margin-bottom:8px">Commerciali Attivi</div>
+      <div style="font-size:32px;font-weight:700;color:#fd7e14" id="stat-comm-att">0</div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--surface2)">
+      <div style="font-size:11px;color:var(--text-sub);text-transform:uppercase;font-weight:700;margin-bottom:8px">Contratti Totali</div>
+      <div style="font-size:32px;font-weight:700;color:var(--accent2)" id="stat-contr-tot">0</div>
+    </div>
+    <div style="border:1px solid var(--border);border-radius:8px;padding:14px;background:var(--surface2)">
+      <div style="font-size:11px;color:var(--text-sub);text-transform:uppercase;font-weight:700;margin-bottom:8px">Valore Totale</div>
+      <div style="font-size:32px;font-weight:700;color:var(--green)" id="stat-valore-tot">€0</div>
+    </div>
+  </div>
+
+  <div style="padding:20px">
+    <div style="border:1px solid var(--border);border-radius:8px;padding:16px;background:var(--surface)">
+      <h3 style="margin:0 0 16px 0;color:var(--text)">📋 Statistiche per Utente</h3>
+      <div style="overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead style="border-bottom:2px solid var(--border)">
+            <tr>
+              <th style="text-align:left;padding:10px;color:var(--text-sub);font-weight:700">Nome</th>
+              <th style="text-align:left;padding:10px;color:var(--text-sub);font-weight:700">Ruolo</th>
+              <th style="text-align:center;padding:10px;color:var(--text-sub);font-weight:700">Contratti</th>
+              <th style="text-align:center;padding:10px;color:var(--text-sub);font-weight:700">Valore €</th>
+              <th style="text-align:center;padding:10px;color:var(--text-sub);font-weight:700">Provvigioni €</th>
+              <th style="text-align:center;padding:10px;color:var(--text-sub);font-weight:700">Stato</th>
+            </tr>
+          </thead>
+          <tbody id="stat-users-tbody">
+            <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-dim)">Caricamento statistiche...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL INFORMAZIONI APP -->
 <div id="modal-info" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;padding:20px;overflow-y:auto">
   <div style="background:white;border-radius:16px;padding:28px;width:100%;max-width:600px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto">
@@ -1387,7 +1438,7 @@ function canAccessTab(tabId){
     return true;
   }
   
-  // Supervisore: overview, promotori, anagrafiche (NO import, NO admin panel)
+  // Supervisore: overview, promotori, anagrafiche (NO import, NO admin panel, NO statistiche)
   if(role==='supervisore') return tabId === 'tab-overview' || tabId === 'tab-promotori' || tabId === 'tab-anagrafiche';
   
   // Utente: overview, promotori, anagrafiche (interroga archivio)
@@ -2159,6 +2210,11 @@ function showDashboard(){
   G('upload-zone').style.display='none';
   G('admin-panel').style.display='none';
   G('tabs-bar').style.display='flex';
+  // Mostra tab statistiche solo per admin
+  if(isAdmin()) {
+    var statBtn = G('tab-stat-btn');
+    if(statBtn) statBtn.style.display='inline-flex';
+  }
   // Show active tab
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   G('tab-overview').classList.add('active');
@@ -4044,6 +4100,8 @@ document.querySelectorAll('.tab-btn').forEach(function(btn){
     }
     // Lazy-load anagrafiche on first visit
     if(tabId==='tab-anagrafiche' && !anaLoaded && !anaLoading){ anaLoad(); }
+    // Carica statistiche quando clicca sul tab
+    if(tabId==='tab-statistiche'){ loadStatistiche(); }
   });
 });
 
@@ -4887,6 +4945,93 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500);
   }
 });
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STATISTICHE UTENTI
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function loadStatistiche() {
+  try {
+    // Carica tutti gli utenti con i loro contratti e commissioni
+    var users = await sbGet('cna_users?select=id,nome,cognome,email,ruolo,attivo&order=nome.asc');
+    if (!users) users = [];
+    
+    var stats = [];
+    var totContratti = 0;
+    var totValore = 0;
+    var totProvvigioni = 0;
+    var commCount = 0;
+    
+    // Per ogni utente, carica i dati
+    for (var i = 0; i < users.length; i++) {
+      var u = users[i];
+      
+      // Contratti creati da questo utente
+      var contratti = await sbGet('contratti?created_by=eq.' + encodeURIComponent(u.id) + '&select=id,amount,contract_status');
+      var nContr = contratti ? contratti.length : 0;
+      var valoreContr = contratti ? contratti.reduce(function(s, c) { return s + (parseFloat(c.amount) || 0); }, 0) : 0;
+      
+      // Commissioni per questo commerciale
+      var commissioni = await sbGet('commissions?commercial_id=eq.' + encodeURIComponent(u.id) + '&select=id,amount,status');
+      var nComm = commissioni ? commissioni.length : 0;
+      var totComm = commissioni ? commissioni.reduce(function(s, c) { return s + (parseFloat(c.amount) || 0); }, 0) : 0;
+      
+      stats.push({
+        nome: u.nome + ' ' + u.cognome,
+        email: u.email,
+        ruolo: u.ruolo,
+        attivo: u.attivo,
+        contratti: nContr,
+        valore: valoreContr,
+        commissioni: totComm,
+        nComm: nComm
+      });
+      
+      totContratti += nContr;
+      totValore += valoreContr;
+      totProvvigioni += totComm;
+      if (u.ruolo === 'commerciale' && u.attivo) commCount++;
+    }
+    
+    // Aggiorna i KPI
+    document.getElementById('stat-utenti-tot').textContent = users.length;
+    document.getElementById('stat-comm-att').textContent = commCount;
+    document.getElementById('stat-contr-tot').textContent = totContratti;
+    document.getElementById('stat-valore-tot').textContent = '€' + totValore.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    
+    // Renderizza tabella
+    var tbody = document.getElementById('stat-users-tbody');
+    if (!stats.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-dim)">Nessun utente</td></tr>';
+      return;
+    }
+    
+    var roleColors = {
+      'admin': 'var(--blue)',
+      'supervisore': '#6f42c1',
+      'commerciale': '#fd7e14',
+      'utente': 'var(--green)',
+      'readonly': '#6c757d'
+    };
+    
+    tbody.innerHTML = stats.map(function(s) {
+      var roleColor = roleColors[s.ruolo] || '#666';
+      var statusBadge = s.attivo ? '<span style="color:var(--green);font-weight:700">● Attivo</span>' : '<span style="color:#999;font-weight:700">● Inattivo</span>';
+      return '<tr style="border-bottom:1px solid var(--border)">' +
+        '<td style="padding:10px"><strong>' + escapeHtml(s.nome) + '</strong></td>' +
+        '<td style="padding:10px"><span style="color:' + roleColor + ';font-weight:700">' + s.ruolo + '</span></td>' +
+        '<td style="padding:10px;text-align:center">' + s.contratti + '</td>' +
+        '<td style="padding:10px;text-align:center">€' + s.valore.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</td>' +
+        '<td style="padding:10px;text-align:center"><span style="color:var(--green);font-weight:700">€' + s.commissioni.toLocaleString('it-IT', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + '</span> (' + s.nComm + ')</td>' +
+        '<td style="padding:10px;text-align:center">' + statusBadge + '</td>' +
+      '</tr>';
+    }).join('');
+    
+  } catch(e) {
+    toast('Errore caricamento statistiche: ' + e.message, 'error');
+    console.error('loadStatistiche error:', e);
+  }
+}
 
 // ══════════════════════════════════════════════════════════════════════════════
 // DARK MODE
