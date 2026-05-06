@@ -2410,7 +2410,7 @@ async function loadRuoli(){
         '<td style="padding:10px">' + escapeHtml(u.nome + ' ' + u.cognome) + '</td>' +
         '<td style="padding:10px"><span style="color:' + roleColor + ';font-weight:600">' + roleBadge + '</span></td>' +
         '<td style="padding:10px;text-align:center">' +
-        '<select class="role-select" data-user-id="' + u.id + '" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:11px">' +
+        '<select class="role-select" data-user-id="' + u.id + '" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:11px;width:140px;min-width:140px">' +
         '<option value="admin"' + (u.ruolo === 'admin' ? ' selected' : '') + '>Admin</option>' +
         '<option value="supervisore"' + (u.ruolo === 'supervisore' ? ' selected' : '') + '>Supervisore</option>' +
         '<option value="commerciale"' + (u.ruolo === 'commerciale' ? ' selected' : '') + '>Commerciale</option>' +
