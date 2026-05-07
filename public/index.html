@@ -482,6 +482,76 @@
           </div>
         </div>
         
+        <!-- GESTIONE PERMESSI GRANULARI -->
+        <div style="border:2px solid var(--border);border-radius:8px;padding:16px;background:var(--surface);margin-bottom:20px">
+          <h4 style="margin:0 0 15px 0;color:var(--text)">⚙️ Gestione Permessi Granulari</h4>
+          <p style="margin:0 0 15px 0;font-size:12px;color:var(--text-sub)">
+            Personalizza i permessi per ogni ruolo. Seleziona/deseleziona le azioni consentite:
+          </p>
+          
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+            <!-- Supervisore -->
+            <div style="border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--surface2)">
+              <strong style="display:block;margin-bottom:8px;color:var(--accent2);font-size:12px">👤 Supervisore</strong>
+              <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-super-interroga" checked onchange="savePermissions()"> Interroga
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-super-export" checked onchange="savePermissions()"> Export
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-super-carica" onchange="savePermissions()"> Carica
+              </label>
+            </div>
+            
+            <!-- Utente -->
+            <div style="border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--surface2)">
+              <strong style="display:block;margin-bottom:8px;color:var(--green);font-size:12px">👁️ Utente</strong>
+              <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-user-interroga" checked onchange="savePermissions()"> Interroga
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-user-export" onchange="savePermissions()"> Export
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-user-carica" onchange="savePermissions()"> Carica
+              </label>
+            </div>
+            
+            <!-- Commerciale -->
+            <div style="border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--surface2)">
+              <strong style="display:block;margin-bottom:8px;color:#FF8C00;font-size:12px">💼 Commerciale</strong>
+              <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-comm-interroga" checked onchange="savePermissions()"> Interroga
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-comm-export" checked onchange="savePermissions()"> Export
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-comm-carica" onchange="savePermissions()"> Carica
+              </label>
+            </div>
+            
+            <!-- Operatore -->
+            <div style="border:1px solid var(--border);border-radius:6px;padding:10px;background:var(--surface2)">
+              <strong style="display:block;margin-bottom:8px;color:#6366F1;font-size:12px">⚙️ Operatore</strong>
+              <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-op-interroga" onchange="savePermissions()"> Interroga
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;margin-bottom:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-op-export" onchange="savePermissions()"> Export
+              </label>
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px">
+                <input type="checkbox" id="perm-op-carica" checked onchange="savePermissions()"> Carica
+              </label>
+            </div>
+          </div>
+          
+          <div style="margin-top:12px;padding:10px;background:var(--grad-primary);color:white;border-radius:4px;font-size:11px;text-align:center">
+            ✅ I permessi si salvano automaticamente
+          </div>
+        </div>
+        
         <table style="width:100%;border-collapse:collapse;font-size:12px;margin-top:20px">
           <thead>
             <tr style="border-bottom:2px solid var(--border)">

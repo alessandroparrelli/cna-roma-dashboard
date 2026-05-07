@@ -68,9 +68,11 @@ function doLogout(){clearSession();location.reload();}
 
 // Permessi default per ogni ruolo
 var defaultPermissions = {
-  admin: {carica: true, interroga: true, admin: true},
-  supervisore: {carica: false, interroga: true, admin: false},
-  utente: {carica: false, interroga: true, admin: false}
+  admin: {carica: true, interroga: true, export: true, admin: true},
+  supervisore: {carica: false, interroga: true, export: true, admin: false},
+  utente: {carica: false, interroga: true, export: false, admin: false},
+  commerciale: {carica: false, interroga: true, export: true, admin: false},
+  operatore: {carica: true, interroga: false, export: false, admin: false}
 };
 
 // Carica permessi dal localStorage

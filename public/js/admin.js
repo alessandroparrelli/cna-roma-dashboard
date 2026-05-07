@@ -330,3 +330,84 @@ function parseUA(ua){
 var anaAll=[], anaFiltered=[], anaSelected=new Set(), anaLoaded=false, anaLoading=false;
 var allDiretti = []; // Caricati da anaLoad per le schede anagrafiche
 var ANA_RENDER_LIMIT=500; // rendering paginato client-side per performance
+
+/* ════════════════════════════════════════════════════════════════
+   GESTIONE PERMESSI GRANULARI - Salva e carica permessi per ogni ruolo
+   ════════════════════════════════════════════════════════════════ */
+
+// Salva permessi in localStorage
+function savePermissions() {
+  var perms = {
+    supervisore: {
+      interroga: document.getElementById('perm-super-interroga').checked,
+      export: document.getElementById('perm-super-export').checked,
+      carica: document.getElementById('perm-super-carica').checked
+    },
+    utente: {
+      interroga: document.getElementById('perm-user-interroga').checked,
+      export: document.getElementById('perm-user-export').checked,
+      carica: document.getElementById('perm-user-carica').checked
+    },
+    commerciale: {
+      interroga: document.getElementById('perm-comm-interroga').checked,
+      export: document.getElementById('perm-comm-export').checked,
+      carica: document.getElementById('perm-comm-carica').checked
+    },
+    operatore: {
+      interroga: document.getElementById('perm-op-interroga').checked,
+      export: document.getElementById('perm-op-export').checked,
+      carica: document.getElementById('perm-op-carica').checked
+    }
+  };
+  
+  localStorage.setItem('cna_permissions', JSON.stringify(perms));
+  console.log('✅ Permessi salvati:', perms);
+  
+  // Aggiorna i permessi per l'utente corrente
+  if(window.loadUserPermissions) {
+    loadUserPermissions();
+  }
+}
+
+// Carica permessi dai checkbox (al caricamento della pagina)
+function loadPermissionsCheckboxes() {
+  var saved = localStorage.getItem('cna_permissions');
+  if (saved) {
+    var perms = JSON.parse(saved);
+    
+    // Supervisore
+    if(document.getElementById('perm-super-interroga')) {
+      document.getElementById('perm-super-interroga').checked = perms.supervisore?.interroga ?? true;
+      document.getElementById('perm-super-export').checked = perms.supervisore?.export ?? true;
+      document.getElementById('perm-super-carica').checked = perms.supervisore?.carica ?? false;
+    }
+    
+    // Utente
+    if(document.getElementById('perm-user-interroga')) {
+      document.getElementById('perm-user-interroga').checked = perms.utente?.interroga ?? true;
+      document.getElementById('perm-user-export').checked = perms.utente?.export ?? false;
+      document.getElementById('perm-user-carica').checked = perms.utente?.carica ?? false;
+    }
+    
+    // Commerciale
+    if(document.getElementById('perm-comm-interroga')) {
+      document.getElementById('perm-comm-interroga').checked = perms.commerciale?.interroga ?? true;
+      document.getElementById('perm-comm-export').checked = perms.commerciale?.export ?? true;
+      document.getElementById('perm-comm-carica').checked = perms.commerciale?.carica ?? false;
+    }
+    
+    // Operatore
+    if(document.getElementById('perm-op-interroga')) {
+      document.getElementById('perm-op-interroga').checked = perms.operatore?.interroga ?? false;
+      document.getElementById('perm-op-export').checked = perms.operatore?.export ?? false;
+      document.getElementById('perm-op-carica').checked = perms.operatore?.carica ?? true;
+    }
+  }
+}
+
+// Chiama loadPermissionsCheckboxes quando il admin panel si carica
+document.addEventListener('DOMContentLoaded', function() {
+  // Carica i permessi salvati
+  loadPermissionsCheckboxes();
+});
+
