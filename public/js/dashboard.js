@@ -321,25 +321,27 @@ function renderPromoTrend(){
       label:p,
       data:anni.map(function(a){return matrix[p][a]?matrix[p][a].total:0;}),
       borderColor: lineColor,
-      backgroundColor: lineColor + '22',
-      borderWidth: 3,
-      borderDash: (i%3===2) ? [5,5] : [], // Alcuni tratteggiati per differenziare
-      tension: 0.4,
-      pointRadius: 6, // Punti più grandi
-      pointHoverRadius: 9, // Hover ancora più grande
+      backgroundColor: lineColor + '40', // 25% opacity per area fill
+      borderWidth: 2,
+      tension: 0.5, // Curve molto smooth
+      fill: true, // IMPORTANTE: attiva l'area fill
+      pointRadius: 0, // Niente punti
+      pointHoverRadius: 5,
       pointBackgroundColor: lineColor,
       pointBorderColor: 'white',
-      pointBorderWidth: 2,
+      pointBorderWidth: 0,
       pointStyle: 'circle',
-      fill: false,
       spanGaps: true
     };
   });
   charts['promo-trend']=new Chart(ctx,{
-    type:'line',
+    type:'line', // Chart.js usa 'line' per area, il fill: true lo rende area
     data:{labels:anni,datasets:datasets},
-    options:{responsive:true,maintainAspectRatio:false,
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
       plugins:{
+        filler:{propagate:true},
         legend:{
           position:'bottom',
           labels:{
