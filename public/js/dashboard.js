@@ -460,6 +460,8 @@ function renderPromoCards(data, anni, matrix, totAnno, sortedPromo) {
   var html = '';
   sortedPromo.forEach(function(p, pi) {
     var color = COLORS_PROMO[pi % COLORS_PROMO.length];
+    // Se è "Credito", usa verde
+    if(p === 'Credito' || p === 'credito') { color = '#10B981'; }
     var totalePromo = anni.reduce(function(s,a){return s+(matrix[p][a]?matrix[p][a].total:0);},0);
     var totaleContratti = anni.reduce(function(s,a){return s+(matrix[p][a]?matrix[p][a].count:0);},0);
     var mediaPromo = totaleContratti > 0 ? totalePromo / totaleContratti : 0;
