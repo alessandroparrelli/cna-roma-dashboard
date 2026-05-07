@@ -323,46 +323,31 @@ function renderPromoTrend(){
     },0);
   });
   
-  // Palette colori vivaci diversi per ogni anno
-  var barColorPalette = [
-    '#005CA9', // Blue CNA
-    '#00D9FF', // Cyan
-    '#FF1493', // Pink vivido
-    '#FF8C00', // Orange
-    '#10B981', // Green
-    '#8B5CF6', // Purple
-    '#EC4899', // Pink soft
-    '#F59E0B', // Amber
-    '#06B6D4', // Cyan bright
-    '#D946EF'  // Fuchsia
-  ];
+  // Area chart gradient - stile smooth azzurro
+  var gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  gradient.addColorStop(0, 'rgba(0, 92, 169, 0.4)');    // Top: azzurro semi-trasparente
+  gradient.addColorStop(0.5, 'rgba(0, 168, 220, 0.2)'); // Middle: light azzurro
+  gradient.addColorStop(1, 'rgba(0, 200, 255, 0.02)');  // Bottom: quasi trasparente
   
-  // Crea gradients per ogni barra
-  var gradients = anni.map(function(anno, idx){
-    var gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    var color = barColorPalette[idx % barColorPalette.length];
-    gradient.addColorStop(0, color);      // Top: saturo
-    gradient.addColorStop(0.5, color + 'cc'); // Middle
-    gradient.addColorStop(1, color + '33');   // Bottom: trasparente
-    return gradient;
-  });
-  
-  // Barre con gradients
+  // Area chart dataset
   var datasets=[{
     label:'Numero Contratti',
     data:contractsPerAnno,
-    backgroundColor:gradients,
-    borderColor:'rgba(0, 92, 169, 0.8)',
+    borderColor:'rgba(0, 92, 169, 1)',
     borderWidth:2,
-    borderRadius:0,
-    borderSkipped:false,
-    hoverBackgroundColor:anni.map(function(_, idx){ return barColorPalette[idx % barColorPalette.length]; }),
-    hoverBorderColor:'rgba(0, 92, 169, 1)',
-    hoverBorderWidth:3
+    backgroundColor:gradient,
+    fill:true,
+    tension:0.4,
+    pointRadius:5,
+    pointHoverRadius:7,
+    pointBackgroundColor:'rgba(0, 92, 169, 1)',
+    pointBorderColor:'white',
+    pointBorderWidth:2,
+    pointHoverBackgroundColor:'rgba(0, 168, 220, 1)'
   }];
   
   charts['promo-trend']=new Chart(ctx,{
-    type:'bar', // BAR CHART
+    type:'line', // AREA CHART
     data:{labels:anni,datasets:datasets},
     options:{
       responsive:true,
