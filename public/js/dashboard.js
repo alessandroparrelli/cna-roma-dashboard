@@ -252,6 +252,22 @@ function sSort(tid,key){sortState[tid]===key?sortState[tid+'_d']=(sortState[tid+
 
 // ── PROMOTORI TREND ──
 function renderPromoTrend(){
+  // Palette colori vivaci per promotori
+  if(!window.COLORS_PROMO) {
+    window.COLORS_PROMO = [
+      '#005CA9', // Blue CNA
+      '#00D9FF', // Cyan
+      '#FF1493', // Pink vivido
+      '#FF8C00', // Orange
+      '#10B981', // Green
+      '#8B5CF6', // Purple
+      '#EC4899', // Pink soft
+      '#F59E0B', // Amber
+      '#06B6D4', // Cyan bright
+      '#D946EF'  // Fuchsia
+    ];
+  }
+  
   var data = getPromoFiltered();
 
   // Etichetta filtro attivo
@@ -300,13 +316,55 @@ function renderPromoTrend(){
   var ctx=G('chart-promo-trend').getContext('2d');
   if(charts['promo-trend'])charts['promo-trend'].destroy();
   var datasets=promotori.map(function(p,i){
-    return{label:p,data:anni.map(function(a){return matrix[p][a]?matrix[p][a].total:0;}),borderColor:COLORS_PROMO[i%COLORS_PROMO.length],backgroundColor:COLORS_PROMO[i%COLORS_PROMO.length]+'22',tension:.3,pointRadius:4,pointHoverRadius:6,fill:false,borderWidth:2};
+    var lineColor = COLORS_PROMO[i%COLORS_PROMO.length];
+    return{
+      label:p,
+      data:anni.map(function(a){return matrix[p][a]?matrix[p][a].total:0;}),
+      borderColor: lineColor,
+      backgroundColor: lineColor + '22',
+      borderWidth: 3,
+      borderDash: (i%3===2) ? [5,5] : [], // Alcuni tratteggiati per differenziare
+      tension: 0.4,
+      pointRadius: 6, // Punti più grandi
+      pointHoverRadius: 9, // Hover ancora più grande
+      pointBackgroundColor: lineColor,
+      pointBorderColor: 'white',
+      pointBorderWidth: 2,
+      pointStyle: 'circle',
+      fill: false,
+      spanGaps: true
+    };
   });
   charts['promo-trend']=new Chart(ctx,{
     type:'line',
     data:{labels:anni,datasets:datasets},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{position:'bottom',labels:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11},boxWidth:12}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': € '+fmt(c.parsed.y);}}}},
+      plugins:{
+        legend:{
+          position:'bottom',
+          labels:{
+            color:'#64748B',
+            font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:12,weight:'600'},
+            boxWidth:16,
+            padding:15,
+            usePointStyle:true
+          }
+        },
+        tooltip:{
+          backgroundColor:'rgba(255,255,255,0.95)',
+          titleColor:'#333',
+          bodyColor:'#666',
+          borderColor:'#E5E7EB',
+          borderWidth:1,
+          padding:12,
+          displayColors:true,
+          callbacks:{
+            label:function(c){
+              return c.dataset.label+': € '+fmt(c.parsed.y);
+            }
+          }
+        }
+      },
       onHover: function(event, activeElements) {
         var chart = this;
         chart.data.datasets.forEach(function(dataset, idx) {
