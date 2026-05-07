@@ -323,27 +323,27 @@ function renderPromoTrend(){
     },0);
   });
   
-  // Area chart gradient - stile smooth azzurro
+  // Area chart gradient - stile smooth viola
   var gradient = ctx.createLinearGradient(0, 0, 0, 400);
-  gradient.addColorStop(0, 'rgba(0, 92, 169, 0.4)');    // Top: azzurro semi-trasparente
-  gradient.addColorStop(0.5, 'rgba(0, 168, 220, 0.2)'); // Middle: light azzurro
-  gradient.addColorStop(1, 'rgba(0, 200, 255, 0.02)');  // Bottom: quasi trasparente
+  gradient.addColorStop(0, 'rgba(139, 92, 246, 0.4)');    // Top: viola semi-trasparente
+  gradient.addColorStop(0.5, 'rgba(168, 85, 247, 0.2)'); // Middle: light viola
+  gradient.addColorStop(1, 'rgba(196, 181, 253, 0.02)');  // Bottom: quasi trasparente
   
   // Area chart dataset
   var datasets=[{
     label:'Numero Contratti',
     data:contractsPerAnno,
-    borderColor:'rgba(0, 92, 169, 1)',
+    borderColor:'rgba(139, 92, 246, 1)',
     borderWidth:2,
     backgroundColor:gradient,
     fill:true,
     tension:0.4,
     pointRadius:5,
     pointHoverRadius:7,
-    pointBackgroundColor:'rgba(0, 92, 169, 1)',
+    pointBackgroundColor:'rgba(139, 92, 246, 1)',
     pointBorderColor:'white',
     pointBorderWidth:2,
-    pointHoverBackgroundColor:'rgba(0, 168, 220, 1)'
+    pointHoverBackgroundColor:'rgba(168, 85, 247, 1)'
   }];
   
   charts['promo-trend']=new Chart(ctx,{
