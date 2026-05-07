@@ -818,3 +818,35 @@ body.dark-mode .ana-table tbody tr:nth-child(even) td{background:var(--surface2)
   .ana-filters-grid{grid-template-columns:1fr 1fr;}
   .btn{padding:8px 14px;font-size:12px;}
 }
+
+/* ════════════════════════════════════════════════════════════════
+   BADGE RUOLI - Commerciale e Operatore
+   ════════════════════════════════════════════════════════════════ */
+
+.badge-commerciale {
+  background: linear-gradient(135deg, #FF8C00 0%, #FF7F00 100%);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.badge-operatore {
+  background: linear-gradient(135deg, #6366F1 0%, #4F46E5 100%);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+}
+
+.badge-supervisore {
+  background: linear-gradient(135deg, #0FA3F2 0%, #0084FF 100%);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+}
+

@@ -18,7 +18,8 @@ async function loadUsers(){
     if(cnt) cnt.textContent=us.length+' utenti';
     if(!us.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Nessun utente</td></tr>';return;}
     tb.innerHTML=us.map(function(u){
-      var rb=u.ruolo==='admin'?'<span class="badge badge-admin">Admin</span>':'<span class="badge badge-user">Utente</span>';
+      var badgesMap={'admin':'<span class="badge badge-admin">Admin</span>','supervisore':'<span class="badge badge-supervisore">Supervisore</span>','commerciale':'<span class="badge badge-commerciale">Commerciale</span>','operatore':'<span class="badge badge-operatore">Operatore</span>'};
+      var rb=badgesMap[u.ruolo]||'<span class="badge badge-user">Utente</span>';
       var sb=u.attivo?'<span class="badge badge-on">● Attivo</span>':'<span class="badge badge-off">● Inattivo</span>';
       var ll=u.last_login?fmtDate(u.last_login):'<span style="color:var(--gray-400)">Mai</span>';
       var actions='<div class="user-actions">';
