@@ -1201,3 +1201,34 @@ defs {
   text-align: center;
 }
 
+
+/* ════════════════════════════════════════════════════════════════
+   BAR CHART GLOW - Effetto glow su barre con sfumature
+   ════════════════════════════════════════════════════════════════ */
+
+/* Chart container glow */
+#chart-promo-trend {
+  filter: drop-shadow(0 0 20px rgba(0, 92, 169, 0.15));
+}
+
+/* Bar chart hover glow */
+#chart-promo-trend:hover {
+  filter: drop-shadow(0 0 30px rgba(0, 92, 169, 0.25));
+  transition: filter 0.3s ease;
+}
+
+/* Canvas wrapper */
+.chart-wrap {
+  position: relative;
+}
+
+/* Glow effect per le barre */
+canvas {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08)) !important;
+}
+
+canvas:hover {
+  filter: drop-shadow(0 4px 16px rgba(0, 92, 169, 0.2)) !important;
+  transition: filter 0.3s ease;
+}
+

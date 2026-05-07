@@ -312,7 +312,7 @@ function renderPromoTrend(){
   var totAnno={};
   anni.forEach(function(a){totAnno[a]=promotori.reduce(function(s,p){return s+(matrix[p][a]?matrix[p][a].total:0);},0);});
 
-  // ── CHART AREA (UNA SOLA AREA) ──
+  // ── CHART BAR (BARRE CON GRADIENTS E GLOW) ──
   var ctx=G('chart-promo-trend').getContext('2d');
   if(charts['promo-trend'])charts['promo-trend'].destroy();
   
@@ -323,24 +323,46 @@ function renderPromoTrend(){
     },0);
   });
   
-  // Una sola area con colore blue vivido
+  // Palette colori vivaci diversi per ogni anno
+  var barColorPalette = [
+    '#005CA9', // Blue CNA
+    '#00D9FF', // Cyan
+    '#FF1493', // Pink vivido
+    '#FF8C00', // Orange
+    '#10B981', // Green
+    '#8B5CF6', // Purple
+    '#EC4899', // Pink soft
+    '#F59E0B', // Amber
+    '#06B6D4', // Cyan bright
+    '#D946EF'  // Fuchsia
+  ];
+  
+  // Crea gradients per ogni barra
+  var gradients = anni.map(function(anno, idx){
+    var gradient = ctx.createLinearGradient(0, 0, 0, 400);
+    var color = barColorPalette[idx % barColorPalette.length];
+    gradient.addColorStop(0, color);      // Top: saturo
+    gradient.addColorStop(0.5, color + 'cc'); // Middle
+    gradient.addColorStop(1, color + '33');   // Bottom: trasparente
+    return gradient;
+  });
+  
+  // Barre con gradients
   var datasets=[{
-    label:'Importo Totale',
+    label:'Importo per Anno',
     data:totalPerAnno,
-    borderColor:'#005CA9',          // Blue CNA vivido
-    backgroundColor:'#005CA933',    // Blu con 20% opacity (sfumatura)
+    backgroundColor:gradients,
+    borderColor:anni.map(function(_, idx){ return barColorPalette[idx % barColorPalette.length]; }),
     borderWidth:2,
-    tension:0.5,                    // Curve smooth
-    fill:true,                      // IMPORTANTE: area fill
-    pointRadius:0,                  // Niente punti
-    pointHoverRadius:5,
-    pointBackgroundColor:'#005CA9',
-    pointBorderColor:'white',
-    pointBorderWidth:0,
-    spanGaps:true
+    borderRadius:8,
+    borderSkipped:false,
+    hoverBackgroundColor:anni.map(function(_, idx){ return barColorPalette[idx % barColorPalette.length]; }),
+    hoverBorderColor:'rgba(0, 92, 169, 0.8)',
+    hoverBorderWidth:3
   }];
+  
   charts['promo-trend']=new Chart(ctx,{
-    type:'line', // Chart.js usa 'line' per area, il fill: true lo rende area
+    type:'bar', // BAR CHART
     data:{labels:anni,datasets:datasets},
     options:{
       responsive:true,
