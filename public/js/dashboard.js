@@ -312,28 +312,33 @@ function renderPromoTrend(){
   var totAnno={};
   anni.forEach(function(a){totAnno[a]=promotori.reduce(function(s,p){return s+(matrix[p][a]?matrix[p][a].total:0);},0);});
 
-  // ── CHART LINE ──
+  // ── CHART AREA (UNA SOLA AREA) ──
   var ctx=G('chart-promo-trend').getContext('2d');
   if(charts['promo-trend'])charts['promo-trend'].destroy();
-  var datasets=promotori.map(function(p,i){
-    var lineColor = COLORS_PROMO[i%COLORS_PROMO.length];
-    return{
-      label:p,
-      data:anni.map(function(a){return matrix[p][a]?matrix[p][a].total:0;}),
-      borderColor: lineColor,
-      backgroundColor: lineColor + '40', // 25% opacity per area fill
-      borderWidth: 2,
-      tension: 0.5, // Curve molto smooth
-      fill: true, // IMPORTANTE: attiva l'area fill
-      pointRadius: 0, // Niente punti
-      pointHoverRadius: 5,
-      pointBackgroundColor: lineColor,
-      pointBorderColor: 'white',
-      pointBorderWidth: 0,
-      pointStyle: 'circle',
-      spanGaps: true
-    };
+  
+  // Calcola il totale per anno (somma di tutti i promotori)
+  var totalPerAnno = anni.map(function(a){
+    return promotori.reduce(function(sum,p){
+      return sum + (matrix[p][a]?matrix[p][a].total:0);
+    },0);
   });
+  
+  // Una sola area con colore blue vivido
+  var datasets=[{
+    label:'Importo Totale',
+    data:totalPerAnno,
+    borderColor:'#005CA9',          // Blue CNA vivido
+    backgroundColor:'#005CA933',    // Blu con 20% opacity (sfumatura)
+    borderWidth:2,
+    tension:0.5,                    // Curve smooth
+    fill:true,                      // IMPORTANTE: area fill
+    pointRadius:0,                  // Niente punti
+    pointHoverRadius:5,
+    pointBackgroundColor:'#005CA9',
+    pointBorderColor:'white',
+    pointBorderWidth:0,
+    spanGaps:true
+  }];
   charts['promo-trend']=new Chart(ctx,{
     type:'line', // Chart.js usa 'line' per area, il fill: true lo rende area
     data:{labels:anni,datasets:datasets},
