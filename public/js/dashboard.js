@@ -687,3 +687,126 @@ window.addEventListener('resize', function() {
   setTimeout(createAreaGradients, 300);
 });
 
+
+/* ════════════════════════════════════════════════════════════════
+   CHART.JS GRADIENT FILL - Area fill con sfumature smooth
+   ════════════════════════════════════════════════════════════════ */
+
+// Crea gradient per Chart.js bar chart
+function createChartGradient(ctx, colors) {
+  var gradient = ctx.createLinearGradient(0, 0, 0, 400);
+  
+  // Colori vivaci con transizione smooth
+  if (colors && colors.length > 0) {
+    // Top: colore saturo
+    gradient.addColorStop(0, colors[0]);
+    // Middle: transizione
+    gradient.addColorStop(0.5, colors[1] || colors[0]);
+    // Bottom: trasparente
+    gradient.addColorStop(1, colors[1] ? colors[1] + '33' : colors[0] + '33');
+  }
+  
+  return gradient;
+}
+
+// Palette colori gradient vivaci per bar charts
+var chartGradientPalette = [
+  ['#005CA9', '#00D9FF'],      // Blue to Cyan
+  ['#FF8C00', '#F97316'],      // Orange gradient
+  ['#8B5CF6', '#D946EF'],      // Purple to Fuchsia
+  ['#10B981', '#34D399'],      // Green to Emerald
+  ['#FF1493', '#EC4899'],      // Pink gradient
+  ['#0FA3F2', '#06B6D4'],      // Cyan gradient
+  ['#6366F1', '#A855F7'],      // Indigo to Purple
+  ['#EF4444', '#F87171'],      // Red gradient
+  ['#F59E0B', '#FBBF24'],      // Amber gradient
+  ['#06B6D4', '#0891B2']       // Teal gradient
+];
+
+// Override della funzione rReport per aggiungere gradients
+var originalRReport = rReport;
+function rReport(id, data, key, colors) {
+  var a = agg(data, key);
+  G('badge-' + id).textContent = a.length + ' voci';
+  var ctx = G('chart-' + id).getContext('2d');
+  if (charts[id]) charts[id].destroy();
+  
+  // Crea gradients per ogni barra
+  var gradients = a.map(function(_, i) {
+    var colorPair = chartGradientPalette[i % chartGradientPalette.length];
+    return createChartGradient(ctx, colorPair);
+  });
+  
+  charts[id] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: a.map(function(x) { return x.label; }),
+      datasets: [{
+        label: 'Importo',
+        data: a.map(function(x) { return x.total; }),
+        backgroundColor: gradients,
+        borderRadius: 8,
+        borderSkipped: false,
+        hoverBackgroundColor: a.map(function(_, i) {
+          return chartGradientPalette[i % chartGradientPalette.length][0];
+        }),
+        hoverBorderColor: 'rgba(0, 92, 169, 0.8)',
+        hoverBorderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+          titleColor: '#333',
+          bodyColor: '#666',
+          borderColor: '#E5E7EB',
+          borderWidth: 1,
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            label: function(c) { 
+              return '€ ' + fmt(c.parsed.y); 
+            }
+          }
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          grid: { 
+            color: 'rgba(15, 23, 42, 0.06)',
+            drawBorder: false
+          },
+          ticks: {
+            color: '#64748B',
+            font: {
+              family: '-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+              size: 11
+            },
+            callback: function(v) { 
+              return '€' + fmt(v, 0); 
+            }
+          }
+        },
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: '#64748B',
+            font: {
+              family: '-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+              size: 11
+            },
+            maxRotation: 30
+          }
+        }
+      }
+    }
+  });
+  
+  rTable('table-' + id, a, false);
+}
+
