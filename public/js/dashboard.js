@@ -404,7 +404,7 @@ function renderPromoTrend(){
   var penultimoAnno=anni.length>1?anni[anni.length-2]:null;
 
   var h='<thead><tr><th>Promotore</th>';
-  anni.forEach(function(a){h+='<th>'+a+' (€)</th><th>'+a+' (Nr.)</th><th>'+a+' % tot.</th>';});
+  anni.forEach(function(a){h+='<th>'+a+' (Nr.)</th><th>'+a+' % tot.</th>';});
   if(penultimoAnno)h+='<th>Δ '+penultimoAnno+'→'+ultimoAnno+'</th>';
   h+='</tr></thead><tbody>';
 
@@ -419,7 +419,7 @@ function renderPromoTrend(){
       var val=matrix[p][a]?matrix[p][a].total:0;
       var cnt=matrix[p][a]?matrix[p][a].count:0;
       var pct=totAnno[a]>0?(val/totAnno[a]*100):0;
-      h+='<td>€ '+fmt(val)+'</td><td>'+cnt+'</td><td>';
+      h+='<td>'+cnt+'</td><td>';
       if(val>0){
         var bw=Math.round(pct);
         h+='<div class="pct-bar-wrap"><div class="pct-bar" style="width:'+bw+'px;max-width:60px;background:'+COLORS_PROMO[sortedPromo.indexOf(p)%COLORS_PROMO.length]+'"></div><span style="font-size:11px">'+pct.toFixed(1)+'%</span></div>';
@@ -447,7 +447,7 @@ function renderPromoTrend(){
   h+='<tr style="background:var(--gray-50)"><td><b>TOTALE</b></td>';
   anni.forEach(function(a){
     var tCnt=promotori.reduce(function(s,p){return s+(matrix[p][a]?matrix[p][a].count:0);},0);
-    h+='<td><b>€ '+fmt(totAnno[a])+'</b></td><td><b>'+tCnt+'</b></td><td>100%</td>';
+    h+='<td><b>'+tCnt+'</b></td><td>100%</td>';
   });
   if(penultimoAnno){
     var vN=totAnno[ultimoAnno]||0,vO=totAnno[penultimoAnno]||0;
