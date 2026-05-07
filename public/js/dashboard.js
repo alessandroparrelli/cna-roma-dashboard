@@ -587,3 +587,35 @@ function showDashboard(){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   G('tab-overview').classList.add('active');
 }
+/* ════════════════════════════════════════════════════════════════
+   CHART COLOR PALETTE - Vivid colors with glow effects
+   ════════════════════════════════════════════════════════════════ */
+
+// Palette colori vivaci per i grafici
+var chartColorPalette = [
+  '#005CA9', // Blue CNA
+  '#00D9FF', // Cyan glow
+  '#FF1493', // Deep pink glow
+  '#FF8C00', // Orange vivid
+  '#10B981', // Emerald glow
+  '#8B5CF6', // Purple glow
+  '#EC4899', // Pink glow
+  '#F59E0B', // Amber vivid
+  '#06B6D4', // Cyan vivid
+  '#D946EF'  // Fuchsia vivid
+];
+
+// Funzione per ottenere colore con glow
+function getChartColor(index) {
+  return chartColorPalette[index % chartColorPalette.length];
+}
+
+// Stile colori per barre con gradients
+function getBarColor(value, maxValue) {
+  var ratio = value / maxValue;
+  if (ratio > 0.75) return '#005CA9'; // Blue
+  if (ratio > 0.5) return '#00D9FF';  // Cyan
+  if (ratio > 0.25) return '#10B981'; // Green
+  return '#8B5CF6'; // Purple
+}
+

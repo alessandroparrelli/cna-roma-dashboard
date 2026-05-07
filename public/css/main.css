@@ -850,3 +850,190 @@ body.dark-mode .ana-table tbody tr:nth-child(even) td{background:var(--surface2)
   font-size: 11px;
 }
 
+
+/* ════════════════════════════════════════════════════════════════
+   CHART STYLING - Glow effects, vivid colors, modern design
+   ════════════════════════════════════════════════════════════════ */
+
+/* Chart Container Glow */
+.recharts-wrapper {
+  filter: drop-shadow(0 0 20px rgba(0, 92, 169, 0.15));
+  transition: filter 0.3s ease;
+}
+
+.recharts-wrapper:hover {
+  filter: drop-shadow(0 0 30px rgba(0, 92, 169, 0.25));
+}
+
+/* Bar Chart Colors - Vivid Gradient */
+.recharts-bar {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+  transition: filter 0.3s ease;
+}
+
+.recharts-bar:hover {
+  filter: drop-shadow(0 6px 20px rgba(0, 92, 169, 0.4)) !important;
+}
+
+/* Bar Gradient Definitions */
+defs linearGradient {
+  stop:first-child {
+    stop-color: #005CA9;
+    stop-opacity: 1;
+  }
+  stop:last-child {
+    stop-color: #00D9FF;
+    stop-opacity: 0.8;
+  }
+}
+
+/* Line Chart - Glow Effect */
+.recharts-line {
+  filter: drop-shadow(0 0 8px rgba(0, 92, 169, 0.4));
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.recharts-line-dot {
+  filter: drop-shadow(0 0 6px rgba(0, 92, 169, 0.6));
+  transition: all 0.3s ease;
+}
+
+.recharts-line-dot:hover {
+  filter: drop-shadow(0 0 12px rgba(0, 92, 169, 0.8));
+  r: 6;
+}
+
+/* Pie Chart - Vivid Colors with Glow */
+.recharts-pie-sector {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
+  transition: all 0.3s ease;
+  stroke: white;
+  stroke-width: 2;
+}
+
+.recharts-pie-sector:hover {
+  filter: drop-shadow(0 4px 16px rgba(0, 92, 169, 0.4));
+}
+
+/* Vivid Chart Colors */
+.chart-color-1 { fill: #005CA9; filter: drop-shadow(0 0 8px rgba(0, 92, 169, 0.4)); }
+.chart-color-2 { fill: #00D9FF; filter: drop-shadow(0 0 8px rgba(0, 217, 255, 0.4)); }
+.chart-color-3 { fill: #FF1493; filter: drop-shadow(0 0 8px rgba(255, 20, 147, 0.4)); }
+.chart-color-4 { fill: #FF8C00; filter: drop-shadow(0 0 8px rgba(255, 140, 0, 0.4)); }
+.chart-color-5 { fill: #10B981; filter: drop-shadow(0 0 8px rgba(16, 185, 129, 0.4)); }
+.chart-color-6 { fill: #8B5CF6; filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.4)); }
+.chart-color-7 { fill: #EC4899; filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.4)); }
+
+/* Tooltip Styling - Modern Glow */
+.recharts-default-tooltip {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid #E5E7EB !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15) !important;
+  padding: 10px 12px !important;
+  filter: drop-shadow(0 0 15px rgba(0, 92, 169, 0.2));
+}
+
+.recharts-tooltip-wrapper text {
+  color: #333 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+/* Legend Styling */
+.recharts-legend {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
+}
+
+.recharts-legend-item {
+  color: #666 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+/* Axis Labels - Enhanced */
+.recharts-cartesian-axis-tick {
+  color: #999 !important;
+  font-size: 12px !important;
+}
+
+.recharts-cartesian-axis-tick text {
+  fill: #999 !important;
+}
+
+/* Grid Lines - Subtle */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: #E5E7EB !important;
+  opacity: 0.5;
+}
+
+/* Reference Line */
+.recharts-reference-line {
+  stroke: #D1D5DB !important;
+  stroke-dasharray: 5,5;
+  opacity: 0.6;
+}
+
+/* Bar Radius */
+.recharts-bar {
+  rx: 4;
+  ry: 4;
+}
+
+/* Area Chart Gradient Fill */
+.recharts-area {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+.recharts-area-shape {
+  fill-opacity: 0.7;
+}
+
+/* Card with Chart - Glow Border */
+.chart-card {
+  border: 1px solid #E5E7EB;
+  border-radius: 12px;
+  padding: 16px;
+  background: white;
+  box-shadow: 0 0 25px rgba(0, 92, 169, 0.08);
+  transition: all 0.3s ease;
+}
+
+.chart-card:hover {
+  box-shadow: 0 0 40px rgba(0, 92, 169, 0.15),
+              0 0 60px rgba(0, 217, 255, 0.1);
+  border-color: #B3D9FF;
+}
+
+/* Dark Mode Chart Adjustments */
+body.dark-mode .recharts-default-tooltip {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border: 1px solid #475569 !important;
+}
+
+body.dark-mode .recharts-tooltip-wrapper text {
+  color: #E2E8F0 !important;
+}
+
+body.dark-mode .recharts-cartesian-axis-tick text {
+  fill: #94A3B8 !important;
+}
+
+body.dark-mode .recharts-legend-item {
+  color: #94A3B8 !important;
+}
+
+body.dark-mode .chart-card {
+  background: #1E293B;
+  border-color: #334155;
+  box-shadow: 0 0 25px rgba(6, 182, 212, 0.1);
+}
+
+body.dark-mode .chart-card:hover {
+  box-shadow: 0 0 40px rgba(6, 182, 212, 0.2),
+              0 0 60px rgba(139, 92, 246, 0.1);
+  border-color: #0F766E;
+}
+
