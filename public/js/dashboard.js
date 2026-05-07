@@ -312,14 +312,14 @@ function renderPromoTrend(){
   var totAnno={};
   anni.forEach(function(a){totAnno[a]=promotori.reduce(function(s,p){return s+(matrix[p][a]?matrix[p][a].total:0);},0);});
 
-  // ── CHART BAR (BARRE CON GRADIENTS E GLOW) ──
+  // ── CHART BAR (NUMERO DI CONTRATTI PER ANNO) ──
   var ctx=G('chart-promo-trend').getContext('2d');
   if(charts['promo-trend'])charts['promo-trend'].destroy();
   
-  // Calcola il totale per anno (somma di tutti i promotori)
-  var totalPerAnno = anni.map(function(a){
+  // Calcola il NUMERO DI CONTRATTI per anno (somma di tutti i promotori)
+  var contractsPerAnno = anni.map(function(a){
     return promotori.reduce(function(sum,p){
-      return sum + (matrix[p][a]?matrix[p][a].total:0);
+      return sum + (matrix[p][a]?matrix[p][a].count:0);
     },0);
   });
   
@@ -349,8 +349,8 @@ function renderPromoTrend(){
   
   // Barre con gradients
   var datasets=[{
-    label:'Importo per Anno',
-    data:totalPerAnno,
+    label:'Numero Contratti',
+    data:contractsPerAnno,
     backgroundColor:gradients,
     borderColor:'rgba(0, 92, 169, 0.8)',
     borderWidth:2,
@@ -389,12 +389,12 @@ function renderPromoTrend(){
           displayColors:true,
           callbacks:{
             label:function(c){
-              return c.dataset.label+': € '+fmt(c.parsed.y);
+              return c.dataset.label+': '+c.parsed.y+' contratti';
             }
           }
         }
       },
-      scales:{y:{beginAtZero:true,grid:{color:'rgba(15,23,42,0.06)'},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11},callback:function(v){return '€'+fmt(v,0);}}},x:{grid:{display:false},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11}}}}}
+      scales:{y:{beginAtZero:true,grid:{color:'rgba(15,23,42,0.06)'},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11},callback:function(v){return v;}}},x:{grid:{display:false},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11}}}}}
   });
 
   // ── TABLE ──
