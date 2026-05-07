@@ -228,7 +228,7 @@ async function renderOverview(){
 function rReport(id,data,key,colors){
   var a=agg(data,key);G('badge-'+id).textContent=a.length+' voci';
   var ctx=G('chart-'+id).getContext('2d');if(charts[id])charts[id].destroy();
-  charts[id]=new Chart(ctx,{type:'bar',data:{labels:a.map(function(x){return x.label;}),datasets:[{label:'Importo',data:a.map(function(x){return x.total;}),backgroundColor:a.map(function(_,i){return colors[i%colors.length];}),borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '€ '+fmt(c.parsed.y);}}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(15,23,42,0.06)'},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11},callback:function(v){return '€'+fmt(v,0);}}},x:{grid:{display:false},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11},maxRotation:30}}}}});
+  charts[id]=new Chart(ctx,{type:'bar',data:{labels:a.map(function(x){return x.label;}),datasets:[{label:'Importo',data:a.map(function(x){return x.total;}),backgroundColor:a.map(function(_,i){return colors[i%colors.length];}),borderRadius:0,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '€ '+fmt(c.parsed.y);}}}},scales:{y:{beginAtZero:true,grid:{color:'rgba(15,23,42,0.06)'},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11},callback:function(v){return '€'+fmt(v,0);}}},x:{grid:{display:false},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11},maxRotation:30}}}}});
   rTable('table-'+id,a,false);
 }
 
@@ -354,7 +354,7 @@ function renderPromoTrend(){
     backgroundColor:gradients,
     borderColor:'rgba(0, 92, 169, 0.8)',
     borderWidth:2,
-    borderRadius:8,
+    borderRadius:0,
     borderSkipped:false,
     hoverBackgroundColor:anni.map(function(_, idx){ return barColorPalette[idx % barColorPalette.length]; }),
     hoverBorderColor:'rgba(0, 92, 169, 1)',
@@ -480,9 +480,9 @@ function renderPromoCards(data, anni, matrix, totAnno, sortedPromo) {
     var mediaPromo = totaleContratti > 0 ? totalePromo / totaleContratti : 0;
 
     html += '<div class="promo-card" style="border-top-color:'+color+'">';
-    html += '<div class="promo-card-header">';
-    html +=   '<span class="promo-card-name">'+p+'</span>';
-    html +=   '<span class="promo-card-total">€ '+fmt(totalePromo,0)+' totale</span>';
+    html += '<div class="promo-card-header" style="background-color:'+color+';color:white;padding:10px 15px;border-radius:4px 4px 0 0;">';
+    html +=   '<span class="promo-card-name" style="font-weight:bold;color:white">'+p+'</span>';
+    html +=   '<span class="promo-card-total" style="color:rgba(255,255,255,0.9)">€ '+fmt(totalePromo,0)+' totale</span>';
     html += '</div>';
     html += '<div class="promo-card-kpi">';
     html +=   '<div class="promo-kpi"><div class="promo-kpi-label">Contratti</div><div class="promo-kpi-value">'+totaleContratti+'</div></div>';
@@ -520,7 +520,7 @@ function renderPromoCards(data, anni, matrix, totAnno, sortedPromo) {
       html += '<tr'+rowStyle+'>';
       html +=   '<td><b>'+a+'</b></td>';
       html +=   '<td>€ '+fmt(val)+'</td>';
-      html +=   '<td>'+cnt+'</td>';
+      html +=   '<td><b>'+cnt+'</b></td>';
       html +=   '<td>';
       if (val > 0) {
         var bw = Math.min(Math.round(pctAnno * 0.8), 60);
