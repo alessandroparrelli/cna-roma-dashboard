@@ -352,12 +352,12 @@ function renderPromoTrend(){
     label:'Importo per Anno',
     data:totalPerAnno,
     backgroundColor:gradients,
-    borderColor:anni.map(function(_, idx){ return barColorPalette[idx % barColorPalette.length]; }),
+    borderColor:'rgba(0, 92, 169, 0.8)',
     borderWidth:2,
     borderRadius:8,
     borderSkipped:false,
     hoverBackgroundColor:anni.map(function(_, idx){ return barColorPalette[idx % barColorPalette.length]; }),
-    hoverBorderColor:'rgba(0, 92, 169, 0.8)',
+    hoverBorderColor:'rgba(0, 92, 169, 1)',
     hoverBorderWidth:3
   }];
   
@@ -393,20 +393,6 @@ function renderPromoTrend(){
             }
           }
         }
-      },
-      onHover: function(event, activeElements) {
-        var chart = this;
-        chart.data.datasets.forEach(function(dataset, idx) {
-          dataset.borderColor = dataset.borderColor.replace(/[\d.]+\)$/, '0.3)').replace('rgb','rgba').replace('hsl','hsla').replace(/\)$/, ', 0.3)');
-          dataset.pointRadius = 2;
-        });
-        activeElements.forEach(function(el) {
-          var ds = chart.data.datasets[el.datasetIndex];
-          var origColor = COLORS_PROMO[el.datasetIndex % COLORS_PROMO.length];
-          ds.borderColor = origColor;
-          ds.pointRadius = 4;
-        });
-        chart.update('none');
       },
       scales:{y:{beginAtZero:true,grid:{color:'rgba(15,23,42,0.06)'},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11},callback:function(v){return '€'+fmt(v,0);}}},x:{grid:{display:false},ticks:{color:'#64748B',font:{family:'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',size:11}}}}}
   });
