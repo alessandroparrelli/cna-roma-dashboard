@@ -619,3 +619,71 @@ function getBarColor(value, maxValue) {
   return '#8B5CF6'; // Purple
 }
 
+
+/* ════════════════════════════════════════════════════════════════
+   AREA CHART GRADIENTS - Smooth fill with color transitions
+   ════════════════════════════════════════════════════════════════ */
+
+// SVG Gradients per Area Charts - Colori vivaci con sfumature smooth
+var areaGradients = {
+  1: { start: '#005CA9', end: '#00D9FF', stroke: '#005CA9' },  // Blue to Cyan
+  2: { start: '#00D9FF', end: '#06B6D4', stroke: '#00D9FF' },  // Cyan to Teal
+  3: { start: '#8B5CF6', end: '#D946EF', stroke: '#8B5CF6' },  // Purple to Fuchsia
+  4: { start: '#FF1493', end: '#EC4899', stroke: '#FF1493' },  // Pink variations
+  5: { start: '#10B981', end: '#34D399', stroke: '#10B981' },  // Green to Emerald
+  6: { start: '#FF8C00', end: '#F97316', stroke: '#FF8C00' }   // Orange variations
+};
+
+// Funzione per creare i gradients SVG
+function createAreaGradients() {
+  var svgNS = 'http://www.w3.org/2000/svg';
+  var svg = document.querySelector('svg');
+  
+  if (!svg) return;
+  
+  var defs = svg.querySelector('defs');
+  if (!defs) {
+    defs = document.createElementNS(svgNS, 'defs');
+    svg.insertBefore(defs, svg.firstChild);
+  }
+  
+  // Crea gradients per ogni area
+  Object.keys(areaGradients).forEach(function(key) {
+    var gradient = areaGradients[key];
+    var existingGrad = defs.querySelector('#areaGradient' + key);
+    
+    if (!existingGrad) {
+      var grad = document.createElementNS(svgNS, 'linearGradient');
+      grad.setAttribute('id', 'areaGradient' + key);
+      grad.setAttribute('x1', '0%');
+      grad.setAttribute('y1', '0%');
+      grad.setAttribute('x2', '0%');
+      grad.setAttribute('y2', '100%');
+      
+      var stop1 = document.createElementNS(svgNS, 'stop');
+      stop1.setAttribute('offset', '0%');
+      stop1.setAttribute('stop-color', gradient.start);
+      stop1.setAttribute('stop-opacity', '0.8');
+      
+      var stop2 = document.createElementNS(svgNS, 'stop');
+      stop2.setAttribute('offset', '100%');
+      stop2.setAttribute('stop-color', gradient.end);
+      stop2.setAttribute('stop-opacity', '0.1');
+      
+      grad.appendChild(stop1);
+      grad.appendChild(stop2);
+      defs.appendChild(grad);
+    }
+  });
+}
+
+// Chiama createAreaGradients quando il dashboard carica
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(createAreaGradients, 1000);
+});
+
+// Ricrea i gradients se il dashboard si aggiorna
+window.addEventListener('resize', function() {
+  setTimeout(createAreaGradients, 300);
+});
+

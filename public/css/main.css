@@ -1037,3 +1037,143 @@ body.dark-mode .chart-card:hover {
   border-color: #0F766E;
 }
 
+
+/* ════════════════════════════════════════════════════════════════
+   AREA CHART STYLING - Gradient fill with smooth curves
+   ════════════════════════════════════════════════════════════════ */
+
+/* Area Chart Container */
+.recharts-area-chart {
+  filter: drop-shadow(0 0 20px rgba(0, 92, 169, 0.1));
+}
+
+/* Area Shape - Gradient Fill */
+.recharts-area-shape {
+  fill-opacity: 0.75 !important;
+  stroke: none !important;
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Area Curve - Smooth */
+.recharts-curve {
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  stroke-width: 3 !important;
+}
+
+/* Area Line Style */
+.recharts-area {
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.08));
+}
+
+/* Gradients per Area Chart */
+defs {
+  linearGradient[id*="area"] {
+    stop:first-child { stop-opacity: 0.8; }
+    stop:last-child { stop-opacity: 0.1; }
+  }
+}
+
+/* Area 1 - Blue Gradient */
+.area-1 .recharts-area-shape {
+  fill: url(#areaGradient1) !important;
+}
+
+.area-1 .recharts-curve {
+  stroke: #005CA9 !important;
+  fill: none !important;
+}
+
+/* Area 2 - Cyan Gradient */
+.area-2 .recharts-area-shape {
+  fill: url(#areaGradient2) !important;
+}
+
+.area-2 .recharts-curve {
+  stroke: #00D9FF !important;
+  fill: none !important;
+}
+
+/* Area 3 - Purple Gradient */
+.area-3 .recharts-area-shape {
+  fill: url(#areaGradient3) !important;
+}
+
+.area-3 .recharts-curve {
+  stroke: #8B5CF6 !important;
+  fill: none !important;
+}
+
+/* Area 4 - Pink Gradient */
+.area-4 .recharts-area-shape {
+  fill: url(#areaGradient4) !important;
+}
+
+.area-4 .recharts-curve {
+  stroke: #FF1493 !important;
+  fill: none !important;
+}
+
+/* Area 5 - Green Gradient */
+.area-5 .recharts-area-shape {
+  fill: url(#areaGradient5) !important;
+}
+
+.area-5 .recharts-curve {
+  stroke: #10B981 !important;
+  fill: none !important;
+}
+
+/* Area 6 - Orange Gradient */
+.area-6 .recharts-area-shape {
+  fill: url(#areaGradient6) !important;
+}
+
+.area-6 .recharts-curve {
+  stroke: #FF8C00 !important;
+  fill: none !important;
+}
+
+/* Smooth Animation */
+.recharts-area-shape,
+.recharts-curve {
+  transition: all 0.3s ease !important;
+}
+
+/* Hover Effect - Area */
+.recharts-area:hover .recharts-area-shape {
+  fill-opacity: 0.95 !important;
+  filter: drop-shadow(0 4px 16px rgba(0, 92, 169, 0.25)) !important;
+}
+
+.recharts-area:hover .recharts-curve {
+  stroke-width: 4 !important;
+  filter: drop-shadow(0 2px 12px rgba(0, 0, 0, 0.2)) !important;
+}
+
+/* Dot Styling - Area Chart */
+.recharts-area-dot {
+  filter: drop-shadow(0 0 6px rgba(0, 92, 169, 0.3));
+  r: 4;
+}
+
+.recharts-area-dot:hover {
+  r: 7;
+  filter: drop-shadow(0 0 12px rgba(0, 92, 169, 0.6));
+}
+
+/* Legend - Area Chart */
+.recharts-legend {
+  padding-top: 20px !important;
+}
+
+.recharts-legend-item {
+  margin-right: 20px !important;
+}
+
+.recharts-legend-item-text {
+  color: #666 !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
