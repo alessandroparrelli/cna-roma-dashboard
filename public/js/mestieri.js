@@ -1,13 +1,15 @@
 /**
- * Tab Mestieri — Caricamento e gestione mestieri CNA
+ * Tab Unioni e Mestieri — Caricamento e gestione Unioni e Mestieri CNA
  */
 
+var unioniData = [];
+var unioniFiltered = [];
 var mestieriData = [];
 var mestieriFiltered = [];
 
-function loadMestieri() {
-  var loader = G('mestieri-loader');
-  var content = G('mestieri-content');
+function loadUnioniMestieri() {
+  var loader = G('unioni-mestieri-loader');
+  var content = G('unioni-mestieri-content');
   
   if (!loader || !content) return;
   
@@ -15,22 +17,39 @@ function loadMestieri() {
   loader.classList.add('active');
   content.style.display = 'none';
   
-  updateProgress('mestieri-progress', 0);
-  updateStatus('mestieri-status-load', 'Caricamento da Supabase…', false);
+  updateProgress('unioni-mestieri-progress', 0);
+  updateStatus('unioni-status', 'Caricamento da Supabase…', false);
+  updateStatus('mestieri-status', 'Caricamento da Supabase…', false);
   
-  // Carica da Supabase
+  // Carica Unioni
   supabase
-    .from('cna_mestieri')
+    .from('cna_unioni')
     .select('*')
     .order('denominazione', { ascending: true })
+    .then(function(result) {
+      if (result.error) throw result.error;
+      
+      unioniData = result.data || [];
+      unioniFiltered = [...unioniData];
+      
+      updateProgress('unioni-mestieri-progress', 50);
+      updateStatus('unioni-status', unioniData.length + ' unioni caricate', true);
+      updateUnioniTable();
+      
+      // Carica Mestieri
+      return supabase
+        .from('cna_mestieri')
+        .select('*')
+        .order('denominazione', { ascending: true });
+    })
     .then(function(result) {
       if (result.error) throw result.error;
       
       mestieriData = result.data || [];
       mestieriFiltered = [...mestieriData];
       
-      updateProgress('mestieri-progress', 100);
-      updateStatus('mestieri-status-load', mestieriData.length + ' mestieri caricati', true);
+      updateProgress('unioni-mestieri-progress', 100);
+      updateStatus('mestieri-status', mestieriData.length + ' mestieri caricati', true);
       
       // Popola categorie
       var categorie = [...new Set(mestieriData.map(m => m.categoria).filter(Boolean))].sort();
@@ -44,7 +63,6 @@ function loadMestieri() {
         });
       }
       
-      // Aggiorna tabella
       updateMestieriTable();
       
       // Nascondi loader dopo 1 secondo
@@ -55,13 +73,45 @@ function loadMestieri() {
       
     })
     .catch(function(err) {
-      console.error('Errore caricamento mestieri:', err);
-      updateStatus('mestieri-status-load', 'Errore: ' + err.message, false);
+      console.error('Errore caricamento unioni/mestieri:', err);
+      updateStatus('unioni-status', 'Errore: ' + err.message, false);
+      updateStatus('mestieri-status', 'Errore: ' + err.message, false);
       setTimeout(function() {
         loader.classList.remove('active');
         content.style.display = 'block';
       }, 2000);
     });
+}
+
+function updateUnioniTable() {
+  var tbody = G('unioni-tbody');
+  if (!tbody) return;
+  
+  // Aggiorna conteggio
+  G('unioni-count').textContent = unioniFiltered.length + ' unioni';
+  G('unioni-info-text').textContent = 'Visualizzando ' + unioniFiltered.length + ' unioni su ' + unioniData.length + ' totali';
+  
+  // Svuota tabella
+  tbody.innerHTML = '';
+  
+  if (unioniFiltered.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="6" class="ana-empty">Nessuna unione trovata</td></tr>';
+    return;
+  }
+  
+  // Popola tabella
+  unioniFiltered.forEach(function(unione) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${unione.codice || '–'}</strong></td>
+      <td><strong>${unione.denominazione || '–'}</strong></td>
+      <td>${unione.provincia || '–'}</td>
+      <td>${unione.email || '–'}</td>
+      <td>${unione.telefono || '–'}</td>
+      <td>${unione.note || '–'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
 }
 
 function updateMestieriTable() {
@@ -94,6 +144,21 @@ function updateMestieriTable() {
   });
 }
 
+function filterUnioni() {
+  var search = G('unioni-search').value.toLowerCase();
+  
+  unioniFiltered = unioniData.filter(function(u) {
+    var matchSearch = !search || 
+      (u.codice && u.codice.toLowerCase().includes(search)) ||
+      (u.denominazione && u.denominazione.toLowerCase().includes(search)) ||
+      (u.provincia && u.provincia.toLowerCase().includes(search));
+    
+    return matchSearch;
+  });
+  
+  updateUnioniTable();
+}
+
 function filterMestieri() {
   var search = G('mestieri-search').value.toLowerCase();
   var categoria = G('mestieri-categoria').value;
@@ -113,29 +178,39 @@ function filterMestieri() {
 
 // Event listeners
 window.addEventListener('load', function() {
-  // Quando tab mestieri diventa attivo
-  var mestieri_tab = G('tab-mestieri');
-  if (mestieri_tab) {
+  // Quando tab unioni-mestieri diventa attivo
+  var tab = G('tab-unioni-mestieri');
+  if (tab) {
     // Carica dati al primo click
     var loaded = false;
     document.addEventListener('click', function(e) {
-      var btn = e.target.closest('[data-tab="tab-mestieri"]');
+      var btn = e.target.closest('[data-tab="tab-unioni-mestieri"]');
       if (btn && !loaded) {
-        loadMestieri();
+        loadUnioniMestieri();
         loaded = true;
       }
     });
     
-    // Listener per filtri
-    var search = G('mestieri-search');
-    var categoria = G('mestieri-categoria');
-    var reset = G('mestieri-reset');
+    // Listener per filtri unioni
+    var uniSearch = G('unioni-search');
+    var uniReset = G('unioni-reset');
     
-    if (search) search.addEventListener('input', filterMestieri);
-    if (categoria) categoria.addEventListener('change', filterMestieri);
-    if (reset) reset.addEventListener('click', function() {
-      if (search) search.value = '';
-      if (categoria) categoria.value = '';
+    if (uniSearch) uniSearch.addEventListener('input', filterUnioni);
+    if (uniReset) uniReset.addEventListener('click', function() {
+      if (uniSearch) uniSearch.value = '';
+      filterUnioni();
+    });
+    
+    // Listener per filtri mestieri
+    var mesSearch = G('mestieri-search');
+    var mesCategoria = G('mestieri-categoria');
+    var mesReset = G('mestieri-reset');
+    
+    if (mesSearch) mesSearch.addEventListener('input', filterMestieri);
+    if (mesCategoria) mesCategoria.addEventListener('change', filterMestieri);
+    if (mesReset) mesReset.addEventListener('click', function() {
+      if (mesSearch) mesSearch.value = '';
+      if (mesCategoria) mesCategoria.value = '';
       filterMestieri();
     });
   }
