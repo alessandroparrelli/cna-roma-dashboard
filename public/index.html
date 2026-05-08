@@ -1,8 +1,11 @@
 <!DOCTYPE html>
-<html lang="it"><!-- v97 build 1776957517 -->
+<html lang="it"><!-- v98 build 1715201400 -->
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <title>CNA Roma – Dashboard Tesseramento</title>
 <link rel="icon" href="favicon.ico" type="image/x-icon">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -130,7 +133,7 @@
 <div class="tabs-bar" id="tabs-bar" style="display:none">
   <button class="tab-btn active" data-tab="tab-overview">📊 Tesseramento | Andamento</button>
   <button class="tab-btn" data-tab="tab-promotori">📈 Tesseramento | Analisi</button>
-  <button class="tab-btn" data-tab="tab-unioni-mestieri">🏢 Unioni e Mestieri</button>
+  <button class="tab-btn" data-tab="tab-ateco">🏭 Ateco</button>
   <button class="tab-btn" data-tab="tab-anagrafiche">🗂️ Archivio Imprese CNA</button>
   <button class="tab-btn" data-tab="tab-contratti">📋 Archivio Contratti</button>
   <button class="tab-btn" data-tab="tab-import">⬆️ Carica Dati</button>
@@ -255,127 +258,11 @@
   <div id="promo-cards-grid"></div>
 </div>
 
-<!-- TAB: UNIONI E MESTIERI -->
-<div class="page" id="tab-unioni-mestieri">
-  <!-- UNIONI SECTION -->
-  <div class="ana-loader active" id="unioni-mestieri-loader">
-    <div class="ana-loader-title">🏢 CARICAMENTO UNIONI E MESTIERI</div>
-    <div class="ana-loader-spinner"></div>
-    <div class="ana-loader-msg" id="unioni-mestieri-load-msg">Preparazione…</div>
-    <div class="ana-progress-bar"><div class="ana-progress-fill" id="unioni-mestieri-progress"></div></div>
-    <div class="ana-status-table">
-      <div class="ana-status-row" id="unioni-status"><span class="ana-sname">Caricamento Unioni</span><span class="ana-sval">In attesa…</span></div>
-      <div class="ana-status-row" id="mestieri-status"><span class="ana-sname">Caricamento Mestieri</span><span class="ana-sval">In attesa…</span></div>
-    </div>
-  </div>
-
-  <div id="unioni-mestieri-content" style="display:none">
-    <!-- UNIONI FILTERS -->
-    <div class="filters-bar" style="display:block;padding:14px 18px;height:auto">
-      <h3 style="margin:0 0 15px 0;color:var(--text)">🏢 Unioni CNA</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:15px">
-        <div>
-          <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:5px;font-weight:600;text-transform:uppercase">Cerca Unione</label>
-          <input type="text" id="unioni-search" placeholder="Digita per cercare..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px">
-        </div>
-        <div></div>
-        <div style="display:flex;align-items:flex-end">
-          <button class="btn btn-secondary" id="unioni-reset" style="width:100%">
-            ⟲ Reset Filtri
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- UNIONI TABLE -->
-    <div class="data-info">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span id="unioni-info-text">–</span>
-      <span class="info-chip" id="unioni-count">0 unioni</span>
-    </div>
-
-    <div class="ana-data-card">
-      <div class="ana-data-header">
-        <div class="ana-data-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="2.5"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-3H5a2 2 0 0 0-2 2z"/></svg>
-          Elenco Unioni
-        </div>
-      </div>
-      <div class="ana-table-wrap">
-        <table class="ana-table" id="unioni-table">
-          <thead>
-            <tr>
-              <th>Codice</th>
-              <th>Denominazione</th>
-              <th>Provincia</th>
-              <th>Email</th>
-              <th>Telefono</th>
-              <th>Note</th>
-            </tr>
-          </thead>
-          <tbody id="unioni-tbody">
-            <tr><td colspan="6" class="ana-empty">Caricamento...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- SEPARATOR -->
-    <div style="margin:40px 0;border-top:2px solid var(--border)"></div>
-
-    <!-- MESTIERI FILTERS -->
-    <div class="filters-bar" style="display:block;padding:14px 18px;height:auto">
-      <h3 style="margin:0 0 15px 0;color:var(--text)">🛠️ Mestieri CNA</h3>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:15px">
-        <div>
-          <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:5px;font-weight:600;text-transform:uppercase">Cerca Mestiere</label>
-          <input type="text" id="mestieri-search" placeholder="Digita per cercare..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px">
-        </div>
-        <div>
-          <label style="display:block;font-size:12px;color:var(--text-secondary);margin-bottom:5px;font-weight:600;text-transform:uppercase">Categoria</label>
-          <select id="mestieri-categoria" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:13px">
-            <option value="">Tutte le categorie</option>
-          </select>
-        </div>
-        <div style="display:flex;align-items:flex-end">
-          <button class="btn btn-secondary" id="mestieri-reset" style="width:100%">
-            ⟲ Reset Filtri
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- MESTIERI TABLE -->
-    <div class="data-info">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-      <span id="mestieri-info-text">–</span>
-      <span class="info-chip" id="mestieri-count">0 mestieri</span>
-    </div>
-
-    <div class="ana-data-card">
-      <div class="ana-data-header">
-        <div class="ana-data-title">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent3)" stroke-width="2.5"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-3H5a2 2 0 0 0-2 2z"/></svg>
-          Elenco Mestieri
-        </div>
-      </div>
-      <div class="ana-table-wrap">
-        <table class="ana-table" id="mestieri-table">
-          <thead>
-            <tr>
-              <th>Codice</th>
-              <th>Denominazione</th>
-              <th>Categoria</th>
-              <th>Sottocategoria</th>
-              <th>Note</th>
-            </tr>
-          </thead>
-          <tbody id="mestieri-tbody">
-            <tr><td colspan="5" class="ana-empty">Caricamento...</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
+<!-- TAB: ATECO - ANALISI UNIONI E MESTIERI -->
+<div class="page" id="tab-ateco">
+  <div style="padding:40px 20px;text-align:center;color:var(--text-secondary)">
+    <div style="font-size:24px;margin-bottom:20px">📊 ANALISI UNIONI E MESTIERI</div>
+    <div style="font-size:14px;margin-bottom:40px">Caricamento dati in corso...</div>
   </div>
 </div>
 
@@ -1134,5 +1021,6 @@
 <script src="js/import.js"></script>
 <script src="js/scheda.js"></script>
 <script src="js/mestieri.js"></script>
+<script src="js/ateco.js"></script>
 </body>
 </html>
