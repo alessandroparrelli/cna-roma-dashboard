@@ -81,12 +81,15 @@ function atecoJoin(tess, ana, ateco) {
 }
 
 async function atecoLoad(force) {
+  console.log('🔄 atecoLoad() CHIAMATA', {force, atecoLoading, atecoLoaded});
   if (atecoLoading) return;
   if (atecoLoaded && !force) return;
   atecoLoading = true;
   
+  console.log('✅ atecoLoad() IN PROGRESS');
   var loader = G('ateco-loader');
   var content = G('ateco-content');
+  console.log('DOM elements:', {loader, content});
   if (loader) loader.classList.add('active');
   if (content) content.style.display = 'none';
   
