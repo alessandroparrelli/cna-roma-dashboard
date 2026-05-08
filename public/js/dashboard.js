@@ -2,6 +2,7 @@ async function loadDashboard(){
   showLoad('Caricamento dati…');
   try{
     var data=await sbGetAll(TR);
+    allDataRaw=data; // dati raw per tab Ateco
     allData=data.map(mapRow);
     // La tabs-bar è sempre visibile dopo login: il tab Anagrafiche
     // è un modulo indipendente che legge da altre tabelle.
