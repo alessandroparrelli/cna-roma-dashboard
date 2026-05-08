@@ -23,7 +23,7 @@ var atecoTab = {
     
     Promise.all([
       fetch(SB + '/rest/v1/tesseramento_records?select=*&limit=10000', {headers: headers}).then(r => r.json()),
-      fetch(SB + '/rest/v1/anagrafiche?select=*&limit=10000', {headers: headers}).then(r => r.json()),
+      fetch(SB + '/rest/v1/Anagrafiche?select=*&limit=10000', {headers: headers}).then(r => r.json()),
       fetch(SB + '/rest/v1/codiciateco?select=*&limit=10000', {headers: headers}).then(r => r.json())
     ])
     .then(function(res) {
