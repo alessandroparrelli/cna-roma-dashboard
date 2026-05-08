@@ -800,6 +800,8 @@ document.querySelectorAll('.tab-btn').forEach(function(btn){
     }
     // Lazy-load anagrafiche on first visit
     if(tabId==='tab-anagrafiche' && !anaLoaded && !anaLoading){ anaLoad(); }
+    // Lazy-load ateco on first visit
+    if(tabId==='tab-ateco' && !atecoLoaded && !atecoLoading){ atecoLoad(); }
   });
 });
 
