@@ -871,242 +871,138 @@ function rReport(id, data, key, colors) {
 }
 
 
-// ========== GENERA REPORT PDF — IDENTICO AL WORD ==========
+// ========== GENERA REPORT PDF (NUOVA VERSIONE CON SKILL) ==========
 function generaReportPDF() {
-  var logoUrl = 'https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png';
-
-  // Loading overlay
-  var overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center';
-  overlay.innerHTML = '<div style="background:white;padding:30px 40px;border-radius:12px;text-align:center;font-family:sans-serif"><div style="font-size:24px;margin-bottom:10px">📄</div><div style="font-size:16px;font-weight:bold">Generazione Report PDF</div><div style="font-size:13px;color:#888;margin-top:8px">Attendere prego...</div></div>';
-  document.body.appendChild(overlay);
-
-  // --- Leggi filtri ---
+  // Leggi dati attuali
+  var kpiTot = G('kpi-tot') ? G('kpi-tot').textContent : '–';
+  var kpiCnt = G('kpi-cnt') ? G('kpi-cnt').textContent : '–';
+  var kpiAvg = G('kpi-avg') ? G('kpi-avg').textContent : '–';
+  var kpiDb  = G('kpi-db') ? G('kpi-db').textContent : '–';
+  
+  // Filtri
   var fAnno  = (G('f-anno')  && G('f-anno').value)  || (G('fp-anno') && G('fp-anno').value) || '';
   var fMese  = (G('f-mese')  && G('f-mese').value)  || '';
   var fpDa   = G('fp-mese-da') ? G('fp-mese-da').value : '';
   var fpA    = G('fp-mese-a')  ? G('fp-mese-a').value  : '';
+  
   var filtroAnno = fAnno || 'tutti gli anni';
   var filtroMesi = fMese ? fMese : (fpDa || fpA) ? ((fpDa||'tutti') + ' - ' + (fpA||'tutti')) : 'Tutti i mesi';
-
-  // --- Dati correnti dalla dashboard ---
-  var kpiTot = G('kpi-tot') ? G('kpi-tot').textContent : '–';
-  var kpiCnt = G('kpi-cnt') ? G('kpi-cnt').textContent : '–';
-  var kpiAvg = G('kpi-avg') ? G('kpi-avg').textContent : '–';
-  var kpiDb  = G('kpi-db')  ? G('kpi-db').textContent  : '–';
-
-  // --- Cattura grafici come immagini ---
-  var chartImages = {};
-  var chartIds = ['chart-tiporete','chart-promotore','chart-acuradi','chart-promo-trend'];
-  chartIds.forEach(function(id){
-    var c = G(id);
-    if(c && c.offsetHeight > 0) {
-      try { chartImages[id] = c.toDataURL('image/png'); } catch(e){}
+  
+  // Grafici da canvas
+  var charts = {};
+  ['chart-tiporete','chart-promotore','chart-acuradi','chart-promo-trend'].forEach(function(id){
+    var el = G(id);
+    if(el && el.offsetHeight > 0) {
+      try { charts[id.replace('chart-','')] = el.toDataURL('image/png'); } catch(e){}
     }
   });
-  // Cattura sparklines promotori
-  var sparkImages = {};
-  for(var si=0; si<20; si++){
-    var sp = G('spark-'+si);
-    if(sp && sp.offsetHeight > 0){
-      try { sparkImages[si] = sp.toDataURL('image/png'); } catch(e){}
+  
+  // Tabelle da DOM
+  var tables = {};
+  ['table-tiporete','table-promotore','table-promo-trend'].forEach(function(id){
+    var el = G(id);
+    if(el && el.offsetHeight > 0) {
+      tables[id.replace('table-','')] = el.outerHTML;
     }
-  }
-
-  // --- Leggi tabelle HTML esistenti ---
-  function getTableHTML(id){
-    var t = G(id);
-    return t ? t.outerHTML : '';
-  }
-
-  // --- Costruisci pagine HTML ---
-  var pages = [];
-
-  // =========================
-  // PAGINA 1: KPI + Report per dimensione (Tipo Rete + Promotore affiancati)
-  // =========================
-  var p1 = '';
-  p1 += '<div style="margin-bottom:20px">';
-  p1 += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px">';
-  p1 += '<div style="flex:1;min-width:140px;border:1px solid #e5e7eb;border-radius:8px;padding:12px;border-top:3px solid #3B82F6"><div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px">Totale Importo</div><div style="font-size:24px;font-weight:bold;margin-top:4px">'+kpiTot+'</div></div>';
-  p1 += '<div style="flex:1;min-width:140px;border:1px solid #e5e7eb;border-radius:8px;padding:12px;border-top:3px solid #10B981"><div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px">Nr. Contratti</div><div style="font-size:24px;font-weight:bold;margin-top:4px">'+kpiCnt+'</div></div>';
-  p1 += '<div style="flex:1;min-width:140px;border:1px solid #e5e7eb;border-radius:8px;padding:12px;border-top:3px solid #8B5CF6"><div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px">Importo Medio</div><div style="font-size:24px;font-weight:bold;margin-top:4px">'+kpiAvg+'</div></div>';
-  p1 += '<div style="flex:1;min-width:140px;border:1px solid #e5e7eb;border-radius:8px;padding:12px;border-top:3px solid #F59E0B"><div style="font-size:10px;color:#666;text-transform:uppercase;letter-spacing:1px">Totale DB</div><div style="font-size:24px;font-weight:bold;margin-top:4px">'+kpiDb+'</div></div>';
-  p1 += '</div>';
-  // Sezione titolo
-  p1 += '<div style="font-weight:bold;font-size:13px;margin-bottom:12px">● Report per dimensione</div>';
-  // Due card affiancate
-  p1 += '<div style="display:flex;gap:16px">';
-  // Card Tipo Rete
-  p1 += '<div style="flex:1;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">';
-  p1 += '<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><div style="font-weight:600;font-size:12px">🔗 Tipo Rete</div></div>';
-  if(chartImages['chart-tiporete']) p1 += '<div style="padding:0 10px"><img src="'+chartImages['chart-tiporete']+'" style="width:100%;height:auto"></div>';
-  p1 += '<div style="padding:8px;font-size:9px">'+getTableHTML('table-tiporete')+'</div>';
-  p1 += '</div>';
-  // Card Promotore
-  p1 += '<div style="flex:1;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">';
-  p1 += '<div style="padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><div style="font-weight:600;font-size:12px">👤 Promotore</div></div>';
-  if(chartImages['chart-promotore']) p1 += '<div style="padding:0 10px"><img src="'+chartImages['chart-promotore']+'" style="width:100%;height:auto"></div>';
-  p1 += '<div style="padding:8px;font-size:9px">'+getTableHTML('table-promotore')+'</div>';
-  p1 += '</div>';
-  p1 += '</div></div>';
-  pages.push(p1);
-
-  // =========================
-  // PAGINA 2: Tabella confronto anni + Trend chart
-  // =========================
-  var p2 = '';
-  // Tabella dettaglio promotore confronto anni
-  var trendTable = G('table-promo-trend');
-  if(trendTable && trendTable.offsetHeight > 0) {
-    p2 += '<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;margin-bottom:20px">';
-    p2 += '<div style="background:#DC2626;color:white;padding:10px 14px;font-weight:600;font-size:12px;display:flex;justify-content:space-between"><span>👥 Dettaglio per promotore — confronto anni</span></div>';
-    p2 += '<div style="padding:8px;font-size:9px;overflow-x:auto">'+trendTable.outerHTML+'</div>';
-    p2 += '</div>';
-  }
-  // Grafico trend
-  if(chartImages['chart-promo-trend']) {
-    p2 += '<div style="border:1px solid #e5e7eb;border-radius:8px;overflow:hidden">';
-    p2 += '<div style="background:#8B5CF6;color:white;padding:10px 14px;font-weight:600;font-size:12px">📈 Trend numerico per anno</div>';
-    p2 += '<div style="padding:10px"><img src="'+chartImages['chart-promo-trend']+'" style="width:100%;height:auto"></div>';
-    p2 += '</div>';
-  }
-  if(p2) pages.push(p2);
-
-  // =========================
-  // PAGINA 3+: Schede individuali promotori (3 per riga)
-  // =========================
+  });
+  
+  // Leggi cards promotori
+  var cardsData = [];
   var promoGrid = G('promo-cards-grid');
   if(promoGrid) {
     var promoCards = promoGrid.querySelectorAll('.promo-card');
-    if(promoCards.length > 0) {
-      var cardsPerPage = 3;
-      for(var ci=0; ci<promoCards.length; ci += cardsPerPage) {
-        var pn = '';
-        if(ci === 0) pn += '<div style="font-size:18px;font-weight:bold;margin-bottom:16px">Dettaglio per promotore</div>';
-        if(ci === 0) pn += '<div style="font-weight:bold;font-size:12px;margin-bottom:12px">● Schede individuali per promotore</div>';
-        pn += '<div style="display:flex;gap:12px;align-items:flex-start">';
-        for(var cj=ci; cj<Math.min(ci+cardsPerPage, promoCards.length); cj++) {
-          var card = promoCards[cj];
-          // Cattura la card con i dati
-          var cardHeader = card.querySelector('.promo-card-header');
-          var headerBg = cardHeader ? cardHeader.style.backgroundColor : '#333';
-          var cardName = card.querySelector('.promo-card-name');
-          var cardTotal = card.querySelector('.promo-card-total');
-          var name = cardName ? cardName.textContent : '';
-          var total = cardTotal ? cardTotal.textContent : '';
-
-          // KPI della card
-          var kpis = card.querySelectorAll('.promo-kpi');
-          var kpiHtml = '';
-          kpis.forEach(function(k){
-            var lbl = k.querySelector('.promo-kpi-label');
-            var val = k.querySelector('.promo-kpi-value');
-            kpiHtml += '<div style="flex:1;text-align:center;padding:4px"><div style="font-size:8px;color:#888;text-transform:uppercase;letter-spacing:0.5px">'+(lbl?lbl.textContent:'')+'</div><div style="font-size:14px;font-weight:bold">'+(val?val.textContent:'')+'</div></div>';
-          });
-
-          // Sparkline
-          var sparkHtml = '';
-          if(sparkImages[cj]) {
-            sparkHtml = '<div style="padding:4px 8px"><img src="'+sparkImages[cj]+'" style="width:100%;height:60px"></div>';
-          }
-
-          // Tabella anni della card
-          var cardTable = card.querySelector('.promo-anni-table');
-          var tableHtml = cardTable ? '<div style="padding:4px 6px;font-size:8px">'+cardTable.outerHTML+'</div>' : '';
-
-          pn += '<div style="flex:1;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;min-width:0">';
-          pn += '<div style="background:'+headerBg+';color:white;padding:8px 12px;display:flex;justify-content:space-between;align-items:center"><span style="font-weight:bold;font-size:11px">'+name+'</span><span style="font-size:9px;background:rgba(255,255,255,0.25);padding:2px 8px;border-radius:10px">'+total+'</span></div>';
-          pn += '<div style="display:flex;border-bottom:1px solid #eee">'+kpiHtml+'</div>';
-          pn += sparkHtml;
-          pn += tableHtml;
-          pn += '</div>';
+    promoCards.forEach(function(card, idx){
+      var headerEl = card.querySelector('.promo-card-header');
+      var nameEl = card.querySelector('.promo-card-name');
+      var totalEl = card.querySelector('.promo-card-total');
+      var sparklineEl = card.querySelector('canvas[id^="spark-"]');
+      var tableEl = card.querySelector('.promo-anni-table');
+      
+      var cardObj = {
+        name: nameEl ? nameEl.textContent : '',
+        total: totalEl ? totalEl.textContent : '',
+        color: headerEl ? window.getComputedStyle(headerEl).backgroundColor : '#333'
+      };
+      
+      // KPI della card
+      var kpiEls = card.querySelectorAll('.promo-kpi');
+      cardObj.kpis = {};
+      kpiEls.forEach(function(kpi){
+        var lbl = kpi.querySelector('.promo-kpi-label');
+        var val = kpi.querySelector('.promo-kpi-value');
+        if(lbl && val) {
+          cardObj.kpis[lbl.textContent.trim()] = val.textContent.trim();
         }
-        pn += '</div>';
-        pages.push(pn);
-      }
-    }
-  }
-
-  // =========================
-  // Crea container nascosto per rendering
-  // =========================
-  var container = document.createElement('div');
-  container.id = 'pdf-render-container';
-  container.style.cssText = 'position:fixed;top:-99999px;left:0;width:1120px;background:white;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;color:#333';
-  document.body.appendChild(container);
-
-  // Render tutte le pagine e cattura
-  var pageCanvases = [];
-  var renderIdx = 0;
-
-  function renderNextPage() {
-    if(renderIdx >= pages.length) {
-      // Tutte le pagine renderizzate, genera PDF
-      buildPDF(pageCanvases);
-      return;
-    }
-    // Header + contenuto + footer per ogni pagina
-    var pageHtml = '';
-    // Header
-    pageHtml += '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:0 0 12px 0;border-bottom:1px solid #ddd;margin-bottom:16px">';
-    pageHtml += '<div style="display:flex;align-items:center;gap:8px"><img src="'+logoUrl+'" style="height:40px" crossorigin="anonymous"></div>';
-    pageHtml += '<div style="text-align:right"><div style="font-size:18px;font-weight:bold">Report tesseramento</div><div style="font-size:11px;color:#888">Dati selezionati</div><div style="font-size:11px;color:#888">Anno, '+filtroAnno+'</div><div style="font-size:11px;color:#888">mesi: '+filtroMesi+'</div></div>';
-    pageHtml += '</div>';
-    // Contenuto
-    pageHtml += pages[renderIdx];
-    // Footer
-    pageHtml += '<div style="position:absolute;bottom:0;left:0;right:0;padding:12px 0;border-top:1px solid #eee;display:flex;justify-content:space-between;font-size:8px;color:#999">';
-    pageHtml += '<div><b>Sede CNA di Roma</b><br>Via Cristoforo Colombo, 283A - 00147 Roma<br>Tel 06570151 • direzione@cnaroma.it • www.cnaroma.it</div>';
-    pageHtml += '<div style="text-align:right;font-size:12px">'+( renderIdx+1 )+'</div>';
-    pageHtml += '</div>';
-
-    container.innerHTML = '<div style="position:relative;width:1120px;min-height:780px;padding:20px 30px 60px 30px;box-sizing:border-box">'+pageHtml+'</div>';
-
-    // Aspetta immagini
-    setTimeout(function(){
-      html2canvas(container.firstChild, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-        width: 1120,
-        allowTaint: true
-      }).then(function(canvas) {
-        pageCanvases.push(canvas);
-        renderIdx++;
-        renderNextPage();
-      }).catch(function(err){
-        console.error('Errore pagina '+renderIdx, err);
-        renderIdx++;
-        renderNextPage();
       });
-    }, 500);
-  }
-
-  function buildPDF(canvases) {
-    var jsPDF = window.jspdf.jsPDF;
-    var doc = new jsPDF({ orientation:'landscape', unit:'mm', format:'a4' });
-    var pw = doc.internal.pageSize.getWidth();
-    var ph = doc.internal.pageSize.getHeight();
-
-    canvases.forEach(function(canvas, idx) {
-      if(idx > 0) doc.addPage();
-      var imgData = canvas.toDataURL('image/png');
-      var ratio = canvas.width / canvas.height;
-      var fitW = pw;
-      var fitH = fitW / ratio;
-      if(fitH > ph) { fitH = ph; fitW = fitH * ratio; }
-      var x = (pw - fitW) / 2;
-      var y = (ph - fitH) / 2;
-      doc.addImage(imgData, 'PNG', x, y, fitW, fitH);
+      
+      // Sparkline
+      if(sparklineEl && sparklineEl.offsetHeight > 0) {
+        try { cardObj.sparkline = sparklineEl.toDataURL('image/png'); } catch(e){}
+      }
+      
+      // Tabella
+      if(tableEl && tableEl.offsetHeight > 0) {
+        cardObj.table = tableEl.outerHTML;
+      }
+      
+      cardsData.push(cardObj);
     });
-
-    doc.save('Report_Tesseramento_CNA_' + new Date().toISOString().slice(0,10) + '.pdf');
-    document.body.removeChild(container);
-    document.body.removeChild(overlay);
   }
-
-  // Avvia rendering
-  renderNextPage();
+  
+  // Crea report generator
+  var reportConfig = {
+    template: 'report-tesseramento',
+    title: 'Report Tesseramento CNA Roma',
+    logoUrl: 'https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png',
+    filename: 'Report_Tesseramento_CNA_' + new Date().toISOString().slice(0,10) + '.pdf',
+    
+    // KPI
+    kpis: {
+      totalImporto: kpiTot,
+      nrContratti: kpiCnt,
+      importoMedio: kpiAvg,
+      totalDb: kpiDb
+    },
+    
+    // Filtri
+    filters: {
+      anno: filtroAnno,
+      mesi: filtroMesi
+    },
+    
+    // Grafici
+    charts: {
+      tiporete: charts.tiporete || null,
+      promotore: charts.promotore || null,
+      trend: charts['promo-trend'] || null
+    },
+    
+    // Tabelle
+    tables: {
+      tiporete: tables.tiporete || '',
+      promotore: tables.promotore || '',
+      trendTable: tables['promo-trend'] || ''
+    },
+    
+    // Schede
+    cards: cardsData,
+    
+    // Opzioni rendering
+    renderingOptions: {
+      scale: 2,
+      delay: 500,
+      timeout: 10000
+    },
+    
+    // Footer CNA
+    footerType: 'cna',
+    pageNumbers: true,
+    totalPages: true
+  };
+  
+  // Genera report
+  var report = new ReportGenerator(reportConfig);
+  report.generatePDF().catch(function(err){
+    console.error('Errore report:', err);
+  });
 }
