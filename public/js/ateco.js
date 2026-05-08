@@ -89,6 +89,10 @@ async function atecoLoad(force) {
   atecoLoading = true;
   
   console.log('✅ atecoLoad() IN PROGRESS');
+  
+  // BUILD UI SUBITO
+  atecoBuildUI();
+  
   var loader = G('ateco-loader');
   var content = G('ateco-content');
   console.log('DOM elements:', {loader, content});
@@ -109,7 +113,6 @@ async function atecoLoad(force) {
     atecoFiltered = atecoAllData.slice();
     
     atecoSetProgress(95, 'Rendering…');
-    atecoBuildUI();
     atecoPopulateFilters();
     atecoRender();
     
