@@ -19,8 +19,8 @@ var atecoTab = {
     
     // Carica i dati
     Promise.all([
-      sbGetAll('cnacontratti'),
-      sbGetAll('anagrafiche'),
+      sbGetAll('tesseramento_records'),
+      sbGetAll('Anagrafiche'),
       sbGetAll('codiciateco')
     ])
     .then(res => {
@@ -37,13 +37,13 @@ var atecoTab = {
     // Crea mappe
     var anaMap = {};
     anagrafiche.forEach(a => {
-      var piva = a.partita_iva || a.Partita_IVA || '';
+      var piva = a.partita_iva || a.Partita_IVA || a.PARTITA_IVA || '';
       if (piva) anaMap[piva] = a;
     });
     
     var atecoMap = {};
     ateco.forEach(a => {
-      var code = a.codiceateco || a.Codiceateco || '';
+      var code = a.codiceateco || a.Codiceateco || a.CODICEATECO || '';
       if (code) atecoMap[code] = a;
     });
     
@@ -53,7 +53,7 @@ var atecoTab = {
     var pivas = new Set();
     
     contratti.forEach(c => {
-      var piva = c.partita_iva || c.Partita_IVA || '';
+      var piva = c.partita_iva || c.Partita_IVA || c.PARTITA_IVA || '';
       if (!piva) return;
       
       var ana = anaMap[piva];
@@ -62,7 +62,7 @@ var atecoTab = {
       pivas.add(piva);
       
       // Estrai sesso da CF
-      var cf = ana.codice_fiscale_titolare || ana.CF || '';
+      var cf = ana.codice_fiscale_titolare || ana.CF || ana.Codice_Fiscale || '';
       var s = null;
       if (cf && cf.length >= 10) {
         var gg = parseInt(cf.substr(9, 2), 10);
@@ -78,12 +78,12 @@ var atecoTab = {
       naz[n]++;
       
       // Estrai unione e mestiere
-      var atecoCode = ana.codiceateco || ana.Codiceateco || '';
+      var atecoCode = ana.codiceateco || ana.Codiceateco || ana.CODICEATECO || '';
       var atecoData = atecoMap[atecoCode];
       
       if (atecoData) {
-        var u = atecoData.unione || atecoData.Unione || 'N/D';
-        var m = atecoData.mestiere_denom || atecoData.Mestiere_Denom || 'N/D';
+        var u = atecoData.unione || atecoData.Unione || atecoData.UNIONE || 'N/D';
+        var m = atecoData.mestiere_denom || atecoData.Mestiere_Denom || atecoData.MESTIERE_DENOM || 'N/D';
         
         unioni[u] = (unioni[u] || 0) + 1;
         mestieri[m] = (mestieri[m] || 0) + 1;
