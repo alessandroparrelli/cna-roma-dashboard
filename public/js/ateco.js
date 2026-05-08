@@ -15,16 +15,21 @@ var atecoTab = {
     // Mostra loading
     tab.innerHTML = '<div style="padding:40px 20px;text-align:center"><div style="font-size:20px;margin-bottom:20px">⏳ Caricamento...</div></div>';
     
+    console.log('🔄 Inizio caricamento dati ATECO...');
+    
     // Carica i dati
     Promise.all([
       sbGetAll('cnacontratti'),
       sbGetAll('anagrafiche'),
       sbGetAll('codiciateco')
     ])
-    .then(res => this.processDati(res[0], res[1], res[2]))
+    .then(res => {
+      console.log('✅ Dati caricati:', {contratti: res[0].length, anagrafiche: res[1].length, ateco: res[2].length});
+      this.processDati(res[0], res[1], res[2]);
+    })
     .catch(err => {
-      console.error('Errore:', err);
-      tab.innerHTML = '<div style="padding:40px 20px;text-align:center;color:red"><p>Errore caricamento dati</p></div>';
+      console.error('❌ Errore caricamento:', err);
+      tab.innerHTML = '<div style="padding:40px 20px;text-align:center;color:red"><p>Errore: ' + (err.message || err) + '</p></div>';
     });
   },
   
