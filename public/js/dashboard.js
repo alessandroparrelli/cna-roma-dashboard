@@ -871,131 +871,203 @@ function rReport(id, data, key, colors) {
 }
 
 
-// ========== GENERA REPORT PDF TAB ANDAMENTO ==========
+// ========== GENERA REPORT PDF IDENTICO AL WORD ==========
 function generaReportPDF() {
-  const { jsPDF } = window.jspdf;
-  const logoUrl = 'https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png';
+  var logoUrl = 'https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png';
   
-  // Mostra loading
-  const loading = document.createElement('div');
-  loading.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:white;padding:20px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);z-index:9999;';
-  loading.innerHTML = '⏳ Generazione PDF in corso...';
-  document.body.appendChild(loading);
+  // Loading overlay
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML = '<div style="background:white;padding:30px 40px;border-radius:12px;text-align:center;font-family:sans-serif"><div style="font-size:24px;margin-bottom:10px">📄</div><div style="font-size:16px;font-weight:bold">Generazione Report PDF</div><div style="font-size:13px;color:#888;margin-top:8px">Attendere prego...</div></div>';
+  document.body.appendChild(overlay);
   
-  html2canvas(document.getElementById('tab-overview'), {
-    scale: 2,
-    useCORS: true,
-    logging: false,
-    backgroundColor: '#ffffff',
-    windowWidth: 1200,
-    windowHeight: document.getElementById('tab-overview').scrollHeight
-  }).then(function(canvas) {
-    const imgData = canvas.toDataURL('image/png');
-    const imgWidth = 210; // A4 width in mm
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  // Leggi filtri attuali dal tab attivo
+  var fAnno = G('f-anno') ? G('f-anno').value : '';
+  var fMese = G('f-mese') ? G('f-mese').value : '';
+  var fpAnno = G('fp-anno') ? G('fp-anno').value : '';
+  var fpMeseDa = G('fp-mese-da') ? G('fp-mese-da').value : '';
+  var fpMeseA = G('fp-mese-a') ? G('fp-mese-a').value : '';
+  var fpTipoRete = G('fp-tiporete') ? G('fp-tiporete').value : '';
+  
+  var filtriText = 'Anno: ' + (fAnno || fpAnno || 'tutti gli anni');
+  if(fMese) filtriText += '\nmese: ' + fMese;
+  if(fpMeseDa || fpMeseA) filtriText += '\nmesi: ' + (fpMeseDa||'tutti') + ' - ' + (fpMeseA||'tutti');
+  if(fpTipoRete) filtriText += '\nTipo Rete: ' + fpTipoRete;
+  
+  // Raccogli le sezioni da catturare
+  var sections = [];
+  var activeTab = document.querySelector('.page.active');
+  if(!activeTab) activeTab = G('tab-overview');
+  
+  // KPI strip
+  var kpiStrip = activeTab.querySelector('.kpi-strip');
+  if(kpiStrip && kpiStrip.offsetHeight > 0) sections.push({el: kpiStrip, title: ''});
+  
+  // Report cards (grafici + tabelle)
+  var reportCards = activeTab.querySelectorAll('.report-card');
+  reportCards.forEach(function(card){
+    if(card.offsetHeight > 0) sections.push({el: card, title: ''});
+  });
+  
+  // Schede promotori (tab analisi)
+  var promoGrid = G('promo-cards-grid');
+  if(promoGrid && promoGrid.offsetHeight > 0) {
+    var promoCards = promoGrid.querySelectorAll('.promo-card');
+    if(promoCards.length > 0) {
+      sections.push({el: null, title: 'Dettaglio per promotore'});
+      promoCards.forEach(function(card){
+        if(card.offsetHeight > 0) sections.push({el: card, title: ''});
+      });
+    }
+  }
+  
+  // Cattura ogni sezione con html2canvas
+  var capturePromises = [];
+  sections.forEach(function(sec){
+    if(sec.el) {
+      capturePromises.push(
+        html2canvas(sec.el, {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          backgroundColor: '#ffffff'
+        }).then(function(canvas){ return {canvas: canvas, title: sec.title}; })
+      );
+    } else {
+      capturePromises.push(Promise.resolve({canvas: null, title: sec.title}));
+    }
+  });
+  
+  Promise.all(capturePromises).then(function(results){
+    var jsPDF = window.jspdf.jsPDF;
     
-    // Crea PDF
-    const doc = new jsPDF({
-      orientation: imgHeight > imgWidth ? 'portrait' : 'portrait',
+    // PDF LANDSCAPE A4
+    var doc = new jsPDF({
+      orientation: 'landscape',
       unit: 'mm',
       format: 'a4'
     });
     
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const headerHeight = 25;
-    const pageWidth = doc.internal.pageSize.getWidth();
+    var pw = doc.internal.pageSize.getWidth();   // 297mm
+    var ph = doc.internal.pageSize.getHeight();  // 210mm
+    var mL = 15;
+    var mR = 10;
+    var mT = 35;
+    var mB = 22;
+    var cW = pw - mL - mR;
+    var cH = ph - mT - mB;
+    var pageNum = 1;
     
-    let yPosition = 0;
-    let currentPage = 1;
-    
-    // Funzione per aggiungere header
-    function addHeader() {
-      // Logo
-      doc.addImage(logoUrl, 'PNG', 10, 5, 20, 12);
+    function drawHeader() {
+      // Logo CNA alto a sinistra
+      doc.addImage(logoUrl, 'PNG', mL, 5, 30, 15);
       
-      // Testo header
-      doc.setFontSize(14);
+      // "Report tesseramento" a destra, grassetto 18pt
+      doc.setFontSize(18);
       doc.setFont(undefined, 'bold');
       doc.setTextColor(33, 33, 33);
-      doc.text('Dashboard Tesseramento', 35, 10);
+      doc.text('Report tesseramento', pw - mR, 12, {align: 'right'});
       
-      doc.setFontSize(9);
+      // "Dati selezionati" 11pt
+      doc.setFontSize(11);
       doc.setFont(undefined, 'normal');
-      doc.setTextColor(100, 100, 100);
-      doc.text('CNA Roma - Confederazione Nazionale dell\'Artigianato', 35, 16);
+      doc.setTextColor(120, 120, 120);
+      doc.text('Dati selezionati', pw - mR, 19, {align: 'right'});
       
-      // Linea
+      // Filtri attivi
+      doc.setFontSize(11);
+      var lines = filtriText.split('\n');
+      for(var fl = 0; fl < lines.length; fl++){
+        doc.text(lines[fl], pw - mR, 25 + (fl * 5), {align: 'right'});
+      }
+      
+      // Linea separatrice
       doc.setDrawColor(200, 200, 200);
       doc.setLineWidth(0.3);
-      doc.line(10, 22, pageWidth - 10, 22);
+      doc.line(mL, mT - 2, pw - mR, mT - 2);
     }
     
-    // Aggiungi header prima pagina
-    addHeader();
-    yPosition = headerHeight;
-    
-    // Aggiungi immagine del tab
-    let remainingHeight = imgHeight;
-    let currentYImage = 0;
-    let pageCount = 1;
-    
-    while (remainingHeight > 0) {
-      const availableHeight = pageHeight - headerHeight - 10; // 10mm margine inferiore
-      const heightToUse = Math.min(remainingHeight, availableHeight);
-      
-      // Taglia la parte dell'immagine
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = canvas.width;
-      tempCanvas.height = (heightToUse * canvas.width) / imgWidth;
-      
-      const ctx = tempCanvas.getContext('2d');
-      ctx.drawImage(
-        canvas,
-        0,
-        (currentYImage * canvas.width) / imgWidth,
-        canvas.width,
-        (heightToUse * canvas.width) / imgWidth
-      );
-      
-      const partImgData = tempCanvas.toDataURL('image/png');
-      
-      // Aggiungi immagine al PDF
-      doc.addImage(partImgData, 'PNG', 10, yPosition, imgWidth - 20, heightToUse);
-      
-      remainingHeight -= heightToUse;
-      currentYImage += heightToUse;
-      
-      // Se ci sono altre parti, aggiungi pagina
-      if (remainingHeight > 0) {
-        doc.addPage();
-        pageCount++;
-        addHeader();
-        yPosition = headerHeight;
-      } else {
-        yPosition += heightToUse;
-      }
-    }
-    
-    // Aggiungi footer su tutte le pagine
-    const totalPages = doc.internal.pages.length - 1;
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
+    function drawFooter(pNum, totalPg) {
+      // Sede CNA in basso a sinistra
       doc.setFontSize(8);
-      doc.setTextColor(150, 150, 150);
+      doc.setFont(undefined, 'bold');
+      doc.setTextColor(100, 100, 100);
+      doc.text('Sede CNA di Roma', mL, ph - 14);
+      doc.setFont(undefined, 'normal');
+      doc.text('Via Cristoforo Colombo, 283A - 00147 Roma', mL, ph - 10);
+      doc.text('Tel 06570151 \u2022 direzione@cnaroma.it \u2022 www.cnaroma.it', mL, ph - 6);
       
-      const now = new Date().toLocaleDateString('it-IT');
-      doc.text(now, 10, pageHeight - 8);
-      doc.text(`Pagina ${i}`, pageWidth - 30, pageHeight - 8);
+      // Pagina X di Y a destra
+      doc.setFontSize(9);
+      doc.text('Pagina ' + pNum + ' di ' + totalPg, pw - mR, ph - 6, {align: 'right'});
     }
     
-    // Scarica PDF
-    doc.save('Report_CNA_Tesseramento_' + new Date().toISOString().slice(0, 10) + '.pdf');
+    // Prima pagina
+    drawHeader();
+    var curY = mT;
     
-    // Rimuovi loading
-    document.body.removeChild(loading);
-  }).catch(function(error) {
-    console.error('Errore generazione PDF:', error);
-    document.body.removeChild(loading);
-    alert('Errore nella generazione del PDF');
+    results.forEach(function(res){
+      // Titolo sezione (es. "Dettaglio per promotore")
+      if(!res.canvas && res.title) {
+        if(curY > mT + 10) {
+          doc.addPage();
+          pageNum++;
+          drawHeader();
+          curY = mT;
+        }
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.setTextColor(33, 33, 33);
+        doc.text(res.title, mL, curY + 8);
+        curY += 15;
+        return;
+      }
+      
+      if(!res.canvas) return;
+      
+      var canvas = res.canvas;
+      var imgData = canvas.toDataURL('image/png');
+      var imgRatio = canvas.width / canvas.height;
+      
+      // Calcola dimensioni
+      var fitW = cW;
+      var fitH = fitW / imgRatio;
+      
+      // Se troppo alta, limita
+      if(fitH > cH) {
+        fitH = cH;
+        fitW = fitH * imgRatio;
+      }
+      
+      // Nuova pagina se non c'e' spazio
+      if(curY + fitH > ph - mB) {
+        doc.addPage();
+        pageNum++;
+        drawHeader();
+        curY = mT;
+      }
+      
+      // Centra orizzontalmente
+      var xPos = mL + (cW - fitW) / 2;
+      
+      doc.addImage(imgData, 'PNG', xPos, curY, fitW, fitH);
+      curY += fitH + 6;
+    });
+    
+    // Footer su tutte le pagine
+    var totalPg = pageNum;
+    for(var p = 1; p <= totalPg; p++) {
+      doc.setPage(p);
+      drawFooter(p, totalPg);
+    }
+    
+    // Scarica
+    doc.save('Report_Tesseramento_CNA_' + new Date().toISOString().slice(0,10) + '.pdf');
+    document.body.removeChild(overlay);
+    
+  }).catch(function(err){
+    console.error('Errore PDF:', err);
+    document.body.removeChild(overlay);
+    alert('Errore generazione PDF: ' + err.message);
   });
 }
