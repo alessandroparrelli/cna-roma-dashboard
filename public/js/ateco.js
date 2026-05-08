@@ -1,3 +1,5 @@
+console.log('✅ ateco.js CARICATO');
+
 // Variabili globali ATECO
 var atecoLoaded = false, atecoLoading = false, atecoAllData = [], atecoFiltered = [], atecoCharts = {};
 
