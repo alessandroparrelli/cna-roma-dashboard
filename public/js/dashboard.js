@@ -870,3 +870,167 @@ function rReport(id, data, key, colors) {
   rTable('table-' + id, a, false);
 }
 
+
+// ========== GENERA REPORT PDF TAB ANALISI ==========
+function generaReportPDF() {
+  // Usa jsPDF per creare PDF multi-pagina professionale
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({
+    orientation: 'portrait',
+    unit: 'mm',
+    format: 'a4'
+  });
+  
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const logoUrl = 'https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png';
+  
+  let currentY = 20;
+  let pageNum = 1;
+  
+  // Funzione per aggiungere header con logo su ogni pagina
+  function addHeader() {
+    doc.addImage(logoUrl, 'PNG', 10, 5, 30, 15);
+    doc.setFontSize(10);
+    doc.setTextColor(33, 33, 33);
+    doc.text('REPORT ANALISI TESSERAMENTO', 50, 12);
+    doc.setFontSize(8);
+    doc.text('CNA ROMA - Dashboard Analisi', 50, 18);
+    doc.setDrawColor(139, 92, 246);
+    doc.setLineWidth(0.5);
+    doc.line(10, 22, pageWidth - 10, 22);
+    currentY = 28;
+  }
+  
+  // Funzione per aggiungere footer
+  function addFooter() {
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(`Pagina ${pageNum}`, pageWidth / 2, pageHeight - 8, { align: 'center' });
+    const now = new Date();
+    const dateStr = now.toLocaleDateString('it-IT');
+    doc.text(dateStr, 10, pageHeight - 8);
+  }
+  
+  // Funzione per controllare se è necessaria una nuova pagina
+  function checkNewPage(heightNeeded) {
+    if (currentY + heightNeeded > pageHeight - 15) {
+      addFooter();
+      doc.addPage();
+      pageNum++;
+      addHeader();
+      return true;
+    }
+    return false;
+  }
+  
+  // Inizio documento
+  addHeader();
+  
+  // SEZIONE 1: Trend Numerico per Anno
+  doc.setFontSize(12);
+  doc.setTextColor(139, 92, 246);
+  doc.text('📈 Trend Numerico per Anno', 15, currentY);
+  currentY += 8;
+  
+  // Creazione mini-tabella trend
+  doc.setFontSize(9);
+  doc.setTextColor(60, 60, 60);
+  let trendData = [];
+  anni.forEach(function(a) {
+    let count = promotori.reduce(function(s, p) { return s + (matrix[p][a] ? matrix[p][a].count : 0); }, 0);
+    trendData.push([a, count]);
+  });
+  
+  doc.autoTable({
+    startY: currentY,
+    head: [['Anno', 'Numero Contratti']],
+    body: trendData,
+    margin: { left: 15, right: 15 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [139, 92, 246], textColor: [255, 255, 255], fontStyle: 'bold' },
+    bodyStyles: { textColor: [60, 60, 60] },
+    alternateRowStyles: { fillColor: [245, 240, 255] }
+  });
+  
+  currentY = doc.lastAutoTable.finalY + 10;
+  
+  // SEZIONE 2: Dettaglio per Promotore
+  checkNewPage(80);
+  
+  doc.setFontSize(12);
+  doc.setTextColor(220, 38, 38);
+  doc.text('👥 Dettaglio per Promotore — Confronto Anni', 15, currentY);
+  currentY += 8;
+  
+  // Tabella promotori
+  let promoTableData = [];
+  promotori.forEach(function(p) {
+    let row = [p];
+    anni.forEach(function(a) {
+      let cnt = matrix[p][a] ? matrix[p][a].count : 0;
+      row.push(cnt.toString());
+    });
+    let total = anni.reduce(function(s, a) { return s + (matrix[p][a] ? matrix[p][a].count : 0); }, 0);
+    row.push(total.toString());
+    promoTableData.push(row);
+  });
+  
+  let promoColumns = ['Promotore'];
+  anni.forEach(function(a) { promoColumns.push(a + ' (Nr.)'); });
+  promoColumns.push('TOTALE');
+  
+  doc.autoTable({
+    startY: currentY,
+    head: [promoColumns],
+    body: promoTableData,
+    margin: { left: 15, right: 15 },
+    styles: { fontSize: 7, cellPadding: 2 },
+    headStyles: { fillColor: [220, 38, 38], textColor: [255, 255, 255], fontStyle: 'bold' },
+    bodyStyles: { textColor: [60, 60, 60] },
+    alternateRowStyles: { fillColor: [254, 242, 242] }
+  });
+  
+  currentY = doc.lastAutoTable.finalY + 10;
+  
+  // SEZIONE 3: Schede Promotori
+  checkNewPage(100);
+  
+  doc.setFontSize(12);
+  doc.setTextColor(16, 185, 129);
+  doc.text('💰 Schede Individuali Promotori', 15, currentY);
+  currentY += 8;
+  
+  // Una riga per promotore con dati sintetici
+  let schedeData = [];
+  promotori.forEach(function(p) {
+    let totContratti = anni.reduce(function(s, a) { return s + (matrix[p][a] ? matrix[p][a].count : 0); }, 0);
+    let totImporto = anni.reduce(function(s, a) { return s + (matrix[p][a] ? matrix[p][a].total : 0); }, 0);
+    let media = totContratti > 0 ? Math.round(totImporto / totContratti) : 0;
+    let anniAttivi = anni.filter(function(a) { return matrix[p][a] && matrix[p][a].total > 0; }).length;
+    
+    schedeData.push([
+      p,
+      totContratti,
+      '€ ' + fmt(media, 0),
+      anniAttivi
+    ]);
+  });
+  
+  doc.autoTable({
+    startY: currentY,
+    head: [['Promotore', 'Contratti', 'Media €', 'Anni Attivi']],
+    body: schedeData,
+    margin: { left: 15, right: 15 },
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [16, 185, 129], textColor: [255, 255, 255], fontStyle: 'bold' },
+    bodyStyles: { textColor: [60, 60, 60] },
+    alternateRowStyles: { fillColor: [240, 253, 250] }
+  });
+  
+  // Aggiungi footer all'ultima pagina
+  addFooter();
+  
+  // Download PDF
+  doc.save('Report_CNA_Analisi_' + new Date().toISOString().slice(0, 10) + '.pdf');
+}
