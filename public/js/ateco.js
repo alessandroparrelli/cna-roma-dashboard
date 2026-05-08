@@ -15,15 +15,15 @@ async function atecoLoad(force){
 
   try{
     G('ateco-msg').textContent='Caricamento tesseramento_records…';
-    var tess=await sbGetAll('tesseramento_records');
+    var tess=await anaFetchAll('tesseramento_records');
     console.log('tess:', tess.length);
 
     G('ateco-msg').textContent='Caricamento Anagrafiche…';
-    var ana=await sbGetAll('Anagrafiche');
+    var ana=await anaFetchAll('Anagrafiche');
     console.log('ana:', ana.length);
 
     G('ateco-msg').textContent='Caricamento codiciateco…';
-    var cod=await sbGetAll('codiciateco');
+    var cod=await anaFetchAll('codiciateco');
     console.log('cod:', cod.length);
 
     G('ateco-msg').textContent='Elaborazione dati…';
