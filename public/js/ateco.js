@@ -12,7 +12,7 @@ var atecoTab = {
     var tab = G('tab-ateco');
     if (!tab) return;
     
-    tab.innerHTML = '<div style="padding:40px;text-align:center"><div style="font-size:20px;margin-bottom:10px">📊 Caricamento dati...</div><div style="color:var(--text-secondary)">Elaborazione tesseramento_records, anagrafiche e codiciateco...</div></div>';
+    tab.innerHTML = '<div style="padding:40px;text-align:center"><div style="font-size:20px;margin-bottom:10px">📊 Caricamento dati...</div></div>';
     
     this.load();
   },
@@ -27,6 +27,10 @@ var atecoTab = {
       fetch(SB + '/rest/v1/codiciateco?select=*&limit=10000', {headers: headers}).then(r => r.json())
     ])
     .then(function(res) {
+      console.log('Dati ricevuti:', {t: typeof res[0], a: typeof res[1], c: typeof res[2]});
+      console.log('Tesseramento:', res[0]);
+      console.log('Anagrafiche:', res[1]);
+      console.log('Codiciateco:', res[2]);
       self.processDati(res[0], res[1], res[2]);
     })
     .catch(function(err) {
@@ -37,32 +41,45 @@ var atecoTab = {
   },
   
   processDati: function(tesseramento, anagrafiche, ateco) {
+    // Assicurati che siano array
+    if (!Array.isArray(tesseramento)) tesseramento = tesseramento ? [tesseramento] : [];
+    if (!Array.isArray(anagrafiche)) anagrafiche = anagrafiche ? [anagrafiche] : [];
+    if (!Array.isArray(ateco)) ateco = ateco ? [ateco] : [];
+    
+    console.log('Dopo conversione:', {t: tesseramento.length, a: anagrafiche.length, c: ateco.length});
+    
     var anaMap = {}, atecoMap = {};
     
     // Costruisci mappa anagrafiche
     anagrafiche.forEach(function(a) {
-      var piva = a.partita_iva || a.Partita_IVA || '';
+      if (!a) return;
+      var piva = a.partita_iva || a.Partita_IVA || a.PARTITA_IVA || '';
       if (piva) anaMap[piva] = a;
     });
     
     // Costruisci mappa ATECO
     ateco.forEach(function(a) {
-      var code = a.codiceateco || a.Codiceateco || '';
+      if (!a) return;
+      var code = a.codiceateco || a.Codiceateco || a.CODICEATECO || '';
       if (code) atecoMap[code] = a;
     });
+    
+    console.log('Mappe create:', {ana: Object.keys(anaMap).length, ateco: Object.keys(atecoMap).length});
     
     // Elabora tesseramento_records
     this.allRecords = [];
     
     tesseramento.forEach(function(t) {
-      var piva = t.partita_iva || t.Partita_IVA || '';
+      if (!t) return;
+      
+      var piva = t.partita_iva || t.Partita_IVA || t.PARTITA_IVA || '';
       if (!piva) return;
       
       var ana = anaMap[piva];
       if (!ana) return;
       
       // Estrai sesso da CF
-      var cf = ana.codice_fiscale_titolare || ana.CF || '';
+      var cf = ana.codice_fiscale_titolare || ana.CF || ana.Codice_Fiscale || '';
       var sesso = null;
       if (cf && cf.length >= 10) {
         var gg = parseInt(cf.substr(9, 2), 10);
@@ -76,17 +93,17 @@ var atecoTab = {
       }
       
       // Estrai anno e mese
-      var data = t.data_associazione || t.Data_Associazione || '';
+      var data = t.data_associazione || t.Data_Associazione || t.DATA_ASSOCIAZIONE || '';
       var parts = data.split('-');
       var anno = parts[0] || '';
       var mese = parts[1] || '';
       
       // Estrai unione e mestiere da ATECO
-      var atecoCode = ana.codiceateco || ana.Codiceateco || '';
+      var atecoCode = ana.codiceateco || ana.Codiceateco || ana.CODICEATECO || '';
       var atecoData = atecoMap[atecoCode] || {};
       
-      var unione = atecoData.unione || atecoData.Unione || 'N/D';
-      var mestiere = atecoData.mestiere_denom || atecoData.Mestiere_Denom || atecoData.mestiere || 'N/D';
+      var unione = atecoData.unione || atecoData.Unione || atecoData.UNIONE || 'N/D';
+      var mestiere = atecoData.mestiere_denom || atecoData.Mestiere_Denom || atecoData.MESTIERE_DENOM || atecoData.mestiere || atecoData.Mestiere || 'N/D';
       
       this.allRecords.push({
         piva: piva,
@@ -98,6 +115,8 @@ var atecoTab = {
         mese: mese
       });
     }.bind(this));
+    
+    console.log('Record elaborati:', this.allRecords.length);
     
     this.filtered = this.allRecords.slice();
     this.renderUI();
