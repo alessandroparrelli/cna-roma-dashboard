@@ -12,12 +12,12 @@ async function populateAtecoData(){
     var tesseramento=await sbGetAll('tesseramento_records');
     console.log('📊 Tesseramento records:',tesseramento.length);
     
-    // 2. Carica Anagrafiche
-    var anagrafiche=await sbGetAll('Anagrafiche');
+    // 2. Carica Anagrafiche con anaFetchAll (non sbGetAll!)
+    var anagrafiche=await anaFetchAll('Anagrafiche');
     console.log('📋 Anagrafiche:',anagrafiche.length);
     
-    // 3. Carica codiciateco
-    var codiciateco=await sbGetAll('codiciateco');
+    // 3. Carica codiciateco con anaFetchAll
+    var codiciateco=await anaFetchAll('codiciateco');
     console.log('🏢 Codiciateco:',codiciateco.length);
     
     // Crea map per lookup veloce
@@ -111,8 +111,6 @@ async function populateAtecoData(){
 
 function calcSessoFromCF(cf){
   if(!cf||cf.length<10) return null;
-  // Codice fiscale: carattere 10-11 è il giorno di nascita
-  // Se >40 = femmina, altrimenti maschio
   var giornoStr=cf.substring(9,11);
   var giorno=parseInt(giornoStr);
   if(isNaN(giorno)) return null;
@@ -122,8 +120,6 @@ function calcSessoFromCF(cf){
 
 function calcNazionalitaFromCF(cf){
   if(!cf||cf.length<6) return 'Italiano';
-  // Se il CF è italiano, ha pattern: AAA BBB DD M ZZ XXX Y
-  // dove i primi 6 caratteri sono lettere (cognome+nome)
   var pattern=/^[A-Z]{3}[A-Z]{3}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/;
   if(pattern.test(cf)){
     return 'Italiano';
@@ -142,13 +138,8 @@ async function atecoLoad(force){
   tab.innerHTML='<div style="padding:40px;text-align:center"><div style="font-size:18px;margin-bottom:10px">📊 Caricamento dati…</div><div id="ateco-msg" style="color:var(--text-secondary)">Connessione…</div></div>';
 
   try{
-    // Prima popola le colonne ATECO se non sono state populate
-    G('ateco-msg').textContent='Controllo dati ATECO…';
-    var check=await sbGet('tesseramento_records?limit=1&select=ateco');
-    if(check.length>0 && check[0].ateco===null){
-      G('ateco-msg').textContent='Popolo dati ATECO…';
-      await populateAtecoData();
-    }
+    G('ateco-msg').textContent='Popolo dati ATECO…';
+    await populateAtecoData();
     
     G('ateco-msg').textContent='Caricamento Anagrafiche…';
     var ana=await anaFetchAll('Anagrafiche');
@@ -164,25 +155,20 @@ async function atecoLoad(force){
 
     G('ateco-msg').textContent='Elaborazione…';
 
-    // Mappa codiciateco
     var codMap=new Map();
     cod.forEach(function(c){
       var k=String(c.codiceateco||'').trim();
       if(k) codMap.set(k,c);
     });
 
-    // Mappa anagrafiche per codiceanagrafica
     var anaMap=new Map();
     ana.forEach(function(a){
       anaMap.set(a.codiceanagrafica, a);
     });
 
-    // Filtra diretti: solo TESSERAMENTO (servizio contiene "Iscritto" o "TESSERAMENTO")
     var joined=[];
     dir.forEach(function(d){
       if(!d.codiceanagrafica) return;
-      var svc=String(d.servizio||'').trim().toUpperCase();
-      // Prendi tutti i contratti con datastipula (= associazioni)
       if(!d.datastipula) return;
 
       var a=anaMap.get(d.codiceanagrafica);
@@ -191,7 +177,6 @@ async function atecoLoad(force){
       var atecoCode=String(a.codiceateco||'').trim();
       var c=codMap.get(atecoCode)||{};
 
-      // Sesso: dalla tabella anagrafiche (campo sesso) o dal CF
       var sesso=a.sesso||null;
       if(!sesso){
         var cf=a.codicefiscale||'';
@@ -201,11 +186,9 @@ async function atecoLoad(force){
         }
       }
 
-      // Nazionalità: 12° char del CF = Z → straniero
       var cf2=a.codicefiscale||'';
       var naz=(cf2&&cf2.length>=12&&cf2.charAt(11)==='Z')?'ST':'IT';
 
-      // Data contratto
       var ds=d.datastipula||'';
       var anno=null, mese=null;
       if(ds){
@@ -232,7 +215,6 @@ async function atecoLoad(force){
 
     console.log('✅ joined:', joined.length);
     atecoData=joined;
-    atecoAllData=joined;
     atecoFiltered=joined.slice();
     atecoLoaded=true;
 
@@ -249,25 +231,19 @@ async function atecoLoad(force){
   }
 }
 
-/* ══════════════ UI ══════════════ */
-
 function atecoBuildUI(){
   var tab=G('tab-ateco');
   if(!tab) return;
   var h='<div style="padding:20px">';
 
-  // FILTRI
   h+='<div style="background:var(--surface);padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #A855F7">';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">ANNO</label><select id="at-anno" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option></select></div>';
-  h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">MESE DA</label><select id="at-mda" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option></select></div>';
-  h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">MESE A</label><select id="at-ma" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option></select></div>';
-  h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">SESSO</label><select id="at-sex" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option><option value="M">Maschio</option><option value="F">Femmina</option></select></div>';
-  h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">NAZIONALITÀ</label><select id="at-naz" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option><option value="IT">Italiano</option><option value="ST">Straniero</option></select></div>';
+  h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">SESSO</label><select id="at-sex" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option><option value="Maschio">Maschio</option><option value="Femmina">Femmina</option></select></div>';
+  h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">NAZIONALITÀ</label><select id="at-naz" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option><option value="Italiano">Italiano</option><option value="Straniero">Straniero</option></select></div>';
   h+='<div style="display:flex;align-items:flex-end"><button id="at-reset" style="width:100%;padding:10px;background:linear-gradient(135deg,#A855F7,#7E22CE);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600">Reset</button></div>';
   h+='</div></div>';
 
-  // KPI
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">';
   h+='<div style="background:linear-gradient(135deg,#A855F7,#7E22CE);color:white;padding:18px;border-radius:8px;text-align:center"><div style="font-size:11px;opacity:0.9">CONTRATTI</div><div style="font-size:32px;font-weight:700" id="at-k1">0</div></div>';
   h+='<div style="background:linear-gradient(135deg,#F97316,#EA580C);color:white;padding:18px;border-radius:8px;text-align:center"><div style="font-size:11px;opacity:0.9">UNIONI</div><div style="font-size:32px;font-weight:700" id="at-k2">0</div></div>';
@@ -275,59 +251,46 @@ function atecoBuildUI(){
   h+='<div style="background:linear-gradient(135deg,#EC4899,#BE185D);color:white;padding:18px;border-radius:8px;text-align:center"><div style="font-size:11px;opacity:0.9">% DONNE</div><div style="font-size:32px;font-weight:700" id="at-k4">0</div></div>';
   h+='</div>';
 
-  // CARD SESSO
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:20px">';
   h+='<div style="background:var(--surface);padding:20px;border-radius:8px;border-left:4px solid #EC4899"><h3 style="margin:0 0 15px 0;font-size:14px;font-weight:700">Sesso Titolare</h3><canvas id="at-ch-sex" style="height:280px"></canvas></div>';
   h+='<div style="background:var(--surface);padding:20px;border-radius:8px;border-left:4px solid #10B981"><h3 style="margin:0 0 15px 0;font-size:14px;font-weight:700">Nazionalità</h3><canvas id="at-ch-naz" style="height:280px"></canvas></div>';
   h+='</div>';
 
-  // TABELLA UNIONI
   h+='<div style="background:var(--surface);padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #A855F7">';
   h+='<h3 style="margin:0 0 15px 0;font-size:14px;font-weight:700">Unioni</h3>';
   h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:rgba(168,85,247,0.1);border-bottom:2px solid var(--border)"><th style="text-align:left;padding:12px">Unione</th><th style="text-align:center;padding:12px">Tot</th><th style="text-align:center;padding:12px">%</th><th style="text-align:center;padding:12px">Donne %</th><th style="text-align:center;padding:12px">Stranieri %</th></tr></thead><tbody id="at-tb-u"></tbody></table></div>';
   h+='</div>';
 
-  // TABELLA TOP 25 MESTIERI
   h+='<div style="background:var(--surface);padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #F97316">';
   h+='<h3 style="margin:0 0 15px 0;font-size:14px;font-weight:700">Top 25 Mestieri</h3>';
   h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:rgba(249,115,22,0.1);border-bottom:2px solid var(--border)"><th style="text-align:left;padding:12px">Mestiere</th><th style="text-align:center;padding:12px">Tot</th><th style="text-align:center;padding:12px">%</th><th style="text-align:center;padding:12px">Donne %</th><th style="text-align:center;padding:12px">Stranieri %</th></tr></thead><tbody id="at-tb-m"></tbody></table></div>';
   h+='</div>';
 
-  // CARD PER OGNI UNIONE (con sottomestieri)
   h+='<div id="at-unioni-cards"></div>';
 
   h+='</div>';
   tab.innerHTML=h;
 }
 
-/* ══════════════ FILTERS ══════════════ */
-
 function atecoPopulateFilters(){
   var anni=new Set();
-  atecoAllData.forEach(function(r){if(r.anno) anni.add(r.anno);});
+  atecoFiltered.forEach(function(r){if(r.anno) anni.add(r.anno);});
   var sel=G('at-anno');
   Array.from(anni).sort().forEach(function(a){
     var o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o);
   });
-  for(var m=1;m<=12;m++){
-    var ms=String(m).padStart(2,'0');
-    ['at-mda','at-ma'].forEach(function(id){
-      var o=document.createElement('option'); o.value=m; o.textContent=MESI[m]||ms; G(id).appendChild(o);
-    });
-  }
-  ['at-anno','at-mda','at-ma','at-sex','at-naz'].forEach(function(id){
+  ['at-anno','at-sex','at-naz'].forEach(function(id){
     G(id).addEventListener('change',atecoApply);
   });
   G('at-reset').addEventListener('click',atecoReset);
 }
 
 function atecoApply(){
-  var anno=G('at-anno').value, mda=parseInt(G('at-mda').value)||0, ma=parseInt(G('at-ma').value)||0;
-  var sex=G('at-sex').value, naz=G('at-naz').value;
-  atecoFiltered=atecoAllData.filter(function(r){
+  var anno=G('at-anno').value;
+  var sex=G('at-sex').value;
+  var naz=G('at-naz').value;
+  atecoFiltered=atecoData.filter(function(r){
     if(anno && String(r.anno)!==anno) return false;
-    if(mda>0 && (r.mese===null||r.mese<mda)) return false;
-    if(ma>0 && (r.mese===null||r.mese>ma)) return false;
     if(sex && r.sesso!==sex) return false;
     if(naz && r.nazionalita!==naz) return false;
     return true;
@@ -336,62 +299,55 @@ function atecoApply(){
 }
 
 function atecoReset(){
-  ['at-anno','at-mda','at-ma','at-sex','at-naz'].forEach(function(id){G(id).value='';});
-  atecoFiltered=atecoAllData.slice();
+  ['at-anno','at-sex','at-naz'].forEach(function(id){G(id).value='';});
+  atecoFiltered=atecoData.slice();
   atecoRender();
 }
-
-/* ══════════════ RENDER ══════════════ */
 
 function atecoRender(){
   var tot=atecoFiltered.length;
   var uSet=new Set(), mSet=new Set();
-  var unioni={}, mestieri={}, sesso={M:0,F:0}, naz={IT:0,ST:0}, donne=0;
+  var unioni={}, mestieri={}, sesso={}, naz={}, donne=0;
 
   atecoFiltered.forEach(function(r){
-    if(r.sesso==='M') sesso.M++;
-    if(r.sesso==='F'){sesso.F++; donne++;}
+    if(r.sesso==='Maschio') sesso.Maschio=(sesso.Maschio||0)+1;
+    if(r.sesso==='Femmina'){sesso.Femmina=(sesso.Femmina||0)+1; donne++;}
     naz[r.nazionalita]=(naz[r.nazionalita]||0)+1;
 
     var u=r.unione||'N/D';
     uSet.add(u);
     if(!unioni[u]) unioni[u]={n:0,d:0,s:0,mestieri:{}};
     unioni[u].n++;
-    if(r.sesso==='F') unioni[u].d++;
-    if(r.nazionalita==='ST') unioni[u].s++;
-    // Sottomestiere per unione
+    if(r.sesso==='Femmina') unioni[u].d++;
+    if(r.nazionalita==='Straniero') unioni[u].s++;
     var m=r.mestiere||'N/D';
     if(!unioni[u].mestieri[m]) unioni[u].mestieri[m]={n:0,d:0,s:0};
     unioni[u].mestieri[m].n++;
-    if(r.sesso==='F') unioni[u].mestieri[m].d++;
-    if(r.nazionalita==='ST') unioni[u].mestieri[m].s++;
+    if(r.sesso==='Femmina') unioni[u].mestieri[m].d++;
+    if(r.nazionalita==='Straniero') unioni[u].mestieri[m].s++;
 
     mSet.add(m);
     if(!mestieri[m]) mestieri[m]={n:0,d:0,s:0};
     mestieri[m].n++;
-    if(r.sesso==='F') mestieri[m].d++;
-    if(r.nazionalita==='ST') mestieri[m].s++;
+    if(r.sesso==='Femmina') mestieri[m].d++;
+    if(r.nazionalita==='Straniero') mestieri[m].s++;
   });
 
-  // KPI
   G('at-k1').textContent=tot.toLocaleString('it-IT');
   G('at-k2').textContent=uSet.size;
   G('at-k3').textContent=mSet.size;
   G('at-k4').textContent=tot>0?(donne/tot*100).toFixed(1)+'%':'0%';
 
-  // CHART SESSO
   if(G('at-ch-sex')){
     if(atecoCharts.s) atecoCharts.s.destroy();
-    atecoCharts.s=new Chart(G('at-ch-sex'),{type:'pie',data:{labels:['Maschi ('+sesso.M+')','Femmine ('+sesso.F+')'],datasets:[{data:[sesso.M,sesso.F],backgroundColor:['#06B6D4','#EC4899']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+    atecoCharts.s=new Chart(G('at-ch-sex'),{type:'pie',data:{labels:['Maschi ('+(sesso.Maschio||0)+')','Femmine ('+(sesso.Femmina||0)+')'],datasets:[{data:[sesso.Maschio||0,sesso.Femmina||0],backgroundColor:['#06B6D4','#EC4899']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
   }
 
-  // CHART NAZIONALITÀ
   if(G('at-ch-naz')){
     if(atecoCharts.n) atecoCharts.n.destroy();
-    atecoCharts.n=new Chart(G('at-ch-naz'),{type:'doughnut',data:{labels:['Italiani ('+naz.IT+')','Stranieri ('+(naz.ST||0)+')'],datasets:[{data:[naz.IT||0,naz.ST||0],backgroundColor:['#10B981','#F59E0B']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
+    atecoCharts.n=new Chart(G('at-ch-naz'),{type:'doughnut',data:{labels:['Italiani ('+(naz.Italiano||0)+')','Stranieri ('+(naz.Straniero||0)+')'],datasets:[{data:[naz.Italiano||0,naz.Straniero||0],backgroundColor:['#10B981','#F59E0B']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
   }
 
-  // TABELLA UNIONI
   var tbU=G('at-tb-u');
   tbU.innerHTML='';
   Object.keys(unioni).sort(function(a,b){return unioni[b].n-unioni[a].n;}).forEach(function(u){
@@ -405,7 +361,6 @@ function atecoRender(){
     tbU.appendChild(tr);
   });
 
-  // TABELLA TOP 25 MESTIERI
   var tbM=G('at-tb-m');
   tbM.innerHTML='';
   Object.keys(mestieri).sort(function(a,b){return mestieri[b].n-mestieri[a].n;}).slice(0,25).forEach(function(m){
@@ -419,7 +374,6 @@ function atecoRender(){
     tbM.appendChild(tr);
   });
 
-  // CARD PER OGNI UNIONE con sottomestieri
   var cardsDiv=G('at-unioni-cards');
   cardsDiv.innerHTML='';
   var colors=['#A855F7','#F97316','#10B981','#EC4899','#06B6D4','#EAB308','#DC2626','#6366F1','#14B8A6','#F43F5E'];
