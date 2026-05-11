@@ -1,7 +1,135 @@
 console.log('✅ ateco.js CARICATO');
 
-var atecoLoaded=false, atecoLoading=false, atecoAllData=[], atecoFiltered=[];
+var atecoLoaded=false, atecoLoading=false, atecoData=[], atecoFiltered=[];
 var atecoCharts={};
+
+async function populateAtecoData(){
+  console.log('🔄 Inizio popolamento ATECO...');
+  showLoad('Popolamento dati ATECO. Questo potrebbe richiedere alcuni minuti...');
+  
+  try{
+    // 1. Carica tesseramento_records
+    var tesseramento=await sbGetAll('tesseramento_records');
+    console.log('📊 Tesseramento records:',tesseramento.length);
+    
+    // 2. Carica Anagrafiche
+    var anagrafiche=await sbGetAll('Anagrafiche');
+    console.log('📋 Anagrafiche:',anagrafiche.length);
+    
+    // 3. Carica codiciateco
+    var codiciateco=await sbGetAll('codiciateco');
+    console.log('🏢 Codiciateco:',codiciateco.length);
+    
+    // Crea map per lookup veloce
+    var anaMap={};
+    anagrafiche.forEach(function(a){
+      if(a.partitaiva) anaMap[a.partitaiva]=a;
+    });
+    
+    var codMap={};
+    codiciateco.forEach(function(c){
+      if(c.codiceateco) codMap[c.codiceateco]=c;
+    });
+    
+    // 4. Per ogni record tesseramento, fai join e calcola i dati
+    var updates=[];
+    var processed=0;
+    
+    for(var i=0;i<tesseramento.length;i++){
+      var tr=tesseramento[i];
+      var piva=tr.partitaiva;
+      
+      if(!piva){
+        processed++;
+        continue;
+      }
+      
+      var ana=anaMap[piva];
+      if(!ana){
+        processed++;
+        continue;
+      }
+      
+      // Join con codiciateco
+      var codiceateco=ana.codiceateco;
+      var cod=codMap[codiceateco];
+      
+      // Calcola sesso dal codice fiscale o dalla tabella
+      var sesso=ana.sesso || calcSessoFromCF(ana.cftitolare) || null;
+      
+      // Calcola nazionalità dal codice fiscale
+      var nazionalita=calcNazionalitaFromCF(ana.cftitolare) || 'Italiano';
+      
+      // Prepara update
+      updates.push({
+        id:tr.id,
+        ateco:codiceateco||null,
+        unione:cod?.unione||null,
+        mestiere:cod?.mestiere||null,
+        settore:cod?.settore||null,
+        sesso:sesso||null,
+        nazionalita:nazionalita||null
+      });
+      
+      processed++;
+      if(processed%500===0){
+        showLoad('Elaborazione: '+processed+'/'+tesseramento.length);
+      }
+    }
+    
+    console.log('✏️ Record da aggiornare:',updates.length);
+    
+    // 5. Salva gli aggiornamenti su Supabase
+    showLoad('Salvataggio '+updates.length+' record su Supabase...');
+    for(var i=0;i<updates.length;i+=100){
+      var batch=updates.slice(i,i+100);
+      for(var j=0;j<batch.length;j++){
+        var upd=batch[j];
+        await sbPatch('tesseramento_records?id=eq.'+upd.id,{
+          ateco:upd.ateco,
+          unione:upd.unione,
+          mestiere:upd.mestiere,
+          settore:upd.settore,
+          sesso:upd.sesso,
+          nazionalita:upd.nazionalita
+        });
+      }
+      if((i+100)<updates.length){
+        showLoad('Salvataggio: '+(i+100)+'/'+updates.length);
+      }
+    }
+    
+    console.log('✅ Popolamento ATECO completato!');
+    toast('✅ '+updates.length+' record ATECO aggiornati','success');
+    
+  }catch(e){
+    console.error('❌ Errore nel popolamento ATECO:',e);
+    toast('Errore: '+e.message,'error');
+    throw e;
+  }
+}
+
+function calcSessoFromCF(cf){
+  if(!cf||cf.length<10) return null;
+  // Codice fiscale: carattere 10-11 è il giorno di nascita
+  // Se >40 = femmina, altrimenti maschio
+  var giornoStr=cf.substring(9,11);
+  var giorno=parseInt(giornoStr);
+  if(isNaN(giorno)) return null;
+  if(giorno>40) return 'Femmina';
+  return 'Maschio';
+}
+
+function calcNazionalitaFromCF(cf){
+  if(!cf||cf.length<6) return 'Italiano';
+  // Se il CF è italiano, ha pattern: AAA BBB DD M ZZ XXX Y
+  // dove i primi 6 caratteri sono lettere (cognome+nome)
+  var pattern=/^[A-Z]{3}[A-Z]{3}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/;
+  if(pattern.test(cf)){
+    return 'Italiano';
+  }
+  return 'Straniero';
+}
 
 async function atecoLoad(force){
   console.log('🔄 atecoLoad()');
@@ -14,6 +142,14 @@ async function atecoLoad(force){
   tab.innerHTML='<div style="padding:40px;text-align:center"><div style="font-size:18px;margin-bottom:10px">📊 Caricamento dati…</div><div id="ateco-msg" style="color:var(--text-secondary)">Connessione…</div></div>';
 
   try{
+    // Prima popola le colonne ATECO se non sono state populate
+    G('ateco-msg').textContent='Controllo dati ATECO…';
+    var check=await sbGet('tesseramento_records?limit=1&select=ateco');
+    if(check.length>0 && check[0].ateco===null){
+      G('ateco-msg').textContent='Popolo dati ATECO…';
+      await populateAtecoData();
+    }
+    
     G('ateco-msg').textContent='Caricamento Anagrafiche…';
     var ana=await anaFetchAll('Anagrafiche');
     console.log('ana:', ana.length);
@@ -95,6 +231,7 @@ async function atecoLoad(force){
     });
 
     console.log('✅ joined:', joined.length);
+    atecoData=joined;
     atecoAllData=joined;
     atecoFiltered=joined.slice();
     atecoLoaded=true;
@@ -108,6 +245,7 @@ async function atecoLoad(force){
     tab.innerHTML='<div style="padding:40px;color:red"><h2>Errore</h2><p>'+e.message+'</p></div>';
   }finally{
     atecoLoading=false;
+    hideLoad();
   }
 }
 
