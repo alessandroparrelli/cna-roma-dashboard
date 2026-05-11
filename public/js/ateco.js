@@ -19,26 +19,36 @@ async function populateAtecoColumns(){
     
     var anaMap={};
     anagrafiche.forEach(function(a){if(a.partitaiva) anaMap[a.partitaiva]=a;});
+    console.log('📍 Anagrafiche mappate per partitaiva:',Object.keys(anaMap).length);
     
     var codMap={};
     codiciateco.forEach(function(c){if(c.codiceateco) codMap[c.codiceateco]=c;});
+    console.log('📍 Codiciateco mappati:',Object.keys(codMap).length);
     
+    var matched=0, unmatched=0;
     for(var i=0;i<tesseramento.length;i++){
       var tr=tesseramento[i];
       var piva=tr.partitaiva;
       if(!piva) continue;
       
       var ana=anaMap[piva];
-      if(!ana) continue;
+      if(!ana){unmatched++; continue;}
+      matched++;
       
       var atecoCode=ana.codiceateco;
       var cod=codMap[atecoCode];
       
-      // Sesso: default Maschio se non trovato
-      var sesso=ana.sesso || calcSessoFromCF(ana.cftitolare) || 'Maschio';
+      // Sesso: se c'è 'M' o 'F' in ana.sesso, usa quello, altrimenti Maschio
+      var sesso='Maschio';
+      if(ana.sesso==='F' || ana.sesso==='f') sesso='Femmina';
+      else if(ana.sesso==='M' || ana.sesso==='m') sesso='Maschio';
       
-      // Nazionalità: default Italiano se non trovato
-      var nazionalita=calcNazionalitaFromCF(ana.cftitolare) || 'Italiano';
+      // Nazionalità: se 12° carattere di cftitolare è 'Z', è Straniero
+      var nazionalita='Italiano';
+      var cf=ana.cftitolare||'';
+      if(cf.length>=12 && (cf.charAt(11)==='Z' || cf.charAt(11)==='z')){
+        nazionalita='Straniero';
+      }
       
       await sbPatch('tesseramento_records?id=eq.'+tr.id, {
         ateco:atecoCode||null,
@@ -52,8 +62,9 @@ async function populateAtecoColumns(){
       if((i+1)%500===0) showLoad('Elaborazione: '+(i+1)+'/'+tesseramento.length);
     }
     
+    console.log('✅ Matched:',matched,'Unmatched:',unmatched);
     console.log('✅ Popolamento completato!');
-    toast('✅ Colonne ATECO populate','success');
+    toast('✅ '+matched+' record ATECO aggiornati','success');
     
   }catch(e){
     console.error('❌',e);
@@ -61,19 +72,6 @@ async function populateAtecoColumns(){
   }finally{
     hideLoad();
   }
-}
-
-function calcSessoFromCF(cf){
-  if(!cf||cf.length<10) return null;
-  var giorno=parseInt(cf.substring(9,11));
-  if(isNaN(giorno)) return null;
-  return giorno>40?'Femmina':'Maschio';
-}
-
-function calcNazionalitaFromCF(cf){
-  if(!cf||cf.length<6) return null;
-  var pattern=/^[A-Z]{3}[A-Z]{3}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/;
-  return pattern.test(cf)?'Italiano':'Straniero';
 }
 
 async function atecoLoad(force){
@@ -93,6 +91,15 @@ async function atecoLoad(force){
     G('ateco-msg').textContent='Caricamento dati…';
     var data=await sbGetAll('tesseramento_records');
     console.log('✅ Dati caricati:',data.length);
+    
+    // Conta i dati validi
+    var validUnione=0, validMestiere=0, validSettore=0;
+    data.forEach(function(r){
+      if(r.unione && r.unione!=='N/D') validUnione++;
+      if(r.mestiere && r.mestiere!=='N/D') validMestiere++;
+      if(r.settore && r.settore!=='N/D') validSettore++;
+    });
+    console.log('📊 Unione validi:',validUnione,'Mestiere validi:',validMestiere,'Settore validi:',validSettore);
     
     atecoData=data;
     atecoFiltered=data.slice();
@@ -116,7 +123,6 @@ function atecoBuildUI(){
   if(!tab) return;
   var h='<div style="padding:20px">';
 
-  // FILTRI
   h+='<div style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #A855F7">';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">ANNO</label><select id="at-anno" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
@@ -128,7 +134,6 @@ function atecoBuildUI(){
   h+='<div style="display:flex;align-items:flex-end"><button id="at-reset" style="width:100%;padding:10px;background:linear-gradient(135deg,#A855F7,#7E22CE);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;box-shadow:0 4px 6px rgba(168,85,247,0.3)">Reset</button></div>';
   h+='</div></div>';
 
-  // KPI
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">';
   h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #A855F7;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">CONTRATTI</div><div style="font-size:32px;font-weight:700;color:#A855F7" id="at-k1">0</div></div>';
   h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #F97316;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">UNIONI</div><div style="font-size:32px;font-weight:700;color:#F97316" id="at-k2">0</div></div>';
@@ -137,7 +142,6 @@ function atecoBuildUI(){
   h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #F59E0B;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">% STRANIERI</div><div style="font-size:32px;font-weight:700;color:#F59E0B" id="at-k5">0</div></div>';
   h+='</div>';
 
-  // CARD per categoria (2 per riga)
   h+='<div id="at-cards-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(500px,1fr));gap:20px"></div>';
 
   h+='</div>';
@@ -148,9 +152,9 @@ function atecoPopulateFilters(){
   var anni=new Set(), unioni=new Set(), mestieri=new Set(), settori=new Set();
   atecoData.forEach(function(r){
     if(r.anno) anni.add(String(r.anno));
-    if(r.unione) unioni.add(r.unione);
-    if(r.mestiere) mestieri.add(r.mestiere);
-    if(r.settore) settori.add(r.settore);
+    if(r.unione && r.unione!=='N/D') unioni.add(r.unione);
+    if(r.mestiere && r.mestiere!=='N/D') mestieri.add(r.mestiere);
+    if(r.settore && r.settore!=='N/D') settori.add(r.settore);
   });
   
   var selAnno=G('at-anno');
@@ -244,8 +248,8 @@ function atecoRender(){
   });
   
   G('at-k1').textContent=tot.toLocaleString('it-IT');
-  G('at-k2').textContent=Object.keys(byUnione).length;
-  G('at-k3').textContent=Object.keys(byMestiere).length;
+  G('at-k2').textContent=Object.keys(byUnione).filter(k=>k!=='N/D').length;
+  G('at-k3').textContent=Object.keys(byMestiere).filter(k=>k!=='N/D').length;
   G('at-k4').textContent=tot>0?(donne/tot*100).toFixed(1)+'%':'0%';
   G('at-k5').textContent=tot>0?(stranieri/tot*100).toFixed(1)+'%':'0%';
   
