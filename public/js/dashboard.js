@@ -78,14 +78,21 @@ function parseRows(rows){
     console.log('Colonne ricevute:',Object.keys(rows[0]));
     console.log('Prima riga:',rows[0]);
   }
-  rows.forEach(function(r){
-    var imp=parseFloat(r['Importo']);if(isNaN(imp))return;
+  var skipped=0;
+  rows.forEach(function(r,idx){
+    var imp=parseFloat(r['Importo']);
+    if(isNaN(imp)){
+      skipped++;
+      if(skipped<=5) console.log('⚠️ Riga',idx,'saltata - Importo non valido:',r['Importo']);
+      return;
+    }
     var dv=r['F,6: Data Stipula']||r['Data Stipula']||'';var d=null;
     if(dv instanceof Date&&!isNaN(dv))d=dv;
     else if(typeof dv==='string'&&dv)d=new Date(dv);
     else if(typeof dv==='number'){try{var dt=XLSX.SSF.parse_date_code(dv);if(dt)d=new Date(dt.y,dt.m-1,dt.d);}catch(x){}}
     out.push({tiporete:String(r['Tipo rete']||'').trim()||'N/D',promotore:String(r['Promotore']||'').trim()||'N/D',acuradi:String(r['A cura di']||'').trim()||'N/D',importo:imp,anno:d&&!isNaN(d)?d.getFullYear():null,mese:d&&!isNaN(d)?d.getMonth()+1:null,partitaiva:String(r['B,2: Partita IVA']||'').trim()||null,codicecliente:String(r['C,3: Codice Cliente']||'').trim()||null});
   });
+  console.log('✅ Parsed:',out.length,'record. Skipped:',skipped);
   return out;
 }
 
