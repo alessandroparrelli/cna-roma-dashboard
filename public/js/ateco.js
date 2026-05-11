@@ -3,67 +3,58 @@ console.log('✅ ateco.js CARICATO');
 var atecoLoaded=false, atecoLoading=false, atecoData=[], atecoFiltered=[];
 var atecoCharts={};
 
-async function populateAtecoData(){
-  console.log('🔄 Inizio popolamento ATECO...');
-  showLoad('Popolamento dati ATECO. Questo potrebbe richiedere alcuni minuti...');
+// STEP 1: Popola le 6 colonne in tesseramento_records
+async function populateAtecoColumns(){
+  console.log('🔄 Inizio popolamento colonne ATECO in tesseramento_records...');
+  showLoad('Popolamento dati ATECO...');
   
   try{
-    // 1. Carica tesseramento_records
+    // Carica i dati
     var tesseramento=await sbGetAll('tesseramento_records');
     console.log('📊 Tesseramento records:',tesseramento.length);
     
-    // 2. Carica Anagrafiche con anaFetchAll (non sbGetAll!)
     var anagrafiche=await anaFetchAll('Anagrafiche');
     console.log('📋 Anagrafiche:',anagrafiche.length);
     
-    // 3. Carica codiciateco con anaFetchAll
     var codiciateco=await anaFetchAll('codiciateco');
     console.log('🏢 Codiciateco:',codiciateco.length);
     
-    // Crea map per lookup veloce
+    // Mappa per lookup veloce per partitaiva
     var anaMap={};
     anagrafiche.forEach(function(a){
       if(a.partitaiva) anaMap[a.partitaiva]=a;
     });
     
+    // Mappa per lookup veloce per codiceateco
     var codMap={};
     codiciateco.forEach(function(c){
       if(c.codiceateco) codMap[c.codiceateco]=c;
     });
     
-    // 4. Per ogni record tesseramento, fai join e calcola i dati
-    var updates=[];
-    var processed=0;
+    console.log('✏️ Inizio elaborazione',tesseramento.length,'record...');
     
+    // Per ogni record in tesseramento_records
     for(var i=0;i<tesseramento.length;i++){
       var tr=tesseramento[i];
       var piva=tr.partitaiva;
       
-      if(!piva){
-        processed++;
-        continue;
-      }
+      if(!piva) continue;
       
       var ana=anaMap[piva];
-      if(!ana){
-        processed++;
-        continue;
-      }
+      if(!ana) continue;
       
-      // Join con codiciateco
-      var codiceateco=ana.codiceateco;
-      var cod=codMap[codiceateco];
+      var atecoCode=ana.codiceateco;
+      var cod=codMap[atecoCode];
       
-      // Calcola sesso dal codice fiscale o dalla tabella
-      var sesso=ana.sesso || calcSessoFromCF(ana.cftitolare) || null;
+      // Calcola sesso
+      var sesso=ana.sesso || calcSessoFromCF(ana.cftitolare);
       
-      // Calcola nazionalità dal codice fiscale
-      var nazionalita=calcNazionalitaFromCF(ana.cftitolare) || 'Italiano';
+      // Calcola nazionalità
+      var nazionalita=calcNazionalitaFromCF(ana.cftitolare);
       
-      // Prepara update
-      updates.push({
-        id:tr.id,
-        ateco:codiceateco||null,
+      // Aggiorna il record
+      await sbPatch('tesseramento_records?id=eq.'+tr.id, {
+        ateco:atecoCode||null,
         unione:cod?.unione||null,
         mestiere:cod?.mestiere||null,
         settore:cod?.settore||null,
@@ -71,62 +62,36 @@ async function populateAtecoData(){
         nazionalita:nazionalita||null
       });
       
-      processed++;
-      if(processed%500===0){
-        showLoad('Elaborazione: '+processed+'/'+tesseramento.length);
+      if((i+1)%500===0){
+        showLoad('Elaborazione: '+(i+1)+'/'+tesseramento.length);
       }
     }
     
-    console.log('✏️ Record da aggiornare:',updates.length);
-    
-    // 5. Salva gli aggiornamenti su Supabase
-    showLoad('Salvataggio '+updates.length+' record su Supabase...');
-    for(var i=0;i<updates.length;i+=100){
-      var batch=updates.slice(i,i+100);
-      for(var j=0;j<batch.length;j++){
-        var upd=batch[j];
-        await sbPatch('tesseramento_records?id=eq.'+upd.id,{
-          ateco:upd.ateco,
-          unione:upd.unione,
-          mestiere:upd.mestiere,
-          settore:upd.settore,
-          sesso:upd.sesso,
-          nazionalita:upd.nazionalita
-        });
-      }
-      if((i+100)<updates.length){
-        showLoad('Salvataggio: '+(i+100)+'/'+updates.length);
-      }
-    }
-    
-    console.log('✅ Popolamento ATECO completato!');
-    toast('✅ '+updates.length+' record ATECO aggiornati','success');
+    console.log('✅ Popolamento completato!');
+    toast('✅ Colonne ATECO populate','success');
     
   }catch(e){
-    console.error('❌ Errore nel popolamento ATECO:',e);
+    console.error('❌ Errore:',e);
     toast('Errore: '+e.message,'error');
-    throw e;
+  }finally{
+    hideLoad();
   }
 }
 
 function calcSessoFromCF(cf){
   if(!cf||cf.length<10) return null;
-  var giornoStr=cf.substring(9,11);
-  var giorno=parseInt(giornoStr);
+  var giorno=parseInt(cf.substring(9,11));
   if(isNaN(giorno)) return null;
-  if(giorno>40) return 'Femmina';
-  return 'Maschio';
+  return giorno>40?'Femmina':'Maschio';
 }
 
 function calcNazionalitaFromCF(cf){
   if(!cf||cf.length<6) return 'Italiano';
   var pattern=/^[A-Z]{3}[A-Z]{3}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]$/;
-  if(pattern.test(cf)){
-    return 'Italiano';
-  }
-  return 'Straniero';
+  return pattern.test(cf)?'Italiano':'Straniero';
 }
 
+// STEP 2: Carica e visualizza i dati ATECO
 async function atecoLoad(force){
   console.log('🔄 atecoLoad()');
   if(atecoLoading) return;
@@ -138,84 +103,17 @@ async function atecoLoad(force){
   tab.innerHTML='<div style="padding:40px;text-align:center"><div style="font-size:18px;margin-bottom:10px">📊 Caricamento dati…</div><div id="ateco-msg" style="color:var(--text-secondary)">Connessione…</div></div>';
 
   try{
-    G('ateco-msg').textContent='Popolo dati ATECO…';
-    await populateAtecoData();
+    // Prima popola le colonne se non sono state populate
+    G('ateco-msg').textContent='Popolo colonne ATECO…';
+    await populateAtecoColumns();
     
-    G('ateco-msg').textContent='Caricamento Anagrafiche…';
-    var ana=await anaFetchAll('Anagrafiche');
-    console.log('ana:', ana.length);
-
-    G('ateco-msg').textContent='Caricamento diretti…';
-    var dir=await anaFetchAll('diretti');
-    console.log('dir:', dir.length);
-
-    G('ateco-msg').textContent='Caricamento codiciateco…';
-    var cod=await anaFetchAll('codiciateco');
-    console.log('cod:', cod.length);
-
-    G('ateco-msg').textContent='Elaborazione…';
-
-    var codMap=new Map();
-    cod.forEach(function(c){
-      var k=String(c.codiceateco||'').trim();
-      if(k) codMap.set(k,c);
-    });
-
-    var anaMap=new Map();
-    ana.forEach(function(a){
-      anaMap.set(a.codiceanagrafica, a);
-    });
-
-    var joined=[];
-    dir.forEach(function(d){
-      if(!d.codiceanagrafica) return;
-      if(!d.datastipula) return;
-
-      var a=anaMap.get(d.codiceanagrafica);
-      if(!a) return;
-
-      var atecoCode=String(a.codiceateco||'').trim();
-      var c=codMap.get(atecoCode)||{};
-
-      var sesso=a.sesso||null;
-      if(!sesso){
-        var cf=a.codicefiscale||'';
-        if(cf&&cf.length>=10){
-          var gg=parseInt(cf.substr(9,2),10);
-          sesso=(gg>=41)?'F':(gg>=1&&gg<=31)?'M':null;
-        }
-      }
-
-      var cf2=a.codicefiscale||'';
-      var naz=(cf2&&cf2.length>=12&&cf2.charAt(11)==='Z')?'ST':'IT';
-
-      var ds=d.datastipula||'';
-      var anno=null, mese=null;
-      if(ds){
-        var dt=new Date(ds);
-        if(!isNaN(dt)){
-          anno=dt.getFullYear();
-          mese=dt.getMonth()+1;
-        }
-      }
-
-      joined.push({
-        codice:d.codiceanagrafica,
-        ragionesociale:a.ragionesociale||'',
-        unione:c.unione||'N/D',
-        mestiere:c.mestiere||'N/D',
-        settore:c.settore||'N/D',
-        sesso:sesso,
-        nazionalita:naz,
-        anno:anno,
-        mese:mese,
-        servizio:d.servizio||''
-      });
-    });
-
-    console.log('✅ joined:', joined.length);
-    atecoData=joined;
-    atecoFiltered=joined.slice();
+    // Poi carica i dati da tesseramento_records
+    G('ateco-msg').textContent='Caricamento dati…';
+    var data=await sbGetAll('tesseramento_records');
+    console.log('✅ Dati tesseramento caricati:',data.length);
+    
+    atecoData=data;
+    atecoFiltered=data.slice();
     atecoLoaded=true;
 
     atecoBuildUI();
@@ -236,14 +134,18 @@ function atecoBuildUI(){
   if(!tab) return;
   var h='<div style="padding:20px">';
 
+  // FILTRI
   h+='<div style="background:var(--surface);padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #A855F7">';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">ANNO</label><select id="at-anno" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option></select></div>';
+  h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">MESTIERE</label><select id="at-mest" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option></select></div>';
+  h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">SETTORE</label><select id="at-sett" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">SESSO</label><select id="at-sex" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option><option value="Maschio">Maschio</option><option value="Femmina">Femmina</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px">NAZIONALITÀ</label><select id="at-naz" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;background:var(--bg)"><option value="">Tutti</option><option value="Italiano">Italiano</option><option value="Straniero">Straniero</option></select></div>';
   h+='<div style="display:flex;align-items:flex-end"><button id="at-reset" style="width:100%;padding:10px;background:linear-gradient(135deg,#A855F7,#7E22CE);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600">Reset</button></div>';
   h+='</div></div>';
 
+  // KPI
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">';
   h+='<div style="background:linear-gradient(135deg,#A855F7,#7E22CE);color:white;padding:18px;border-radius:8px;text-align:center"><div style="font-size:11px;opacity:0.9">CONTRATTI</div><div style="font-size:32px;font-weight:700" id="at-k1">0</div></div>';
   h+='<div style="background:linear-gradient(135deg,#F97316,#EA580C);color:white;padding:18px;border-radius:8px;text-align:center"><div style="font-size:11px;opacity:0.9">UNIONI</div><div style="font-size:32px;font-weight:700" id="at-k2">0</div></div>';
@@ -251,46 +153,63 @@ function atecoBuildUI(){
   h+='<div style="background:linear-gradient(135deg,#EC4899,#BE185D);color:white;padding:18px;border-radius:8px;text-align:center"><div style="font-size:11px;opacity:0.9">% DONNE</div><div style="font-size:32px;font-weight:700" id="at-k4">0</div></div>';
   h+='</div>';
 
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;margin-bottom:20px">';
-  h+='<div style="background:var(--surface);padding:20px;border-radius:8px;border-left:4px solid #EC4899"><h3 style="margin:0 0 15px 0;font-size:14px;font-weight:700">Sesso Titolare</h3><canvas id="at-ch-sex" style="height:280px"></canvas></div>';
-  h+='<div style="background:var(--surface);padding:20px;border-radius:8px;border-left:4px solid #10B981"><h3 style="margin:0 0 15px 0;font-size:14px;font-weight:700">Nazionalità</h3><canvas id="at-ch-naz" style="height:280px"></canvas></div>';
-  h+='</div>';
-
-  h+='<div style="background:var(--surface);padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #A855F7">';
-  h+='<h3 style="margin:0 0 15px 0;font-size:14px;font-weight:700">Unioni</h3>';
-  h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:rgba(168,85,247,0.1);border-bottom:2px solid var(--border)"><th style="text-align:left;padding:12px">Unione</th><th style="text-align:center;padding:12px">Tot</th><th style="text-align:center;padding:12px">%</th><th style="text-align:center;padding:12px">Donne %</th><th style="text-align:center;padding:12px">Stranieri %</th></tr></thead><tbody id="at-tb-u"></tbody></table></div>';
-  h+='</div>';
-
-  h+='<div style="background:var(--surface);padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #F97316">';
-  h+='<h3 style="margin:0 0 15px 0;font-size:14px;font-weight:700">Top 25 Mestieri</h3>';
-  h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:rgba(249,115,22,0.1);border-bottom:2px solid var(--border)"><th style="text-align:left;padding:12px">Mestiere</th><th style="text-align:center;padding:12px">Tot</th><th style="text-align:center;padding:12px">%</th><th style="text-align:center;padding:12px">Donne %</th><th style="text-align:center;padding:12px">Stranieri %</th></tr></thead><tbody id="at-tb-m"></tbody></table></div>';
-  h+='</div>';
-
-  h+='<div id="at-unioni-cards"></div>';
+  // CARD per categoria
+  h+='<div id="at-cards-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:20px"></div>';
 
   h+='</div>';
   tab.innerHTML=h;
 }
 
 function atecoPopulateFilters(){
-  var anni=new Set();
-  atecoFiltered.forEach(function(r){if(r.anno) anni.add(r.anno);});
-  var sel=G('at-anno');
-  Array.from(anni).sort().forEach(function(a){
-    var o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o);
+  var anni=new Set(), mestieri=new Set(), settori=new Set();
+  atecoData.forEach(function(r){
+    if(r.anno) anni.add(String(r.anno));
+    if(r.mestiere) mestieri.add(r.mestiere);
+    if(r.settore) settori.add(r.settore);
   });
-  ['at-anno','at-sex','at-naz'].forEach(function(id){
-    G(id).addEventListener('change',atecoApply);
+  
+  var selAnno=G('at-anno');
+  Array.from(anni).sort().reverse().forEach(function(a){
+    var o=document.createElement('option');
+    o.value=a;
+    o.textContent=a;
+    selAnno.appendChild(o);
+  });
+  
+  var selMest=G('at-mest');
+  Array.from(mestieri).sort().forEach(function(m){
+    var o=document.createElement('option');
+    o.value=m;
+    o.textContent=m;
+    selMest.appendChild(o);
+  });
+  
+  var selSett=G('at-sett');
+  Array.from(settori).sort().forEach(function(s){
+    var o=document.createElement('option');
+    o.value=s;
+    o.textContent=s;
+    selSett.appendChild(o);
+  });
+  
+  ['at-anno','at-mest','at-sett','at-sex','at-naz'].forEach(function(id){
+    var el=G(id);
+    if(el) el.addEventListener('change',atecoApply);
   });
   G('at-reset').addEventListener('click',atecoReset);
 }
 
 function atecoApply(){
   var anno=G('at-anno').value;
+  var mest=G('at-mest').value;
+  var sett=G('at-sett').value;
   var sex=G('at-sex').value;
   var naz=G('at-naz').value;
+  
   atecoFiltered=atecoData.filter(function(r){
     if(anno && String(r.anno)!==anno) return false;
+    if(mest && r.mestiere!==mest) return false;
+    if(sett && r.settore!==sett) return false;
     if(sex && r.sesso!==sex) return false;
     if(naz && r.nazionalita!==naz) return false;
     return true;
@@ -299,106 +218,87 @@ function atecoApply(){
 }
 
 function atecoReset(){
-  ['at-anno','at-sex','at-naz'].forEach(function(id){G(id).value='';});
+  ['at-anno','at-mest','at-sett','at-sex','at-naz'].forEach(function(id){G(id).value='';});
   atecoFiltered=atecoData.slice();
   atecoRender();
 }
 
 function atecoRender(){
   var tot=atecoFiltered.length;
-  var uSet=new Set(), mSet=new Set();
-  var unioni={}, mestieri={}, sesso={}, naz={}, donne=0;
-
+  var byUnione={}, byMestiere={}, bySettore={}, byNazionalita={}, bySesso={};
+  var donne=0;
+  
   atecoFiltered.forEach(function(r){
-    if(r.sesso==='Maschio') sesso.Maschio=(sesso.Maschio||0)+1;
-    if(r.sesso==='Femmina'){sesso.Femmina=(sesso.Femmina||0)+1; donne++;}
-    naz[r.nazionalita]=(naz[r.nazionalita]||0)+1;
-
+    // Unione
     var u=r.unione||'N/D';
-    uSet.add(u);
-    if(!unioni[u]) unioni[u]={n:0,d:0,s:0,mestieri:{}};
-    unioni[u].n++;
-    if(r.sesso==='Femmina') unioni[u].d++;
-    if(r.nazionalita==='Straniero') unioni[u].s++;
+    byUnione[u]=(byUnione[u]||0)+1;
+    
+    // Mestiere
     var m=r.mestiere||'N/D';
-    if(!unioni[u].mestieri[m]) unioni[u].mestieri[m]={n:0,d:0,s:0};
-    unioni[u].mestieri[m].n++;
-    if(r.sesso==='Femmina') unioni[u].mestieri[m].d++;
-    if(r.nazionalita==='Straniero') unioni[u].mestieri[m].s++;
-
-    mSet.add(m);
-    if(!mestieri[m]) mestieri[m]={n:0,d:0,s:0};
-    mestieri[m].n++;
-    if(r.sesso==='Femmina') mestieri[m].d++;
-    if(r.nazionalita==='Straniero') mestieri[m].s++;
+    byMestiere[m]=(byMestiere[m]||0)+1;
+    
+    // Settore
+    var s=r.settore||'N/D';
+    bySettore[s]=(bySettore[s]||0)+1;
+    
+    // Nazionalità
+    var n=r.nazionalita||'Italiano';
+    byNazionalita[n]=(byNazionalita[n]||0)+1;
+    
+    // Sesso
+    var sx=r.sesso||'N/D';
+    bySesso[sx]=(bySesso[sx]||0)+1;
+    if(sx==='Femmina') donne++;
   });
-
+  
+  // KPI
   G('at-k1').textContent=tot.toLocaleString('it-IT');
-  G('at-k2').textContent=uSet.size;
-  G('at-k3').textContent=mSet.size;
+  G('at-k2').textContent=Object.keys(byUnione).length;
+  G('at-k3').textContent=Object.keys(byMestiere).length;
   G('at-k4').textContent=tot>0?(donne/tot*100).toFixed(1)+'%':'0%';
+  
+  // Render card
+  renderCategoryCards(byUnione,'Unione','#A855F7',tot);
+  renderCategoryCards(byMestiere,'Mestiere','#F97316',tot);
+  renderCategoryCards(bySettore,'Settore','#10B981',tot);
+  renderCategoryCards(byNazionalita,'Nazionalità','#7C3AED',tot);
+  renderCategoryCards(bySesso,'Sesso','#CA8A04',tot);
+}
 
-  if(G('at-ch-sex')){
-    if(atecoCharts.s) atecoCharts.s.destroy();
-    atecoCharts.s=new Chart(G('at-ch-sex'),{type:'pie',data:{labels:['Maschi ('+(sesso.Maschio||0)+')','Femmine ('+(sesso.Femmina||0)+')'],datasets:[{data:[sesso.Maschio||0,sesso.Femmina||0],backgroundColor:['#06B6D4','#EC4899']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
-  }
-
-  if(G('at-ch-naz')){
-    if(atecoCharts.n) atecoCharts.n.destroy();
-    atecoCharts.n=new Chart(G('at-ch-naz'),{type:'doughnut',data:{labels:['Italiani ('+(naz.Italiano||0)+')','Stranieri ('+(naz.Straniero||0)+')'],datasets:[{data:[naz.Italiano||0,naz.Straniero||0],backgroundColor:['#10B981','#F59E0B']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom'}}}});
-  }
-
-  var tbU=G('at-tb-u');
-  tbU.innerHTML='';
-  Object.keys(unioni).sort(function(a,b){return unioni[b].n-unioni[a].n;}).forEach(function(u){
-    var d=unioni[u];
-    var pct=tot>0?(d.n/tot*100).toFixed(1):'0';
-    var pD=d.n>0?(d.d/d.n*100).toFixed(1):'0';
-    var pS=d.n>0?(d.s/d.n*100).toFixed(1):'0';
-    var tr=document.createElement('tr');
-    tr.style.borderBottom='1px solid var(--border)';
-    tr.innerHTML='<td style="padding:12px"><strong>'+u+'</strong></td><td style="text-align:center;padding:12px">'+d.n+'</td><td style="text-align:center;padding:12px">'+pct+'%</td><td style="text-align:center;padding:12px;color:#EC4899;font-weight:600">'+pD+'%</td><td style="text-align:center;padding:12px;color:#F97316;font-weight:600">'+pS+'%</td>';
-    tbU.appendChild(tr);
+function renderCategoryCards(data,title,color,total){
+  var container=G('at-cards-container');
+  if(!container) return;
+  
+  var sorted=Object.keys(data).sort(function(a,b){return data[b]-data[a];});
+  
+  var cardHTML='<div style="background:var(--surface);border-radius:8px;overflow:hidden;border-left:4px solid '+color+'">';
+  cardHTML+='<div style="background:'+color+';color:white;padding:14px;font-weight:600;font-size:13px">'+title+'</div>';
+  cardHTML+='<div style="padding:16px">';
+  
+  sorted.forEach(function(key){
+    var count=data[key];
+    var pct=total>0?((count/total)*100).toFixed(1):0;
+    cardHTML+='<div style="margin-bottom:12px">';
+    cardHTML+='<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">';
+    cardHTML+='<strong>'+escapeHtml(key)+'</strong>';
+    cardHTML+='<span>'+count+' ('+pct+'%)</span>';
+    cardHTML+='</div>';
+    cardHTML+='<div style="background:var(--border);height:6px;border-radius:3px">';
+    cardHTML+='<div style="background:'+color+';height:100%;width:'+pct+'%;border-radius:3px;transition:width 0.3s"></div>';
+    cardHTML+='</div>';
+    cardHTML+='</div>';
   });
+  
+  cardHTML+='</div></div>';
+  
+  // Aggiungi alla container
+  var tempDiv=document.createElement('div');
+  tempDiv.innerHTML=cardHTML;
+  container.appendChild(tempDiv.firstChild);
+}
 
-  var tbM=G('at-tb-m');
-  tbM.innerHTML='';
-  Object.keys(mestieri).sort(function(a,b){return mestieri[b].n-mestieri[a].n;}).slice(0,25).forEach(function(m){
-    var d=mestieri[m];
-    var pct=tot>0?(d.n/tot*100).toFixed(1):'0';
-    var pD=d.n>0?(d.d/d.n*100).toFixed(1):'0';
-    var pS=d.n>0?(d.s/d.n*100).toFixed(1):'0';
-    var tr=document.createElement('tr');
-    tr.style.borderBottom='1px solid var(--border)';
-    tr.innerHTML='<td style="padding:12px"><strong>'+m+'</strong></td><td style="text-align:center;padding:12px">'+d.n+'</td><td style="text-align:center;padding:12px">'+pct+'%</td><td style="text-align:center;padding:12px;color:#EC4899;font-weight:600">'+pD+'%</td><td style="text-align:center;padding:12px;color:#F97316;font-weight:600">'+pS+'%</td>';
-    tbM.appendChild(tr);
-  });
-
-  var cardsDiv=G('at-unioni-cards');
-  cardsDiv.innerHTML='';
-  var colors=['#A855F7','#F97316','#10B981','#EC4899','#06B6D4','#EAB308','#DC2626','#6366F1','#14B8A6','#F43F5E'];
-  var uSorted=Object.keys(unioni).sort(function(a,b){return unioni[b].n-unioni[a].n;});
-  uSorted.forEach(function(u, idx){
-    var d=unioni[u];
-    var color=colors[idx%colors.length];
-    var card=document.createElement('div');
-    card.style.cssText='background:var(--surface);padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid '+color;
-
-    var html='<h3 style="margin:0 0 5px 0;font-size:16px;font-weight:700;color:'+color+'">'+u+'</h3>';
-    html+='<div style="font-size:13px;color:var(--text-secondary);margin-bottom:15px">'+d.n+' contratti &middot; '+(d.n>0?(d.d/d.n*100).toFixed(1):'0')+'% donne &middot; '+(d.n>0?(d.s/d.n*100).toFixed(1):'0')+'% stranieri</div>';
-    html+='<table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="border-bottom:2px solid var(--border)"><th style="text-align:left;padding:8px">Mestiere</th><th style="text-align:center;padding:8px">Tot</th><th style="text-align:center;padding:8px">%</th><th style="text-align:center;padding:8px">Donne %</th><th style="text-align:center;padding:8px">Stranieri %</th></tr></thead><tbody>';
-
-    var mSorted=Object.keys(d.mestieri).sort(function(a,b){return d.mestieri[b].n-d.mestieri[a].n;});
-    mSorted.forEach(function(m){
-      var md=d.mestieri[m];
-      var pct=d.n>0?(md.n/d.n*100).toFixed(1):'0';
-      var pD=md.n>0?(md.d/md.n*100).toFixed(1):'0';
-      var pS=md.n>0?(md.s/md.n*100).toFixed(1):'0';
-      html+='<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px">'+m+'</td><td style="text-align:center;padding:8px">'+md.n+'</td><td style="text-align:center;padding:8px">'+pct+'%</td><td style="text-align:center;padding:8px;color:#EC4899">'+pD+'%</td><td style="text-align:center;padding:8px;color:#F97316">'+pS+'%</td></tr>';
-    });
-
-    html+='</tbody></table>';
-    card.innerHTML=html;
-    cardsDiv.appendChild(card);
-  });
+function escapeHtml(text){
+  var div=document.createElement('div');
+  div.textContent=text;
+  return div.innerHTML;
 }
