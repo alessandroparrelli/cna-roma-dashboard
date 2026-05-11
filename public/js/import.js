@@ -702,7 +702,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 100);
 });
 G('file-input').addEventListener('change',function(e){handleFile(e.target.files[0],false);e.target.value='';});
-G('file-add').addEventListener('change',function(e){handleFile(e.target.files[0],true);e.target.value='';});
+G('file-add').addEventListener('change',function(e){console.log('🔼 File-add click! File:',e.target.files[0]?.name);handleFile(e.target.files[0],true);e.target.value='';});
 G('btn-reset').addEventListener('click',async function(){
   if(!isAdmin())return;
   if(!confirm('Eliminare TUTTI i dati di tesseramento?\nOperazione irreversibile. I dati delle anagrafiche non saranno toccati.'))return;

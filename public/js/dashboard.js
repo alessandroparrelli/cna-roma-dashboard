@@ -1,3 +1,4 @@
+// v2026.05.07.2 - cache busting
 async function loadDashboard(){
   showLoad('Caricamento dati…');
   try{
@@ -47,7 +48,10 @@ function handleFile(file,isAdd){
     try{
       showLoad('Lettura file…');
       var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+      console.log('📊 File Excel letto. Sheet names:',wb.SheetNames);
       var rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+      console.log('📄 Righe lette:',rows.length);
+      if(rows.length>0) console.log('Colonne disponibili:',Object.keys(rows[0]));
       var parsed=parseRows(rows);
       if(!parsed.length){toast('Nessun dato valido','error');hideLoad();return;}
       showLoad('Salvataggio '+parsed.length+' record…');
@@ -70,13 +74,17 @@ function handleFile(file,isAdd){
 
 function parseRows(rows){
   var out=[];
+  if(rows.length>0){
+    console.log('Colonne ricevute:',Object.keys(rows[0]));
+    console.log('Prima riga:',rows[0]);
+  }
   rows.forEach(function(r){
     var imp=parseFloat(r['Importo']);if(isNaN(imp))return;
     var dv=r['F,6: Data Stipula']||r['Data Stipula']||'';var d=null;
     if(dv instanceof Date&&!isNaN(dv))d=dv;
     else if(typeof dv==='string'&&dv)d=new Date(dv);
     else if(typeof dv==='number'){try{var dt=XLSX.SSF.parse_date_code(dv);if(dt)d=new Date(dt.y,dt.m-1,dt.d);}catch(x){}}
-    out.push({tiporete:String(r['Tipo rete']||'').trim()||'N/D',promotore:String(r['Promotore']||'').trim()||'N/D',acuradi:String(r['A cura di']||'').trim()||'N/D',importo:imp,anno:d&&!isNaN(d)?d.getFullYear():null,mese:d&&!isNaN(d)?d.getMonth()+1:null,partitaiva:String(r['B,2: Partita IVA']||r['Partita IVA']||'').trim()||null,codicecliente:String(r['C,3: Codice Cliente']||r['Codice Cliente']||'').trim()||null});
+    out.push({tiporete:String(r['Tipo rete']||'').trim()||'N/D',promotore:String(r['Promotore']||'').trim()||'N/D',acuradi:String(r['A cura di']||'').trim()||'N/D',importo:imp,anno:d&&!isNaN(d)?d.getFullYear():null,mese:d&&!isNaN(d)?d.getMonth()+1:null,partitaiva:String(r['B,2: Partita IVA']||'').trim()||null,codicecliente:String(r['C,3: Codice Cliente']||'').trim()||null});
   });
   return out;
 }
