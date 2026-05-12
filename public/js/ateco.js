@@ -16,12 +16,9 @@ async function atecoLoad(force){
     G('ateco-msg').textContent='Caricamento tesseramento_records…';
     var data=await sbGetAll('tesseramento_records');
     
-    // Filtra solo record con dati ATECO completi
-    atecoData=data.filter(function(r){
-      return r.unione && r.mestiere && r.settore && r.sesso && r.nazionalita;
-    });
+    atecoData=data;
     
-    console.log('📊 Tot record:',data.length,'Validi per ATECO:',atecoData.length);
+    console.log('📊 Tot record caricati:',data.length);
     
     atecoFiltered=atecoData.slice();
     atecoLoaded=true;
