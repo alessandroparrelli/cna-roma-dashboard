@@ -1,4 +1,4 @@
-console.log('✅ ateco.js CARICATO');
+console.log('✅ ateco.js CARICATO v2');
 
 var atecoLoaded=false, atecoLoading=false, atecoData=[], atecoFiltered=[];
 
