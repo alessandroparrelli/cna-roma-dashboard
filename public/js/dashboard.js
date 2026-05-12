@@ -56,7 +56,7 @@ function handleFile(file,isAdd){
       if(!parsed.length){toast('Nessun dato valido','error');hideLoad();return;}
       showLoad('Salvataggio '+parsed.length+' record…');
       for(var i=0;i<parsed.length;i+=500){
-        var chunk=parsed.slice(i,i+500).map(function(r){return{tiporete:r.tiporete,promotore:r.promotore,acuradi:r.acuradi,importo:r.importo,anno:r.anno,mese:r.mese,partitaiva:r.partitaiva,codicecliente:r.codicecliente,fonte:file.name};});
+        var chunk=parsed.slice(i,i+500).map(function(r){return{tiporete:r.tiporete,promotore:r.promotore,acuradi:r.acuradi,importo:r.importo,anno:r.anno,mese:r.mese,partitaiva:r.partitaiva,codicecliente:r.codicecliente,ateco:r.ateco,unione:r.unione,mestiere:r.mestiere,settore:r.settore,sesso:r.sesso,nazionalita:r.nazionalita,fonte:file.name};});
         await sbPost(TR,chunk,{'Prefer':'return=minimal'});
       }
       showLoad('Aggiornamento…');
@@ -90,7 +90,7 @@ function parseRows(rows){
     if(dv instanceof Date&&!isNaN(dv))d=dv;
     else if(typeof dv==='string'&&dv)d=new Date(dv);
     else if(typeof dv==='number'){try{var dt=XLSX.SSF.parse_date_code(dv);if(dt)d=new Date(dt.y,dt.m-1,dt.d);}catch(x){}}
-    out.push({tiporete:String(r['Tipo rete']||'').trim()||'N/D',promotore:String(r['Promotore']||'').trim()||'N/D',acuradi:String(r['A cura di']||'').trim()||'N/D',importo:imp,anno:d&&!isNaN(d)?d.getFullYear():null,mese:d&&!isNaN(d)?d.getMonth()+1:null,partitaiva:String(r['B,2: Partita IVA']||'').trim()||null,codicecliente:String(r['C,3: Codice Cliente']||'').trim()||null});
+    out.push({tiporete:String(r['Tipo rete']||'').trim()||'N/D',promotore:String(r['Promotore']||'').trim()||'N/D',acuradi:String(r['A cura di']||'').trim()||'N/D',importo:imp,anno:d&&!isNaN(d)?d.getFullYear():null,mese:d&&!isNaN(d)?d.getMonth()+1:null,partitaiva:String(r['B,2: Partita IVA']||'').trim()||null,codicecliente:String(r['C,3: Codice Cliente']||'').trim()||null,ateco:String(r['ateco']||'').trim()||null,unione:String(r['unione']||'').trim()||null,mestiere:String(r['mestiere']||'').trim()||null,settore:String(r['settore']||'').trim()||null,sesso:String(r['sesso']||'').trim()||null,nazionalita:String(r['nazionalità']||r['nazionalita']||'').trim()||null});
   });
   console.log('✅ Parsed:',out.length,'record. Skipped:',skipped);
   return out;
