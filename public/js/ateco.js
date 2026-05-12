@@ -42,7 +42,7 @@ function atecoBuildUI(){
   var h='<div style="padding:20px">';
 
   // FILTRI
-  h+='<div style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #A855F7">';
+  h+='<div style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB">';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">ANNO</label><select id="at-anno" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">UNIONE</label><select id="at-unione" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
@@ -50,19 +50,19 @@ function atecoBuildUI(){
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">SETTORE</label><select id="at-sett" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">SESSO</label><select id="at-sex" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">NAZIONALITÀ</label><select id="at-naz" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
-  h+='<div style="display:flex;align-items:flex-end"><button id="at-reset" style="width:100%;padding:10px;background:linear-gradient(135deg,#A855F7,#7E22CE);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;box-shadow:0 4px 6px rgba(168,85,247,0.3)">Reset</button></div>';
+  h+='<div style="display:flex;align-items:flex-end"><button id="at-reset" style="width:100%;padding:10px;background:linear-gradient(135deg,#0047AB,#003380);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;box-shadow:0 4px 6px rgba(0,71,171,0.3)">Reset</button></div>';
   h+='</div></div>';
 
   // KPI
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">';
-  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #A855F7;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">CONTRATTI</div><div style="font-size:32px;font-weight:700;color:#A855F7" id="at-k1">0</div></div>';
-  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #F97316;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">UNIONI</div><div style="font-size:32px;font-weight:700;color:#F97316" id="at-k2">0</div></div>';
-  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #10B981;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">MESTIERI</div><div style="font-size:32px;font-weight:700;color:#10B981" id="at-k3">0</div></div>';
+  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">CONTRATTI</div><div style="font-size:32px;font-weight:700;color:#0047AB" id="at-k1">0</div></div>';
+  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #DC2626;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">UNIONI</div><div style="font-size:32px;font-weight:700;color:#DC2626" id="at-k2">0</div></div>';
+  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #F59E0B;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">MESTIERI</div><div style="font-size:32px;font-weight:700;color:#F59E0B" id="at-k3">0</div></div>';
   h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #EC4899;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">% DONNE</div><div style="font-size:32px;font-weight:700;color:#EC4899" id="at-k4">0</div></div>';
-  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #F59E0B;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">% STRANIERI</div><div style="font-size:32px;font-weight:700;color:#F59E0B" id="at-k5">0</div></div>';
+  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #10B981;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">% STRANIERI</div><div style="font-size:32px;font-weight:700;color:#10B981" id="at-k5">0</div></div>';
   h+='</div>';
 
-  h+='<div id="at-cards-container" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(500px,1fr));gap:20px"></div>';
+  h+='<div id="at-cards-container" style="display:grid;gap:20px"></div>';
 
   h+='</div>';
   tab.innerHTML=h;
@@ -136,9 +136,6 @@ function atecoRender(){
   var byUnione={}, byMestiere={}, bySettore={};
   var donne=0, stranieri=0;
   
-  // Struttura: {categoria: {sesso: count, naz: count, ...}}
-  var sesso={}, naz={};
-  
   atecoFiltered.forEach(function(r){
     var u=r.unione||'N/D';
     var m=r.mestiere||'N/D';
@@ -146,27 +143,25 @@ function atecoRender(){
     var sx=r.sesso||'N/D';
     var n=r.nazionalita||'N/D';
     
-    // Conta per categoria
-    if(!byUnione[u]) byUnione[u]={tot:0,sesso:{},naz:{}};
+    if(!byUnione[u]) byUnione[u]={tot:0,maschi:0,femmine:0,stranieri:0};
     byUnione[u].tot++;
-    byUnione[u].sesso[sx]=(byUnione[u].sesso[sx]||0)+1;
-    byUnione[u].naz[n]=(byUnione[u].naz[n]||0)+1;
+    if(sx==='M') byUnione[u].maschi++;
+    if(sx==='F') byUnione[u].femmine++;
+    if(n==='Straniero') byUnione[u].stranieri++;
     
-    if(!byMestiere[m]) byMestiere[m]={tot:0,sesso:{},naz:{}};
+    if(!byMestiere[m]) byMestiere[m]={tot:0,maschi:0,femmine:0,stranieri:0};
     byMestiere[m].tot++;
-    byMestiere[m].sesso[sx]=(byMestiere[m].sesso[sx]||0)+1;
-    byMestiere[m].naz[n]=(byMestiere[m].naz[n]||0)+1;
+    if(sx==='M') byMestiere[m].maschi++;
+    if(sx==='F') byMestiere[m].femmine++;
+    if(n==='Straniero') byMestiere[m].stranieri++;
     
-    if(!bySettore[s]) bySettore[s]={tot:0,sesso:{},naz:{}};
+    if(!bySettore[s]) bySettore[s]={tot:0,maschi:0,femmine:0,stranieri:0};
     bySettore[s].tot++;
-    bySettore[s].sesso[sx]=(bySettore[s].sesso[sx]||0)+1;
-    bySettore[s].naz[n]=(bySettore[s].naz[n]||0)+1;
+    if(sx==='M') bySettore[s].maschi++;
+    if(sx==='F') bySettore[s].femmine++;
+    if(n==='Straniero') bySettore[s].stranieri++;
     
-    // Totali globali
-    sesso[sx]=(sesso[sx]||0)+1;
-    naz[n]=(naz[n]||0)+1;
-    
-    if(sx==='Femmina') donne++;
+    if(sx==='F') donne++;
     if(n==='Straniero') stranieri++;
   });
   
@@ -179,106 +174,61 @@ function atecoRender(){
   var container=G('at-cards-container');
   container.innerHTML='';
   
-  renderCategoryCardWithBreakdown(byUnione,'Unione','#A855F7',tot,container);
-  renderCategoryCardWithBreakdown(byMestiere,'Mestiere','#F97316',tot,container);
-  renderCategoryCardWithBreakdown(bySettore,'Settore','#10B981',tot,container);
+  renderTableCard(byUnione,'UNIONE','#0047AB',tot,container);
+  renderTableCard(byMestiere,'MESTIERE','#DC2626',tot,container);
+  renderTableCard(bySettore,'SETTORE','#F59E0B',tot,container);
 }
 
-function renderCategoryCardWithBreakdown(data,title,color,total,container){
+function renderTableCard(data,title,color,total,container){
   var sorted=Object.keys(data).sort(function(a,b){return data[b].tot-data[a].tot;});
   
   var cardDiv=document.createElement('div');
-  cardDiv.style.cssText='background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid '+color;
+  cardDiv.style.cssText='background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.07);margin-bottom:20px';
   
   var headerDiv=document.createElement('div');
-  headerDiv.style.cssText='background:linear-gradient(135deg,'+color+'80,'+color+'40);padding:16px;border-left:4px solid '+color;
-  headerDiv.innerHTML='<div style="font-weight:700;font-size:14px;color:#333">'+title+'</div>';
+  headerDiv.style.cssText='background:'+color+';padding:16px;color:white;font-weight:700;font-size:14px';
+  headerDiv.innerHTML=title;
   cardDiv.appendChild(headerDiv);
   
-  var contentDiv=document.createElement('div');
-  contentDiv.style.cssText='padding:16px;max-height:450px;overflow-y:auto';
+  var tableDiv=document.createElement('div');
+  tableDiv.style.cssText='overflow-x:auto;padding:16px';
   
-  sorted.slice(0,15).forEach(function(key){
+  var html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  html+='<thead><tr style="background:#F3F4F6;border-bottom:2px solid #E5E7EB">';
+  html+='<th style="text-align:left;padding:10px;font-weight:700;color:#333">'+title+'</th>';
+  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#333">TOTALE</th>';
+  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#333">%</th>';
+  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#0047AB">MASCHI</th>';
+  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#0047AB">%</th>';
+  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#EC4899">FEMMINE</th>';
+  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#EC4899">%</th>';
+  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#10B981">STRANIERI</th>';
+  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#10B981">%</th>';
+  html+='</tr></thead><tbody>';
+  
+  sorted.forEach(function(key){
     var item=data[key];
-    var pct=total>0?((item.tot/total)*100).toFixed(1):0;
+    var pctTot=total>0?((item.tot/total)*100).toFixed(1):0;
+    var pctM=item.tot>0?((item.maschi/item.tot)*100).toFixed(0):0;
+    var pctF=item.tot>0?((item.femmine/item.tot)*100).toFixed(0):0;
+    var pctS=item.tot>0?((item.stranieri/item.tot)*100).toFixed(0):0;
     
-    var itemDiv=document.createElement('div');
-    itemDiv.style.cssText='margin-bottom:14px;padding:10px;background:#F9FAFB;border-radius:6px';
-    
-    var html='<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;font-weight:600"><strong style="color:#333">'+escapeHtml(key)+'</strong><span style="color:#666">'+item.tot+' ('+pct+'%)</span></div>';
-    
-    // Barra principale
-    html+='<div style="background:#E5E7EB;height:6px;border-radius:3px;margin-bottom:8px"><div style="background:'+color+';height:100%;width:'+pct+'%;border-radius:3px;box-shadow:0 0 8px '+color+'40"></div></div>';
-    
-    // Breakdown sesso
-    html+='<div style="font-size:11px;margin-bottom:6px;padding:6px;background:white;border-radius:4px;border-left:2px solid #EC4899">';
-    Object.keys(item.sesso).forEach(function(s){
-      var cnt=item.sesso[s];
-      var pctSesso=item.tot>0?((cnt/item.tot)*100).toFixed(0):'0';
-      html+='<div style="color:#666">'+s+': <strong style="color:#EC4899">'+cnt+' ('+pctSesso+'%)</strong></div>';
-    });
-    html+='</div>';
-    
-    // Breakdown nazionalità
-    html+='<div style="font-size:11px;padding:6px;background:white;border-radius:4px;border-left:2px solid #F59E0B">';
-    Object.keys(item.naz).forEach(function(n){
-      var cnt=item.naz[n];
-      var pctNaz=item.tot>0?((cnt/item.tot)*100).toFixed(0):'0';
-      html+='<div style="color:#666">'+n+': <strong style="color:#F59E0B">'+cnt+' ('+pctNaz+'%)</strong></div>';
-    });
-    html+='</div>';
-    
-    itemDiv.innerHTML=html;
-    contentDiv.appendChild(itemDiv);
+    html+='<tr style="border-bottom:1px solid #E5E7EB">';
+    html+='<td style="padding:10px;color:#333;font-weight:500">'+escapeHtml(key)+'</td>';
+    html+='<td style="text-align:center;padding:10px;color:#333;font-weight:600">'+item.tot+'</td>';
+    html+='<td style="text-align:center;padding:10px;color:#666">'+pctTot+'%</td>';
+    html+='<td style="text-align:center;padding:10px;color:#0047AB;font-weight:600">'+item.maschi+'</td>';
+    html+='<td style="text-align:center;padding:10px;color:#0047AB">'+pctM+'%</td>';
+    html+='<td style="text-align:center;padding:10px;color:#EC4899;font-weight:600">'+item.femmine+'</td>';
+    html+='<td style="text-align:center;padding:10px;color:#EC4899">'+pctF+'%</td>';
+    html+='<td style="text-align:center;padding:10px;color:#10B981;font-weight:600">'+item.stranieri+'</td>';
+    html+='<td style="text-align:center;padding:10px;color:#10B981">'+pctS+'%</td>';
+    html+='</tr>';
   });
   
-  if(sorted.length>15){
-    var moreBtn=document.createElement('button');
-    moreBtn.textContent='Mostra altro...';
-    moreBtn.style.cssText='width:100%;padding:10px;background:transparent;border:1px solid '+color+';color:'+color+';border-radius:6px;cursor:pointer;font-weight:600;margin-top:8px';
-    
-    moreBtn.onclick=function(){
-      contentDiv.innerHTML='';
-      sorted.forEach(function(key){
-        var item=data[key];
-        var pct=total>0?((item.tot/total)*100).toFixed(1):0;
-        
-        var itemDiv=document.createElement('div');
-        itemDiv.style.cssText='margin-bottom:14px;padding:10px;background:#F9FAFB;border-radius:6px';
-        
-        var html='<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:8px;font-weight:600"><strong style="color:#333">'+escapeHtml(key)+'</strong><span style="color:#666">'+item.tot+' ('+pct+'%)</span></div>';
-        html+='<div style="background:#E5E7EB;height:6px;border-radius:3px;margin-bottom:8px"><div style="background:'+color+';height:100%;width:'+pct+'%;border-radius:3px;box-shadow:0 0 8px '+color+'40"></div></div>';
-        
-        html+='<div style="font-size:11px;margin-bottom:6px;padding:6px;background:white;border-radius:4px;border-left:2px solid #EC4899">';
-        Object.keys(item.sesso).forEach(function(s){
-          var cnt=item.sesso[s];
-          var pctSesso=item.tot>0?((cnt/item.tot)*100).toFixed(0):'0';
-          html+='<div style="color:#666">'+s+': <strong style="color:#EC4899">'+cnt+' ('+pctSesso+'%)</strong></div>';
-        });
-        html+='</div>';
-        
-        html+='<div style="font-size:11px;padding:6px;background:white;border-radius:4px;border-left:2px solid #F59E0B">';
-        Object.keys(item.naz).forEach(function(n){
-          var cnt=item.naz[n];
-          var pctNaz=item.tot>0?((cnt/item.tot)*100).toFixed(0):'0';
-          html+='<div style="color:#666">'+n+': <strong style="color:#F59E0B">'+cnt+' ('+pctNaz+'%)</strong></div>';
-        });
-        html+='</div>';
-        
-        itemDiv.innerHTML=html;
-        contentDiv.appendChild(itemDiv);
-      });
-      
-      var hideBtn=document.createElement('button');
-      hideBtn.textContent='Nascondi';
-      hideBtn.style.cssText='width:100%;padding:10px;background:transparent;border:1px solid '+color+';color:'+color+';border-radius:6px;cursor:pointer;font-weight:600;margin-top:8px';
-      hideBtn.onclick=function(){renderCategoryCardWithBreakdown(data,title,color,total,container);};
-      contentDiv.appendChild(hideBtn);
-    };
-    contentDiv.appendChild(moreBtn);
-  }
-  
-  cardDiv.appendChild(contentDiv);
+  html+='</tbody></table>';
+  tableDiv.innerHTML=html;
+  cardDiv.appendChild(tableDiv);
   container.appendChild(cardDiv);
 }
 
