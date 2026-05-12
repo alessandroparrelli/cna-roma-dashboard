@@ -87,6 +87,10 @@ function parseRows(rows){
   }
   var skipped=0;
   rows.forEach(function(r,idx){
+    if(idx===0){
+      console.log('📋 TUTTE LE COLONNE:');
+      Object.keys(r).forEach(function(k){console.log('  -',k);});
+    }
     var imp=parseFloat(r['Importo']);
     if(isNaN(imp)){
       skipped++;
