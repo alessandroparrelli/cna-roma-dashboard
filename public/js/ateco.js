@@ -136,34 +136,45 @@ function atecoRender(){
   var byUnione={}, byMestiere={}, bySettore={};
   var donne=0, stranieri=0;
   
+  // Debug: conta i valori per verificare cosa arriva
+  var sessoCount={}, nazCount={};
+  
   atecoFiltered.forEach(function(r){
     var u=r.unione||'N/D';
     var m=r.mestiere||'N/D';
     var s=r.settore||'N/D';
-    var sx=r.sesso||'N/D';
-    var n=(r.nazionalita||'N/D').toLowerCase();
+    var sx=String(r.sesso||'').trim();
+    var n=String(r.nazionalita||'').trim().toLowerCase();
+    
+    // Debug
+    sessoCount[sx]=(sessoCount[sx]||0)+1;
+    nazCount[n]=(nazCount[n]||0)+1;
     
     if(!byUnione[u]) byUnione[u]={tot:0,maschi:0,femmine:0,stranieri:0};
     byUnione[u].tot++;
-    if(sx==='M') byUnione[u].maschi++;
-    if(sx==='F') byUnione[u].femmine++;
+    if(sx==='M' || sx==='m') byUnione[u].maschi++;
+    if(sx==='F' || sx==='f') byUnione[u].femmine++;
     if(n==='straniero') byUnione[u].stranieri++;
     
     if(!byMestiere[m]) byMestiere[m]={tot:0,maschi:0,femmine:0,stranieri:0};
     byMestiere[m].tot++;
-    if(sx==='M') byMestiere[m].maschi++;
-    if(sx==='F') byMestiere[m].femmine++;
+    if(sx==='M' || sx==='m') byMestiere[m].maschi++;
+    if(sx==='F' || sx==='f') byMestiere[m].femmine++;
     if(n==='straniero') byMestiere[m].stranieri++;
     
     if(!bySettore[s]) bySettore[s]={tot:0,maschi:0,femmine:0,stranieri:0};
     bySettore[s].tot++;
-    if(sx==='M') bySettore[s].maschi++;
-    if(sx==='F') bySettore[s].femmine++;
+    if(sx==='M' || sx==='m') bySettore[s].maschi++;
+    if(sx==='F' || sx==='f') bySettore[s].femmine++;
     if(n==='straniero') bySettore[s].stranieri++;
     
-    if(sx==='F') donne++;
+    if(sx==='F' || sx==='f') donne++;
     if(n==='straniero') stranieri++;
   });
+  
+  console.log('Debug sesso:',sessoCount);
+  console.log('Debug nazionalita:',nazCount);
+  console.log('Donne:',donne,'Stranieri:',stranieri);
   
   G('at-k1').textContent=tot.toLocaleString('it-IT');
   G('at-k2').textContent=Object.keys(byUnione).length;
@@ -225,6 +236,29 @@ function renderTableCard(data,title,color,total,container){
     html+='<td style="text-align:center;padding:10px;color:#10B981">'+pctS+'%</td>';
     html+='</tr>';
   });
+  
+  // RIGA TOTALI
+  var totMaschi=0, totFemmine=0, totStranieri=0;
+  sorted.forEach(function(key){
+    totMaschi+=data[key].maschi;
+    totFemmine+=data[key].femmine;
+    totStranieri+=data[key].stranieri;
+  });
+  var pctTotM=total>0?((totMaschi/total)*100).toFixed(0):0;
+  var pctTotF=total>0?((totFemmine/total)*100).toFixed(0):0;
+  var pctTotS=total>0?((totStranieri/total)*100).toFixed(0):0;
+  
+  html+='<tr style="background:#F3F4F6;border-top:2px solid #E5E7EB;font-weight:700">';
+  html+='<td style="padding:10px;color:#333">TOTALE</td>';
+  html+='<td style="text-align:center;padding:10px;color:#333">'+total+'</td>';
+  html+='<td style="text-align:center;padding:10px;color:#333">100%</td>';
+  html+='<td style="text-align:center;padding:10px;color:#0047AB">'+totMaschi+'</td>';
+  html+='<td style="text-align:center;padding:10px;color:#0047AB">'+pctTotM+'%</td>';
+  html+='<td style="text-align:center;padding:10px;color:#EC4899">'+totFemmine+'</td>';
+  html+='<td style="text-align:center;padding:10px;color:#EC4899">'+pctTotF+'%</td>';
+  html+='<td style="text-align:center;padding:10px;color:#10B981">'+totStranieri+'</td>';
+  html+='<td style="text-align:center;padding:10px;color:#10B981">'+pctTotS+'%</td>';
+  html+='</tr>';
   
   html+='</tbody></table>';
   tableDiv.innerHTML=html;
