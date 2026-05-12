@@ -97,7 +97,11 @@ function parseRows(rows){
     if(dv instanceof Date&&!isNaN(dv))d=dv;
     else if(typeof dv==='string'&&dv)d=new Date(dv);
     else if(typeof dv==='number'){try{var dt=XLSX.SSF.parse_date_code(dv);if(dt)d=new Date(dt.y,dt.m-1,dt.d);}catch(x){}}
-    out.push({tiporete:String(r['Tipo rete']||'').trim()||'N/D',promotore:String(r['Promotore']||'').trim()||'N/D',acuradi:String(r['A cura di']||'').trim()||'N/D',importo:imp,anno:d&&!isNaN(d)?d.getFullYear():null,mese:d&&!isNaN(d)?d.getMonth()+1:null,partitaiva:String(r['B,2: Partita IVA']||'').trim()||null,codicecliente:String(r['C,3: Codice Cliente']||'').trim()||null,ateco:String(r['ateco']||'').trim()||null,unione:String(r['unione']||'').trim()||null,mestiere:String(r['mestiere']||'').trim()||null,settore:String(r['settore']||'').trim()||null,sesso:String(r['sesso']||'').trim()||null,nazionalita:String(r['nazionalità']||r['nazionalita']||'').trim()||null});
+    
+    var naz=String(r['nazionalita']||'').trim();
+    if(idx===0) console.log('🔍 Prima riga - nazionalita:', naz, '| valore raw:', r['nazionalita']);
+    
+    out.push({tiporete:String(r['Tipo rete']||'').trim()||'N/D',promotore:String(r['Promotore']||'').trim()||'N/D',acuradi:String(r['A cura di']||'').trim()||'N/D',importo:imp,anno:d&&!isNaN(d)?d.getFullYear():null,mese:d&&!isNaN(d)?d.getMonth()+1:null,partitaiva:String(r['B,2: Partita IVA']||'').trim()||null,codicecliente:String(r['C,3: Codice Cliente']||'').trim()||null,ateco:String(r['ateco']||'').trim()||null,unione:String(r['unione']||'').trim()||null,mestiere:String(r['mestiere']||'').trim()||null,settore:String(r['settore']||'').trim()||null,sesso:String(r['sesso']||'').trim()||null,nazionalita:naz||null});
   });
   console.log('✅ Parsed:',out.length,'record. Skipped:',skipped);
   return out;
