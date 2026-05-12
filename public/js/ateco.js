@@ -264,7 +264,7 @@ function renderTableCard(data,title,color,total,container){
   tableDiv.innerHTML=html;
   cardDiv.appendChild(tableDiv);
   
-  // GRAFICO sotto la tabella
+  // GRAFICO gradient area sotto la tabella
   var chartWrap=document.createElement('div');
   chartWrap.style.cssText='padding:0 16px 16px 16px';
   var chartBox=document.createElement('div');
@@ -276,7 +276,7 @@ function renderTableCard(data,title,color,total,container){
   chartBox.appendChild(chartTitle);
   
   var canvasWrap=document.createElement('div');
-  canvasWrap.style.cssText='background:rgba(255,255,255,0.1);border-radius:8px;padding:10px';
+  canvasWrap.style.cssText='background:rgba(255,255,255,0.95);border-radius:8px;padding:16px';
   var canvas=document.createElement('canvas');
   canvas.style.cssText='width:100%;height:300px';
   canvasWrap.appendChild(canvas);
@@ -286,43 +286,65 @@ function renderTableCard(data,title,color,total,container){
   
   container.appendChild(cardDiv);
   
-  // Render chart
+  // Render gradient area chart
   var top15=sorted.slice(0,15);
   var labels=top15.map(function(k){return k.length>20?k.substring(0,18)+'…':k;});
   var values=top15.map(function(k){return data[k].tot;});
   
-  // Colore con alpha per area fill
+  var ctx=canvas.getContext('2d');
+  var gradient=ctx.createLinearGradient(0,0,0,300);
+  
+  // Colori gradient per ogni card
   var rgbMatch=color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-  var r2=parseInt(rgbMatch[1],16), g2=parseInt(rgbMatch[2],16), b2=parseInt(rgbMatch[3],16);
+  var cr=parseInt(rgbMatch[1],16),cg=parseInt(rgbMatch[2],16),cb=parseInt(rgbMatch[3],16);
+  gradient.addColorStop(0,'rgba('+cr+','+cg+','+cb+',0.4)');
+  gradient.addColorStop(0.5,'rgba('+cr+','+cg+','+cb+',0.2)');
+  gradient.addColorStop(1,'rgba('+cr+','+cg+','+cb+',0.02)');
   
   new Chart(canvas,{
-    type:'bar',
+    type:'line',
     data:{
       labels:labels,
       datasets:[{
         label:'Totale',
         data:values,
-        backgroundColor:'rgba(255,255,255,0.3)',
-        borderColor:'rgba(255,255,255,0.8)',
-        borderWidth:1,
-        borderRadius:4
+        borderColor:color,
+        borderWidth:2,
+        backgroundColor:gradient,
+        fill:true,
+        tension:0.4,
+        pointRadius:5,
+        pointHoverRadius:7,
+        pointBackgroundColor:color,
+        pointBorderColor:'white',
+        pointBorderWidth:2,
+        pointHoverBackgroundColor:color
       }]
     },
     options:{
       responsive:true,
       maintainAspectRatio:false,
       plugins:{
-        legend:{display:false}
+        filler:{propagate:true},
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'rgba(255,255,255,0.95)',
+          titleColor:'#333',
+          bodyColor:'#666',
+          borderColor:'#E5E7EB',
+          borderWidth:1,
+          padding:12
+        }
       },
       scales:{
         x:{
-          ticks:{color:'rgba(255,255,255,0.8)',font:{size:10},maxRotation:45,minRotation:45},
-          grid:{display:false}
+          grid:{display:false},
+          ticks:{color:'#64748B',font:{size:10},maxRotation:45,minRotation:45}
         },
         y:{
-          ticks:{color:'rgba(255,255,255,0.8)',font:{size:10}},
-          grid:{color:'rgba(255,255,255,0.1)'},
-          beginAtZero:true
+          beginAtZero:true,
+          grid:{color:'rgba(15,23,42,0.06)'},
+          ticks:{color:'#64748B',font:{size:11}}
         }
       }
     }
