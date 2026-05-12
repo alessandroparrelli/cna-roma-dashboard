@@ -392,7 +392,7 @@ function renderTableCard(data,title,color,total,container){
   container.appendChild(cardDiv);
   
   // Render gradient area chart
-  var top15=sorted.slice(0,15);
+  var top15=getSorted().slice(0,15);
   var labels=top15.map(function(k){return k.length>20?k.substring(0,18)+'…':k;});
   var values=top15.map(function(k){return data[k].tot;});
   
