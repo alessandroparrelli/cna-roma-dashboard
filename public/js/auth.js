@@ -24,7 +24,7 @@ async function doLogin(){
     var hash=await sha256hex(pwd);
     console.log('✅ Hash generato:', hash.substring(0,10) + '...');
     
-    var query='cna_users?select=id,nome,cognome,email,ruolo,avatar_base64,tabs_allowed&email=eq.'+encodeURIComponent(email)+'&password_sha256=eq.'+hash+'&attivo=eq.true';
+    var query='cna_users?select=id,nome,cognome,email,ruolo,avatar_base64&email=eq.'+encodeURIComponent(email)+'&password_sha256=eq.'+hash+'&attivo=eq.true';
     console.log('📝 Query:', query);
     
     var rows=await sbGet(query);
