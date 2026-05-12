@@ -142,13 +142,22 @@ async function writeLog(userId, email, nomeCompleto, esito){
 
 async function loadRuoli(){
   try {
-    var users = await sbGet('cna_users?select=id,nome,cognome,email,ruolo,attivo&order=email.asc');
+    var users = await sbGet('cna_users?select=id,nome,cognome,email,ruolo,attivo,tabs_allowed&order=email.asc');
     var tb = G('ruoli-tbody');
     
     if(!users || users.length === 0) {
-      tb.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:20px;color:var(--text-dim)">Nessun utente</td></tr>';
+      tb.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-dim)">Nessun utente</td></tr>';
       return;
     }
+    
+    var allTabs=[
+      {id:'tab-overview',label:'Tesseramento'},
+      {id:'tab-promotori',label:'Analisi'},
+      {id:'tab-anagrafiche',label:'Anagrafiche'},
+      {id:'tab-contratti',label:'Contratti'},
+      {id:'tab-ateco',label:'ATECO'},
+      {id:'tab-import',label:'Carica Dati'}
+    ];
     
     tb.innerHTML = users.map(function(u) {
       var roleBadge = '';
@@ -169,7 +178,23 @@ async function loadRuoli(){
         ? '<span class="badge badge-on">● Attivo</span>'
         : '<span class="badge badge-off">● Inattivo</span>';
       
-      return '<tr style="border-bottom:1px solid var(--border);hover:background:var(--surface2)">' +
+      // Checkbox tab permessi (solo per non-admin)
+      var tabsHtml = '';
+      if(u.ruolo !== 'admin') {
+        var userTabs = u.tabs_allowed || [];
+        tabsHtml = '<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">';
+        allTabs.forEach(function(t){
+          var checked = userTabs.indexOf(t.id) >= 0 ? ' checked' : '';
+          tabsHtml += '<label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;padding:3px 8px;border-radius:4px;background:' + (checked ? 'rgba(0,71,171,0.1)' : '#f3f4f6') + ';transition:all 0.2s">';
+          tabsHtml += '<input type="checkbox" class="tab-perm-cb" data-user-id="' + u.id + '" data-tab="' + t.id + '"' + checked + ' style="cursor:pointer;accent-color:#0047AB">';
+          tabsHtml += '<span>' + t.label + '</span></label>';
+        });
+        tabsHtml += '</div>';
+      } else {
+        tabsHtml = '<div style="margin-top:8px;font-size:11px;color:#999;font-style:italic">Accesso completo</div>';
+      }
+      
+      return '<tr style="border-bottom:1px solid var(--border)">' +
         '<td style="padding:10px">' + escapeHtml(u.email) + '</td>' +
         '<td style="padding:10px">' + escapeHtml(u.nome + ' ' + u.cognome) + '</td>' +
         '<td style="padding:10px"><span style="color:' + roleColor + ';font-weight:600">' + roleBadge + '</span></td>' +
@@ -179,10 +204,11 @@ async function loadRuoli(){
         '<option value="supervisore"' + (u.ruolo === 'supervisore' ? ' selected' : '') + '>Supervisore</option>' +
         '<option value="utente"' + (u.ruolo === 'utente' ? ' selected' : '') + '>Utente</option>' +
         '</select>' +
+        tabsHtml +
         '</td></tr>';
     }).join('');
     
-    // Attacca event listener ai select
+    // Attacca event listener ai select ruolo
     setTimeout(function() {
       document.querySelectorAll('.role-select').forEach(function(select) {
         select.addEventListener('change', function() {
@@ -191,6 +217,21 @@ async function loadRuoli(){
           updateUserRole(userId, newRole);
         });
       });
+      
+      // Attacca event listener ai checkbox tab
+      document.querySelectorAll('.tab-perm-cb').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+          var userId = this.getAttribute('data-user-id');
+          // Raccogli tutti i checkbox per questo utente
+          var cbs = document.querySelectorAll('.tab-perm-cb[data-user-id="' + userId + '"]');
+          var tabs = [];
+          cbs.forEach(function(c) {
+            if(c.checked) tabs.push(c.getAttribute('data-tab'));
+          });
+          updateUserTabs(userId, tabs);
+        });
+      });
+      
       // Carica i checkbox dei permessi
       loadPermissionsCheckboxes();
     }, 100);
@@ -252,6 +293,18 @@ async function updateUserRole(id, newRole) {
     console.error('updateUserRole error:', err);
     toast('❌ Errore: ' + err.message, 'error');
     loadRuoli(); // Ripristina il valore precedente
+  }
+}
+
+async function updateUserTabs(userId, tabs) {
+  try {
+    console.log('updateUserTabs:', userId, tabs);
+    await sbPatch('cna_users?id=eq.' + userId, { tabs_allowed: tabs });
+    toast('✓ Permessi tab aggiornati', 'success');
+  } catch(err) {
+    console.error('updateUserTabs error:', err);
+    toast('❌ Errore: ' + err.message, 'error');
+    loadRuoli();
   }
 }
 

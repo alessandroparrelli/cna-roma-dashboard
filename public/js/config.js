@@ -36,10 +36,15 @@ function canAccessTab(tabId){
     return true;
   }
   
-  // Supervisore: overview, promotori, anagrafiche (NO import, NO admin panel)
-  if(role==='supervisore') return tabId === 'tab-overview' || tabId === 'tab-promotori' || tabId === 'tab-anagrafiche';
+  // Se l'utente ha tabs_allowed personalizzati, usa quelli
+  if(session.tabs_allowed && session.tabs_allowed.length > 0) {
+    var allowed = session.tabs_allowed.indexOf(tabId) >= 0;
+    console.log('tabs_allowed check:', tabId, allowed, session.tabs_allowed);
+    return allowed;
+  }
   
-  // Utente: overview, promotori, anagrafiche (interroga archivio)
+  // Default per ruolo (fallback se tabs_allowed non è impostato)
+  if(role==='supervisore') return tabId === 'tab-overview' || tabId === 'tab-promotori' || tabId === 'tab-anagrafiche';
   if(role==='utente') return tabId === 'tab-overview' || tabId === 'tab-promotori' || tabId === 'tab-anagrafiche';
   
   console.log('Access denied to', tabId, 'for role', role);
