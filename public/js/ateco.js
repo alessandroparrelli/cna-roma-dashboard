@@ -39,27 +39,63 @@ async function atecoLoad(force){
 function atecoBuildUI(){
   var tab=G('tab-ateco');
   if(!tab) return;
+  
+  // Inietta CSS animazioni
+  if(!document.getElementById('ateco-animations')){
+    var style=document.createElement('style');
+    style.id='ateco-animations';
+    style.textContent=`
+      @keyframes atecoFadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+      @keyframes atecoPulse{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
+      @keyframes atecoSlideIn{from{opacity:0;transform:translateX(-20px)}to{opacity:1;transform:translateX(0)}}
+      @keyframes atecoGlow{0%{box-shadow:0 4px 6px rgba(0,0,0,0.07)}50%{box-shadow:0 8px 25px rgba(0,71,171,0.15)}100%{box-shadow:0 4px 6px rgba(0,0,0,0.07)}}
+      .ateco-kpi{transition:all 0.3s cubic-bezier(0.4,0,0.2,1);cursor:default}
+      .ateco-kpi:hover{transform:translateY(-6px) scale(1.03);box-shadow:0 12px 30px rgba(0,0,0,0.15)!important}
+      .ateco-card{transition:all 0.3s cubic-bezier(0.4,0,0.2,1);animation:atecoFadeIn 0.6s ease-out}
+      .ateco-card:hover{box-shadow:0 12px 40px rgba(0,0,0,0.12)!important;transform:translateY(-2px)}
+      .ateco-card-header{transition:all 0.3s ease}
+      .ateco-card:hover .ateco-card-header{letter-spacing:1px;padding-left:24px}
+      .ateco-row{transition:all 0.25s ease}
+      .ateco-row:hover{background:linear-gradient(90deg,rgba(0,71,171,0.04),rgba(0,71,171,0.08))!important;transform:scale(1.005)}
+      .ateco-row td{transition:all 0.25s ease}
+      .ateco-row:hover td{padding-top:12px;padding-bottom:12px}
+      .ateco-row:hover td:first-child{font-weight:700!important;color:#0047AB!important}
+      .ateco-btn{transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+      .ateco-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.15);background:var(--btn-color)!important;color:white!important}
+      .ateco-btn:active{transform:translateY(0);box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+      .ateco-filter select{transition:all 0.3s ease}
+      .ateco-filter select:hover{border-color:#0047AB!important;box-shadow:0 0 0 3px rgba(0,71,171,0.1)}
+      .ateco-filter select:focus{border-color:#0047AB!important;box-shadow:0 0 0 3px rgba(0,71,171,0.2);outline:none}
+      .ateco-chart-box{transition:all 0.3s ease}
+      .ateco-chart-box:hover{transform:translateY(-3px);box-shadow:0 15px 40px rgba(0,0,0,0.2)}
+      .ateco-reset-btn{transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+      .ateco-reset-btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(0,71,171,0.4)!important;filter:brightness(1.1)}
+      .ateco-reset-btn:active{transform:translateY(0)}
+    `;
+    document.head.appendChild(style);
+  }
+  
   var h='<div style="padding:20px">';
 
   // FILTRI
-  h+='<div style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB">';
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
+  h+='<div class="ateco-card" style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB">';
+  h+='<div class="ateco-filter" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">ANNO</label><select id="at-anno" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">UNIONE</label><select id="at-unione" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">MESTIERE</label><select id="at-mest" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">SETTORE</label><select id="at-sett" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">SESSO</label><select id="at-sex" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">NAZIONALITÀ</label><select id="at-naz" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
-  h+='<div style="display:flex;align-items:flex-end"><button id="at-reset" style="width:100%;padding:10px;background:linear-gradient(135deg,#0047AB,#003380);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;box-shadow:0 4px 6px rgba(0,71,171,0.3)">Reset</button></div>';
+  h+='<div style="display:flex;align-items:flex-end"><button id="at-reset" class="ateco-reset-btn" style="width:100%;padding:10px;background:linear-gradient(135deg,#0047AB,#003380);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;box-shadow:0 4px 6px rgba(0,71,171,0.3)">Reset</button></div>';
   h+='</div></div>';
 
   // KPI
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">';
-  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">CONTRATTI</div><div style="font-size:32px;font-weight:700;color:#0047AB" id="at-k1">0</div></div>';
-  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #DC2626;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">UNIONI</div><div style="font-size:32px;font-weight:700;color:#DC2626" id="at-k2">0</div></div>';
-  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #F59E0B;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">MESTIERI</div><div style="font-size:32px;font-weight:700;color:#F59E0B" id="at-k3">0</div></div>';
-  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #EC4899;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">% DONNE</div><div style="font-size:32px;font-weight:700;color:#EC4899" id="at-k4">0</div></div>';
-  h+='<div style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #10B981;text-align:center"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">% STRANIERI</div><div style="font-size:32px;font-weight:700;color:#10B981" id="at-k5">0</div></div>';
+  h+='<div class="ateco-kpi" style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB;text-align:center;animation:atecoFadeIn 0.3s ease-out"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">CONTRATTI</div><div style="font-size:32px;font-weight:700;color:#0047AB" id="at-k1">0</div></div>';
+  h+='<div class="ateco-kpi" style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #DC2626;text-align:center;animation:atecoFadeIn 0.4s ease-out"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">UNIONI</div><div style="font-size:32px;font-weight:700;color:#DC2626" id="at-k2">0</div></div>';
+  h+='<div class="ateco-kpi" style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #F59E0B;text-align:center;animation:atecoFadeIn 0.5s ease-out"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">MESTIERI</div><div style="font-size:32px;font-weight:700;color:#F59E0B" id="at-k3">0</div></div>';
+  h+='<div class="ateco-kpi" style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #EC4899;text-align:center;animation:atecoFadeIn 0.6s ease-out"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">% DONNE</div><div style="font-size:32px;font-weight:700;color:#EC4899" id="at-k4">0</div></div>';
+  h+='<div class="ateco-kpi" style="background:white;padding:18px;border-radius:12px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #10B981;text-align:center;animation:atecoFadeIn 0.7s ease-out"><div style="font-size:11px;color:#666;font-weight:700;margin-bottom:8px">% STRANIERI</div><div style="font-size:32px;font-weight:700;color:#10B981" id="at-k5">0</div></div>';
   h+='</div>';
 
   h+='<div id="at-cards-container" style="display:grid;gap:20px"></div>';
@@ -195,10 +231,12 @@ function renderTableCard(data,title,color,total,container){
   var showAll=false;
   
   var cardDiv=document.createElement('div');
+  cardDiv.className='ateco-card';
   cardDiv.style.cssText='background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.07);margin-bottom:20px';
   
   var headerDiv=document.createElement('div');
-  headerDiv.style.cssText='background:'+color+';padding:16px;color:white;font-weight:700;font-size:14px';
+  headerDiv.className='ateco-card-header';
+  headerDiv.style.cssText='background:'+color+';padding:16px;color:white;font-weight:700;font-size:14px;transition:all 0.3s ease';
   headerDiv.innerHTML=title;
   cardDiv.appendChild(headerDiv);
   
@@ -231,7 +269,7 @@ function renderTableCard(data,title,color,total,container){
       var pctF=item.tot>0?((item.femmine/item.tot)*100).toFixed(0):0;
       var pctS=item.tot>0?((item.stranieri/item.tot)*100).toFixed(0):0;
       
-      html+='<tr style="border-bottom:1px solid #E5E7EB">';
+      html+='<tr class="ateco-row" style="border-bottom:1px solid #E5E7EB;cursor:default">';
       html+='<td style="padding:10px;color:#333;font-weight:500">'+escapeHtml(key)+'</td>';
       html+='<td style="text-align:center;padding:10px;color:#333;font-weight:600">'+item.tot+'</td>';
       html+='<td style="text-align:center;padding:10px;color:#666">'+pctTot+'%</td>';
@@ -278,7 +316,8 @@ function renderTableCard(data,title,color,total,container){
     if(sorted.length>10){
       var btn=document.createElement('button');
       btn.textContent=showAll?'Nascondi':'Mostra altro ('+sorted.length+')';
-      btn.style.cssText='width:100%;padding:10px;background:transparent;border:1px solid '+color+';color:'+color+';border-radius:6px;cursor:pointer;font-weight:600';
+      btn.className='ateco-btn';
+      btn.style.cssText='width:100%;padding:10px;background:transparent;border:1px solid '+color+';color:'+color+';border-radius:6px;cursor:pointer;font-weight:600;--btn-color:'+color;
       btn.onclick=function(){showAll=!showAll;refresh();};
       btnDiv.innerHTML='';
       btnDiv.appendChild(btn);
@@ -291,6 +330,7 @@ function renderTableCard(data,title,color,total,container){
   var chartWrap=document.createElement('div');
   chartWrap.style.cssText='padding:0 16px 16px 16px';
   var chartBox=document.createElement('div');
+  chartBox.className='ateco-chart-box';
   chartBox.style.cssText='background:linear-gradient(135deg,'+color+','+color+'CC);border-radius:12px;padding:20px;position:relative';
   
   var chartTitle=document.createElement('div');
