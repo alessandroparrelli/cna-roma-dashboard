@@ -102,7 +102,7 @@ function parseRows(rows){
     else if(typeof dv==='string'&&dv)d=new Date(dv);
     else if(typeof dv==='number'){try{var dt=XLSX.SSF.parse_date_code(dv);if(dt)d=new Date(dt.y,dt.m-1,dt.d);}catch(x){}}
     
-    var naz=String(r['nazionalità']||r['nazionalita']||'').trim();
+    var naz=String(r['nazionalita']||'').trim();
     var sx=String(r['sesso']||'').trim();
     // Normalizza sesso: M->Maschio, F->Femmina
     if(sx==='M' || sx==='m') sx='Maschio';
