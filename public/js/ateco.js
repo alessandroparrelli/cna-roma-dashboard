@@ -63,6 +63,9 @@ function atecoBuildUI(){
       .ateco-btn{transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
       .ateco-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.15);background:var(--btn-color)!important;color:white!important}
       .ateco-btn:active{transform:translateY(0);box-shadow:0 2px 8px rgba(0,0,0,0.1)}
+      .ateco-th{transition:all 0.2s ease;cursor:pointer;user-select:none}
+      .ateco-th:hover{background:#E5E7EB!important;transform:scale(1.02)}
+      .ateco-th:active{transform:scale(0.98)}
       .ateco-filter select{transition:all 0.3s ease}
       .ateco-filter select:hover{border-color:#0047AB!important;box-shadow:0 0 0 3px rgba(0,71,171,0.1)}
       .ateco-filter select:focus{border-color:#0047AB!important;box-shadow:0 0 0 3px rgba(0,71,171,0.2);outline:none}
@@ -227,8 +230,27 @@ function atecoRender(){
 }
 
 function renderTableCard(data,title,color,total,container){
-  var sorted=Object.keys(data).sort(function(a,b){return data[b].tot-data[a].tot;});
+  var keys=Object.keys(data);
   var showAll=false;
+  var sortCol='tot';
+  var sortDir='desc';
+  
+  function getSorted(){
+    return keys.slice().sort(function(a,b){
+      var va,vb;
+      if(sortCol==='name'){va=a.toLowerCase();vb=b.toLowerCase();return sortDir==='asc'?va.localeCompare(vb):vb.localeCompare(va);}
+      if(sortCol==='tot'){va=data[a].tot;vb=data[b].tot;}
+      else if(sortCol==='pct'){va=data[a].tot;vb=data[b].tot;}
+      else if(sortCol==='maschi'){va=data[a].maschi;vb=data[b].maschi;}
+      else if(sortCol==='pctM'){va=data[a].tot>0?data[a].maschi/data[a].tot:0;vb=data[b].tot>0?data[b].maschi/data[b].tot:0;}
+      else if(sortCol==='femmine'){va=data[a].femmine;vb=data[b].femmine;}
+      else if(sortCol==='pctF'){va=data[a].tot>0?data[a].femmine/data[a].tot:0;vb=data[b].tot>0?data[b].femmine/data[b].tot:0;}
+      else if(sortCol==='stranieri'){va=data[a].stranieri;vb=data[b].stranieri;}
+      else if(sortCol==='pctS'){va=data[a].tot>0?data[a].stranieri/data[a].tot:0;vb=data[b].tot>0?data[b].stranieri/data[b].tot:0;}
+      else{va=data[a].tot;vb=data[b].tot;}
+      return sortDir==='asc'?va-vb:vb-va;
+    });
+  }
   
   var cardDiv=document.createElement('div');
   cardDiv.className='ateco-card';
@@ -248,18 +270,29 @@ function renderTableCard(data,title,color,total,container){
   btnDiv.style.cssText='padding:0 16px 16px 16px';
   cardDiv.appendChild(btnDiv);
   
+  var cols=[
+    {id:'name',label:title,align:'left',color:'#333'},
+    {id:'tot',label:'TOTALE',align:'center',color:'#333'},
+    {id:'pct',label:'%',align:'center',color:'#333'},
+    {id:'maschi',label:'MASCHI',align:'center',color:'#0047AB'},
+    {id:'pctM',label:'%',align:'center',color:'#0047AB'},
+    {id:'femmine',label:'FEMMINE',align:'center',color:'#EC4899'},
+    {id:'pctF',label:'%',align:'center',color:'#EC4899'},
+    {id:'stranieri',label:'STRANIERI',align:'center',color:'#10B981'},
+    {id:'pctS',label:'%',align:'center',color:'#10B981'}
+  ];
+  
+  function arrow(colId){
+    if(sortCol!==colId) return ' <span style="opacity:0.3;font-size:10px">⇅</span>';
+    return sortDir==='asc'?' <span style="font-size:10px">▲</span>':' <span style="font-size:10px">▼</span>';
+  }
+  
   function buildTable(items){
     var html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
     html+='<thead><tr style="background:#F3F4F6;border-bottom:2px solid #E5E7EB">';
-    html+='<th style="text-align:left;padding:10px;font-weight:700;color:#333">'+title+'</th>';
-    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#333">TOTALE</th>';
-    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#333">%</th>';
-    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#0047AB">MASCHI</th>';
-    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#0047AB">%</th>';
-    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#EC4899">FEMMINE</th>';
-    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#EC4899">%</th>';
-    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#10B981">STRANIERI</th>';
-    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#10B981">%</th>';
+    cols.forEach(function(c){
+      html+='<th class="ateco-th" data-col="'+c.id+'" style="text-align:'+c.align+';padding:10px;font-weight:700;color:'+c.color+';cursor:pointer;user-select:none;white-space:nowrap;transition:all 0.2s ease">'+c.label+arrow(c.id)+'</th>';
+    });
     html+='</tr></thead><tbody>';
     
     items.forEach(function(key){
@@ -283,12 +316,8 @@ function renderTableCard(data,title,color,total,container){
     });
     
     // RIGA TOTALI
-    var totMaschi=0, totFemmine=0, totStranieri=0;
-    sorted.forEach(function(key){
-      totMaschi+=data[key].maschi;
-      totFemmine+=data[key].femmine;
-      totStranieri+=data[key].stranieri;
-    });
+    var totMaschi=0,totFemmine=0,totStranieri=0;
+    keys.forEach(function(key){totMaschi+=data[key].maschi;totFemmine+=data[key].femmine;totStranieri+=data[key].stranieri;});
     var pctTotM=total>0?((totMaschi/total)*100).toFixed(0):0;
     var pctTotF=total>0?((totFemmine/total)*100).toFixed(0):0;
     var pctTotS=total>0?((totStranieri/total)*100).toFixed(0):0;
@@ -310,12 +339,25 @@ function renderTableCard(data,title,color,total,container){
   }
   
   function refresh(){
+    var sorted=getSorted();
     var items=showAll?sorted:sorted.slice(0,10);
     tableDiv.innerHTML=buildTable(items);
     
-    if(sorted.length>10){
+    // Attach click handlers sugli header
+    tableDiv.querySelectorAll('.ateco-th').forEach(function(th){
+      th.addEventListener('click',function(){
+        var col=this.getAttribute('data-col');
+        if(sortCol===col) sortDir=sortDir==='asc'?'desc':'asc';
+        else{sortCol=col;sortDir=col==='name'?'asc':'desc';}
+        refresh();
+      });
+      th.addEventListener('mouseenter',function(){this.style.background='#E5E7EB';});
+      th.addEventListener('mouseleave',function(){this.style.background='';});
+    });
+    
+    if(keys.length>10){
       var btn=document.createElement('button');
-      btn.textContent=showAll?'Nascondi':'Mostra altro ('+sorted.length+')';
+      btn.textContent=showAll?'Nascondi':'Mostra altro ('+keys.length+')';
       btn.className='ateco-btn';
       btn.style.cssText='width:100%;padding:10px;background:transparent;border:1px solid '+color+';color:'+color+';border-radius:6px;cursor:pointer;font-weight:600;--btn-color:'+color;
       btn.onclick=function(){showAll=!showAll;refresh();};
