@@ -263,7 +263,70 @@ function renderTableCard(data,title,color,total,container){
   html+='</tbody></table>';
   tableDiv.innerHTML=html;
   cardDiv.appendChild(tableDiv);
+  
+  // GRAFICO sotto la tabella
+  var chartWrap=document.createElement('div');
+  chartWrap.style.cssText='padding:0 16px 16px 16px';
+  var chartBox=document.createElement('div');
+  chartBox.style.cssText='background:linear-gradient(135deg,'+color+','+color+'CC);border-radius:12px;padding:20px;position:relative';
+  
+  var chartTitle=document.createElement('div');
+  chartTitle.style.cssText='color:white;font-weight:700;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px';
+  chartTitle.innerHTML='✦ Distribuzione per '+title.charAt(0)+title.slice(1).toLowerCase();
+  chartBox.appendChild(chartTitle);
+  
+  var canvasWrap=document.createElement('div');
+  canvasWrap.style.cssText='background:rgba(255,255,255,0.1);border-radius:8px;padding:10px';
+  var canvas=document.createElement('canvas');
+  canvas.style.cssText='width:100%;height:300px';
+  canvasWrap.appendChild(canvas);
+  chartBox.appendChild(canvasWrap);
+  chartWrap.appendChild(chartBox);
+  cardDiv.appendChild(chartWrap);
+  
   container.appendChild(cardDiv);
+  
+  // Render chart
+  var top15=sorted.slice(0,15);
+  var labels=top15.map(function(k){return k.length>20?k.substring(0,18)+'…':k;});
+  var values=top15.map(function(k){return data[k].tot;});
+  
+  // Colore con alpha per area fill
+  var rgbMatch=color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+  var r2=parseInt(rgbMatch[1],16), g2=parseInt(rgbMatch[2],16), b2=parseInt(rgbMatch[3],16);
+  
+  new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[{
+        label:'Totale',
+        data:values,
+        backgroundColor:'rgba(255,255,255,0.3)',
+        borderColor:'rgba(255,255,255,0.8)',
+        borderWidth:1,
+        borderRadius:4
+      }]
+    },
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false}
+      },
+      scales:{
+        x:{
+          ticks:{color:'rgba(255,255,255,0.8)',font:{size:10},maxRotation:45,minRotation:45},
+          grid:{display:false}
+        },
+        y:{
+          ticks:{color:'rgba(255,255,255,0.8)',font:{size:10}},
+          grid:{color:'rgba(255,255,255,0.1)'},
+          beginAtZero:true
+        }
+      }
+    }
+  });
 }
 
 function escapeHtml(text){
