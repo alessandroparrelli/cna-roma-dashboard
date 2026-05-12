@@ -192,6 +192,7 @@ function atecoRender(){
 
 function renderTableCard(data,title,color,total,container){
   var sorted=Object.keys(data).sort(function(a,b){return data[b].tot-data[a].tot;});
+  var showAll=false;
   
   var cardDiv=document.createElement('div');
   cardDiv.style.cssText='background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.07);margin-bottom:20px';
@@ -203,66 +204,88 @@ function renderTableCard(data,title,color,total,container){
   
   var tableDiv=document.createElement('div');
   tableDiv.style.cssText='overflow-x:auto;padding:16px';
-  
-  var html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
-  html+='<thead><tr style="background:#F3F4F6;border-bottom:2px solid #E5E7EB">';
-  html+='<th style="text-align:left;padding:10px;font-weight:700;color:#333">'+title+'</th>';
-  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#333">TOTALE</th>';
-  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#333">%</th>';
-  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#0047AB">MASCHI</th>';
-  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#0047AB">%</th>';
-  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#EC4899">FEMMINE</th>';
-  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#EC4899">%</th>';
-  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#10B981">STRANIERI</th>';
-  html+='<th style="text-align:center;padding:10px;font-weight:700;color:#10B981">%</th>';
-  html+='</tr></thead><tbody>';
-  
-  sorted.forEach(function(key){
-    var item=data[key];
-    var pctTot=total>0?((item.tot/total)*100).toFixed(1):0;
-    var pctM=item.tot>0?((item.maschi/item.tot)*100).toFixed(0):0;
-    var pctF=item.tot>0?((item.femmine/item.tot)*100).toFixed(0):0;
-    var pctS=item.tot>0?((item.stranieri/item.tot)*100).toFixed(0):0;
-    
-    html+='<tr style="border-bottom:1px solid #E5E7EB">';
-    html+='<td style="padding:10px;color:#333;font-weight:500">'+escapeHtml(key)+'</td>';
-    html+='<td style="text-align:center;padding:10px;color:#333;font-weight:600">'+item.tot+'</td>';
-    html+='<td style="text-align:center;padding:10px;color:#666">'+pctTot+'%</td>';
-    html+='<td style="text-align:center;padding:10px;color:#0047AB;font-weight:600">'+item.maschi+'</td>';
-    html+='<td style="text-align:center;padding:10px;color:#0047AB">'+pctM+'%</td>';
-    html+='<td style="text-align:center;padding:10px;color:#EC4899;font-weight:600">'+item.femmine+'</td>';
-    html+='<td style="text-align:center;padding:10px;color:#EC4899">'+pctF+'%</td>';
-    html+='<td style="text-align:center;padding:10px;color:#10B981;font-weight:600">'+item.stranieri+'</td>';
-    html+='<td style="text-align:center;padding:10px;color:#10B981">'+pctS+'%</td>';
-    html+='</tr>';
-  });
-  
-  // RIGA TOTALI
-  var totMaschi=0, totFemmine=0, totStranieri=0;
-  sorted.forEach(function(key){
-    totMaschi+=data[key].maschi;
-    totFemmine+=data[key].femmine;
-    totStranieri+=data[key].stranieri;
-  });
-  var pctTotM=total>0?((totMaschi/total)*100).toFixed(0):0;
-  var pctTotF=total>0?((totFemmine/total)*100).toFixed(0):0;
-  var pctTotS=total>0?((totStranieri/total)*100).toFixed(0):0;
-  
-  html+='<tr style="background:#F3F4F6;border-top:2px solid #E5E7EB;font-weight:700">';
-  html+='<td style="padding:10px;color:#333">TOTALE</td>';
-  html+='<td style="text-align:center;padding:10px;color:#333">'+total+'</td>';
-  html+='<td style="text-align:center;padding:10px;color:#333">100%</td>';
-  html+='<td style="text-align:center;padding:10px;color:#0047AB">'+totMaschi+'</td>';
-  html+='<td style="text-align:center;padding:10px;color:#0047AB">'+pctTotM+'%</td>';
-  html+='<td style="text-align:center;padding:10px;color:#EC4899">'+totFemmine+'</td>';
-  html+='<td style="text-align:center;padding:10px;color:#EC4899">'+pctTotF+'%</td>';
-  html+='<td style="text-align:center;padding:10px;color:#10B981">'+totStranieri+'</td>';
-  html+='<td style="text-align:center;padding:10px;color:#10B981">'+pctTotS+'%</td>';
-  html+='</tr>';
-  
-  html+='</tbody></table>';
-  tableDiv.innerHTML=html;
   cardDiv.appendChild(tableDiv);
+  
+  var btnDiv=document.createElement('div');
+  btnDiv.style.cssText='padding:0 16px 16px 16px';
+  cardDiv.appendChild(btnDiv);
+  
+  function buildTable(items){
+    var html='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+    html+='<thead><tr style="background:#F3F4F6;border-bottom:2px solid #E5E7EB">';
+    html+='<th style="text-align:left;padding:10px;font-weight:700;color:#333">'+title+'</th>';
+    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#333">TOTALE</th>';
+    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#333">%</th>';
+    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#0047AB">MASCHI</th>';
+    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#0047AB">%</th>';
+    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#EC4899">FEMMINE</th>';
+    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#EC4899">%</th>';
+    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#10B981">STRANIERI</th>';
+    html+='<th style="text-align:center;padding:10px;font-weight:700;color:#10B981">%</th>';
+    html+='</tr></thead><tbody>';
+    
+    items.forEach(function(key){
+      var item=data[key];
+      var pctTot=total>0?((item.tot/total)*100).toFixed(1):0;
+      var pctM=item.tot>0?((item.maschi/item.tot)*100).toFixed(0):0;
+      var pctF=item.tot>0?((item.femmine/item.tot)*100).toFixed(0):0;
+      var pctS=item.tot>0?((item.stranieri/item.tot)*100).toFixed(0):0;
+      
+      html+='<tr style="border-bottom:1px solid #E5E7EB">';
+      html+='<td style="padding:10px;color:#333;font-weight:500">'+escapeHtml(key)+'</td>';
+      html+='<td style="text-align:center;padding:10px;color:#333;font-weight:600">'+item.tot+'</td>';
+      html+='<td style="text-align:center;padding:10px;color:#666">'+pctTot+'%</td>';
+      html+='<td style="text-align:center;padding:10px;color:#0047AB;font-weight:600">'+item.maschi+'</td>';
+      html+='<td style="text-align:center;padding:10px;color:#0047AB">'+pctM+'%</td>';
+      html+='<td style="text-align:center;padding:10px;color:#EC4899;font-weight:600">'+item.femmine+'</td>';
+      html+='<td style="text-align:center;padding:10px;color:#EC4899">'+pctF+'%</td>';
+      html+='<td style="text-align:center;padding:10px;color:#10B981;font-weight:600">'+item.stranieri+'</td>';
+      html+='<td style="text-align:center;padding:10px;color:#10B981">'+pctS+'%</td>';
+      html+='</tr>';
+    });
+    
+    // RIGA TOTALI
+    var totMaschi=0, totFemmine=0, totStranieri=0;
+    sorted.forEach(function(key){
+      totMaschi+=data[key].maschi;
+      totFemmine+=data[key].femmine;
+      totStranieri+=data[key].stranieri;
+    });
+    var pctTotM=total>0?((totMaschi/total)*100).toFixed(0):0;
+    var pctTotF=total>0?((totFemmine/total)*100).toFixed(0):0;
+    var pctTotS=total>0?((totStranieri/total)*100).toFixed(0):0;
+    
+    html+='<tr style="background:#F3F4F6;border-top:2px solid #E5E7EB;font-weight:700">';
+    html+='<td style="padding:10px;color:#333">TOTALE</td>';
+    html+='<td style="text-align:center;padding:10px;color:#333">'+total+'</td>';
+    html+='<td style="text-align:center;padding:10px;color:#333">100%</td>';
+    html+='<td style="text-align:center;padding:10px;color:#0047AB">'+totMaschi+'</td>';
+    html+='<td style="text-align:center;padding:10px;color:#0047AB">'+pctTotM+'%</td>';
+    html+='<td style="text-align:center;padding:10px;color:#EC4899">'+totFemmine+'</td>';
+    html+='<td style="text-align:center;padding:10px;color:#EC4899">'+pctTotF+'%</td>';
+    html+='<td style="text-align:center;padding:10px;color:#10B981">'+totStranieri+'</td>';
+    html+='<td style="text-align:center;padding:10px;color:#10B981">'+pctTotS+'%</td>';
+    html+='</tr>';
+    
+    html+='</tbody></table>';
+    return html;
+  }
+  
+  function refresh(){
+    var items=showAll?sorted:sorted.slice(0,10);
+    tableDiv.innerHTML=buildTable(items);
+    
+    if(sorted.length>10){
+      var btn=document.createElement('button');
+      btn.textContent=showAll?'Nascondi':'Mostra altro ('+sorted.length+')';
+      btn.style.cssText='width:100%;padding:10px;background:transparent;border:1px solid '+color+';color:'+color+';border-radius:6px;cursor:pointer;font-weight:600';
+      btn.onclick=function(){showAll=!showAll;refresh();};
+      btnDiv.innerHTML='';
+      btnDiv.appendChild(btn);
+    }
+  }
+  
+  refresh();
   
   // GRAFICO gradient area sotto la tabella
   var chartWrap=document.createElement('div');
