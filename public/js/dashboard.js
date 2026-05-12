@@ -110,7 +110,7 @@ function parseRows(rows){
     
     if(idx===0) console.log('🔍 nazionalita:', naz, '| sesso:', sx);
     
-    out.push({tiporete:String(r['Tipo rete']||'').trim()||'N/D',promotore:String(r['Promotore']||'').trim()||'N/D',acuradi:String(r['A cura di']||'').trim()||'N/D',importo:imp,anno:d&&!isNaN(d)?d.getFullYear():null,mese:d&&!isNaN(d)?d.getMonth()+1:null,partitaiva:String(r['B,2: Partita IVA']||'').trim()||null,codicecliente:String(r['C,3: Codice Cliente']||'').trim()||null,ateco:String(r['ateco']||'').trim()||null,unione:String(r['unione']||'').trim()||null,mestiere:String(r['mestiere']||'').trim()||null,settore:String(r['settore']||'').trim()||null,sesso:sx||null,nazionalita:naz});
+    out.push({tiporete:String(r['Tipo rete']||'').trim()||'N/D',promotore:String(r['Promotore']||'').trim()||'N/D',acuradi:String(r['A cura di']||'').trim()||'N/D',importo:imp,anno:d&&!isNaN(d)?d.getFullYear():null,mese:d&&!isNaN(d)?d.getMonth()+1:null,partitaiva:String(r['B,2: Partita IVA']||'').trim()||null,codicecliente:String(r['C,3: Codice Cliente']||'').trim()||null,ateco:String(r['ateco']||'').trim()||null,unione:String(r['unione']||'').trim()||null,mestiere:String(r['mestiere']||'').trim()||null,settore:String(r['settore']||'').trim()||null,sesso:sx||null,nazionalita:naz||null});
   });
   console.log('✅ Parsed:',out.length,'record. Skipped:',skipped);
   return out;
