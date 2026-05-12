@@ -49,16 +49,8 @@ function handleFile(file,isAdd){
       showLoad('Lettura file…');
       var wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
       console.log('📊 File Excel letto. Sheet names:',wb.SheetNames);
-      // Cerca il foglio che contiene la colonna "nazionalita" (senza accento)
-      var sheetName=wb.SheetNames[0];
-      for(var si=0;si<wb.SheetNames.length;si++){
-        var testRows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[si]],{defval:'',range:0});
-        if(testRows.length>0 && testRows[0].hasOwnProperty('nazionalita')){
-          sheetName=wb.SheetNames[si];
-          console.log('✅ Trovato foglio con nazionalita:',sheetName);
-          break;
-        }
-      }
+      var sheetName=wb.SheetNames.indexOf('Foglio1')>=0?'Foglio1':wb.SheetNames[0];
+      console.log('📄 Uso foglio:',sheetName);
       var rows=XLSX.utils.sheet_to_json(wb.Sheets[sheetName],{defval:''});
       console.log('📄 Righe lette:',rows.length);
       if(rows.length>0) console.log('Colonne disponibili:',Object.keys(rows[0]));
