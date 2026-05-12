@@ -144,7 +144,7 @@ function atecoRender(){
     var m=r.mestiere||'N/D';
     var s=r.settore||'N/D';
     var sx=String(r.sesso||'').trim();
-    var n=String(r.nazionalita||'').trim().toLowerCase();
+    var n=String(r.nazionalita||'').trim();
     
     // Debug
     sessoCount[sx]=(sessoCount[sx]||0)+1;
@@ -152,24 +152,24 @@ function atecoRender(){
     
     if(!byUnione[u]) byUnione[u]={tot:0,maschi:0,femmine:0,stranieri:0};
     byUnione[u].tot++;
-    if(sx==='M' || sx==='m') byUnione[u].maschi++;
-    if(sx==='F' || sx==='f') byUnione[u].femmine++;
-    if(n==='straniero') byUnione[u].stranieri++;
+    if(sx==='Maschio') byUnione[u].maschi++;
+    if(sx==='Femmina') byUnione[u].femmine++;
+    if(n==='Straniero') byUnione[u].stranieri++;
     
     if(!byMestiere[m]) byMestiere[m]={tot:0,maschi:0,femmine:0,stranieri:0};
     byMestiere[m].tot++;
-    if(sx==='M' || sx==='m') byMestiere[m].maschi++;
-    if(sx==='F' || sx==='f') byMestiere[m].femmine++;
-    if(n==='straniero') byMestiere[m].stranieri++;
+    if(sx==='Maschio') byMestiere[m].maschi++;
+    if(sx==='Femmina') byMestiere[m].femmine++;
+    if(n==='Straniero') byMestiere[m].stranieri++;
     
     if(!bySettore[s]) bySettore[s]={tot:0,maschi:0,femmine:0,stranieri:0};
     bySettore[s].tot++;
-    if(sx==='M' || sx==='m') bySettore[s].maschi++;
-    if(sx==='F' || sx==='f') bySettore[s].femmine++;
-    if(n==='straniero') bySettore[s].stranieri++;
+    if(sx==='Maschio') bySettore[s].maschi++;
+    if(sx==='Femmina') bySettore[s].femmine++;
+    if(n==='Straniero') bySettore[s].stranieri++;
     
-    if(sx==='F' || sx==='f') donne++;
-    if(n==='straniero') stranieri++;
+    if(sx==='Femmina') donne++;
+    if(n==='Straniero') stranieri++;
   });
   
   console.log('Debug sesso:',sessoCount);
