@@ -77,6 +77,13 @@ function parseRows(rows){
   if(rows.length>0){
     console.log('Colonne ricevute:',Object.keys(rows[0]));
     console.log('Prima riga:',rows[0]);
+    // Log specifico per le colonne ATECO
+    console.log('ateco:',rows[0]['ateco']);
+    console.log('unione:',rows[0]['unione']);
+    console.log('mestiere:',rows[0]['mestiere']);
+    console.log('settore:',rows[0]['settore']);
+    console.log('sesso:',rows[0]['sesso']);
+    console.log('nazionalita:',rows[0]['nazionalita']);
   }
   var skipped=0;
   rows.forEach(function(r,idx){
