@@ -3,7 +3,7 @@ console.log('✅ ateco.js CARICATO');
 var atecoLoaded=false, atecoLoading=false, atecoData=[], atecoFiltered=[];
 
 async function atecoLoad(force){
-  console.log('🔄 atecoLoad()');
+  console.log('🔄 🔄 🔄 ATECO LOAD CHIAMATO 🔄 🔄 🔄');
   if(atecoLoading) return;
   if(atecoLoaded && !force) return;
   atecoLoading=true;
