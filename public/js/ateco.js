@@ -141,28 +141,28 @@ function atecoRender(){
     var m=r.mestiere||'N/D';
     var s=r.settore||'N/D';
     var sx=r.sesso||'N/D';
-    var n=r.nazionalita||'N/D';
+    var n=(r.nazionalita||'N/D').toLowerCase();
     
     if(!byUnione[u]) byUnione[u]={tot:0,maschi:0,femmine:0,stranieri:0};
     byUnione[u].tot++;
     if(sx==='M') byUnione[u].maschi++;
     if(sx==='F') byUnione[u].femmine++;
-    if(n==='Straniero') byUnione[u].stranieri++;
+    if(n==='straniero') byUnione[u].stranieri++;
     
     if(!byMestiere[m]) byMestiere[m]={tot:0,maschi:0,femmine:0,stranieri:0};
     byMestiere[m].tot++;
     if(sx==='M') byMestiere[m].maschi++;
     if(sx==='F') byMestiere[m].femmine++;
-    if(n==='Straniero') byMestiere[m].stranieri++;
+    if(n==='straniero') byMestiere[m].stranieri++;
     
     if(!bySettore[s]) bySettore[s]={tot:0,maschi:0,femmine:0,stranieri:0};
     bySettore[s].tot++;
     if(sx==='M') bySettore[s].maschi++;
     if(sx==='F') bySettore[s].femmine++;
-    if(n==='Straniero') bySettore[s].stranieri++;
+    if(n==='straniero') bySettore[s].stranieri++;
     
     if(sx==='F') donne++;
-    if(n==='Straniero') stranieri++;
+    if(n==='straniero') stranieri++;
   });
   
   G('at-k1').textContent=tot.toLocaleString('it-IT');
