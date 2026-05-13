@@ -149,6 +149,7 @@ async function contrattiLoad(force) {
     setTimeout(function() {
       G('contratti-loader').classList.remove('active');
       G('contratti-content').style.display = 'block';
+      if(window.reInitFiltersToggle) reInitFiltersToggle();
     }, 300);
     
   } catch(e) {

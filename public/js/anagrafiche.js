@@ -116,6 +116,7 @@ async function anaLoad(force){
     setTimeout(function(){
       G('ana-loader').classList.remove('active');
       G('ana-content').style.display='block';
+      if(window.reInitFiltersToggle) reInitFiltersToggle();
     }, 300);
   }catch(e){
     console.error(e);

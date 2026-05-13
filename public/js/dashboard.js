@@ -809,7 +809,58 @@ function createAreaGradients() {
 // Chiama createAreaGradients quando il dashboard carica
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(createAreaGradients, 1000);
+  setTimeout(initFiltersToggle, 200);
 });
+
+// ════════════ FILTRI TOGGLE ════════════
+function initFiltersToggle() {
+  document.querySelectorAll('.filters-bar').forEach(function(bar) {
+    if (bar.dataset.toggleInit) return;
+    bar.dataset.toggleInit = '1';
+
+    // Pulsante toggle
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn-toggle-filters';
+    btn.innerHTML = '<i class="tgl-icon">▼</i> Filtri';
+
+    // Titolo
+    var title = document.createElement('span');
+    title.className = 'filters-bar-title';
+    title.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filtri';
+
+    // Header
+    var header = document.createElement('div');
+    header.className = 'filters-bar-header';
+    header.appendChild(title);
+    header.appendChild(btn);
+
+    // Avvolgi contenuto esistente in .filters-body
+    var body = document.createElement('div');
+    body.className = 'filters-body';
+    while (bar.firstChild) {
+      body.appendChild(bar.firstChild);
+    }
+
+    bar.appendChild(header);
+    bar.appendChild(body);
+
+    // Inizia collassato
+    bar.classList.add('collapsed');
+
+    btn.addEventListener('click', function() {
+      var isCollapsed = bar.classList.toggle('collapsed');
+      btn.innerHTML = isCollapsed
+        ? '<i class="tgl-icon">▼</i> Filtri'
+        : '<i class="tgl-icon">▼</i> Chiudi';
+    });
+  });
+}
+
+// Ri-applica il toggle alle filters-bar iniettate dinamicamente
+function reInitFiltersToggle() {
+  initFiltersToggle();
+}
 
 // Ricrea i gradients se il dashboard si aggiorna
 window.addEventListener('resize', function() {
