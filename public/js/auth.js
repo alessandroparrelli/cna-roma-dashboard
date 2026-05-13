@@ -172,6 +172,19 @@ function showApp(){
   updateChipAvatar();
   
   if(isAdmin())G('admin-actions').style.display='flex';
+  
+  // Export solo per admin e supervisore
+  var canExport = isAdmin() || isSupervisore();
+  setTimeout(function(){
+    var exportBtns = ['ana-btn-export', 'contratti-btn-export'];
+    exportBtns.forEach(function(id){
+      var btn = G(id);
+      if(btn) btn.style.display = canExport ? 'inline-flex' : 'none';
+    });
+    var exportWrapper = G('ana-export-wrapper');
+    if(exportWrapper) exportWrapper.style.display = canExport ? 'block' : 'none';
+  }, 100);
+  
   loadUserPermissions();
   syncMobileAdmin();
   loadDashboard();

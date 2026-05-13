@@ -276,14 +276,45 @@ function rTable(tid,a,isTrend){
   var s=a.slice().sort(function(a,b){var av=a[sk],bv=b[sk];if(typeof av==='string'){av=av.toLowerCase();bv=bv.toLowerCase();}return sd==='asc'?(av>bv?1:-1):(av<bv?1:-1);});
   var tT=a.reduce(function(x,r){return x+r.total;},0),tC=a.reduce(function(x,r){return x+r.count;},0);
   function thC(k){return sk===k?' class="'+(sd==='asc'?'sort-asc':'sort-desc')+'"':'';}
+  
+  // Gestione "Mostra altro" per table-acuradi
+  var isAcuradi = tid === 'table-acuradi';
+  var showAll = window['showAll_' + tid] || false;
+  var displayData = (isAcuradi && !showAll && s.length > 15) ? s.slice(0, 15) : s;
+  
   var h='<thead><tr><th'+thC('label')+' onclick="sSort(\''+tid+'\',\'label\')">Categoria</th><th'+thC('count')+' onclick="sSort(\''+tid+'\',\'count\')">Nr.</th><th'+thC('total')+' onclick="sSort(\''+tid+'\',\'total\')">Importo</th><th>% Tot.</th><th'+thC('media')+' onclick="sSort(\''+tid+'\',\'media\')">Media</th></tr></thead><tbody>';
-  s.forEach(function(r){
+  displayData.forEach(function(r){
     var p=tT>0?(r.total/tT*100):0;
     var barW=Math.round(p);
     h+='<tr><td>'+r.label+'</td><td>'+r.count+'</td><td>€ '+fmt(r.total)+'</td><td><div class="pct-bar-wrap"><div class="pct-bar" style="width:'+barW+'px;max-width:80px"></div><span style="font-size:11px;color:var(--gray-600)">'+p.toFixed(1)+'%</span></div></td><td>€ '+fmt(r.media,0)+'</td></tr>';
   });
   h+='</tbody><tfoot><tr><td>Totale</td><td>'+tC+'</td><td>€ '+fmt(tT)+'</td><td>100%</td><td>€ '+fmt(tC?tT/tC:0,0)+'</td></tr></tfoot>';
   t.innerHTML=h;
+  
+  // Aggiungi pulsante Mostra altro/Comprimi per acuradi
+  if(isAcuradi && s.length > 15) {
+    var btnWrap = t.parentElement.querySelector('.acuradi-btn-wrap');
+    if(!btnWrap) {
+      btnWrap = document.createElement('div');
+      btnWrap.className = 'acuradi-btn-wrap';
+      btnWrap.style.cssText = 'padding:12px;text-align:center;border-top:1px solid var(--border)';
+      t.parentElement.appendChild(btnWrap);
+    }
+    var btn = document.createElement('button');
+    btn.textContent = showAll ? 'Comprimi' : 'Mostra altro (' + s.length + ')';
+    btn.style.cssText = 'padding:8px 16px;background:linear-gradient(135deg,#7C3AED,#8B5CF6);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;transition:all 0.3s';
+    btn.onmouseover = function(){ this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 20px rgba(124,58,237,0.4)'; };
+    btn.onmouseout = function(){ this.style.transform='';this.style.boxShadow=''; };
+    btn.onclick = function(){
+      window['showAll_' + tid] = !showAll;
+      renderOverview();
+    };
+    btnWrap.innerHTML = '';
+    btnWrap.appendChild(btn);
+  } else if(isAcuradi) {
+    var btnWrap = t.parentElement.querySelector('.acuradi-btn-wrap');
+    if(btnWrap) btnWrap.remove();
+  }
 }
 
 function sSort(tid,key){sortState[tid]===key?sortState[tid+'_d']=(sortState[tid+'_d']==='asc'?'desc':'asc'):(sortState[tid]=key,sortState[tid+'_d']=key==='label'?'asc':'desc');renderOverview();}

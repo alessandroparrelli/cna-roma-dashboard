@@ -28,22 +28,13 @@ function canAccessTab(tabId){
   if(!session) return false;
   var role = session.ruolo;
   
-  console.log('canAccessTab:', tabId, 'role:', role);
-  
-  // Admin: accesso a tutto
-  if(role==='admin') {
-    console.log('Admin access granted to', tabId);
-    return true;
+  // Tab "Carica dati" (import) solo per admin
+  if(tabId === 'tab-import') {
+    return role === 'admin';
   }
   
-  // Supervisore: overview, promotori, anagrafiche (NO import, NO admin panel)
-  if(role==='supervisore') return tabId === 'tab-overview' || tabId === 'tab-promotori' || tabId === 'tab-anagrafiche';
-  
-  // Utente: overview, promotori, anagrafiche (interroga archivio)
-  if(role==='utente') return tabId === 'tab-overview' || tabId === 'tab-promotori' || tabId === 'tab-anagrafiche';
-  
-  console.log('Access denied to', tabId, 'for role', role);
-  return false;
+  // Tutti gli altri tab sono visibili a tutti
+  return true;
 }
 function canAccessPanel(panel){
   if(!session) return false;
