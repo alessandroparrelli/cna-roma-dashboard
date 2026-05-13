@@ -1,55 +1,38 @@
 async function doLogin(){
-  console.log('🔐 doLogin() CHIAMATA');
   var email=G('inp-email').value.trim().toLowerCase();
   var pwd=G('inp-pwd').value;
-  console.log('📧 Email:', email);
-  console.log('🔑 Password:', pwd.length + ' caratteri');
-  
   var errEl=G('login-error');
   errEl.style.display='none';
   if(!email||!pwd){
-    console.log('❌ Email o password vuota');
     errEl.textContent='Inserisci email e password';
     errEl.style.display='block';
     return;
   }
-  
   var btn=G('btn-login');
   btn.disabled=true;
   btn.textContent='Accesso in corso…';
   showLoad('Verifica credenziali…');
-  
   try{
-    console.log('⏳ Hashing password...');
     var hash=await sha256hex(pwd);
-    console.log('✅ Hash generato:', hash.substring(0,10) + '...');
-    
-    var query='cna_users?select=id,nome,cognome,email,ruolo,avatar_base64&email=eq.'+encodeURIComponent(email)+'&password_sha256=eq.'+hash+'&attivo=eq.true';
-    console.log('📝 Query:', query);
-    
-    var rows=await sbGet(query);
-    console.log('📊 Risultato query:', rows);
-    
-    if(!rows||!rows.length){
-      console.log('❌ Login fallito - Utente non trovato');
-      writeLog(null, email, null, 'fallito');
+    // Login tramite Edge Function server-side — cna_users non è mai interrogata dal browser
+    var resp=await fetch(SB+'/functions/v1/cna-login',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':KEY},
+      body:JSON.stringify({email:email,password_sha256:hash})
+    });
+    var result=await resp.json();
+    if(!resp.ok||!result.user){
+      writeLog(null,email,null,'fallito');
       errEl.textContent='Email o password non corretti';
       errEl.style.display='block';
       return;
     }
-    
-    console.log('✅ Utente trovato:', rows[0].nome + ' ' + rows[0].cognome);
-    
-    sbPatch('cna_users?email=eq.'+encodeURIComponent(email),{last_login:new Date().toISOString()}).catch(function(){});
-    writeLog(rows[0].id, email, rows[0].nome+' '+rows[0].cognome, 'successo');
-    
-    console.log('💾 Salvando session...');
-    saveSession(rows[0]);
-    
-    console.log('🎉 Mostrando app...');
+    var user=result.user;
+    writeLog(user.id,email,user.nome+' '+user.cognome,'successo');
+    saveSession(user);
     showApp();
   }catch(e){
-    console.error('❌ ERRORE LOGIN:', e);
+    console.error('❌ ERRORE LOGIN:',e);
     errEl.textContent='Errore di connessione. Riprova.';
     errEl.style.display='block';
   }
