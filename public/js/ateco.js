@@ -81,8 +81,13 @@ function atecoBuildUI(){
   var h='<div style="padding:20px">';
 
   // FILTRI
-  h+='<div class="ateco-card" style="background:white;padding:20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB">';
-  h+='<div class="ateco-filter" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
+  h+='<div id="ateco-filters-box" class="ateco-card" style="background:white;padding:16px 20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">';
+  h+='<span style="font-size:12px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filtri</span>';
+  h+='<button id="at-toggle-btn" onclick="atecoToggleFiltri()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:12px;font-weight:700;color:#005CA9;background:rgba(0,92,169,.07);border:1px solid rgba(0,92,169,.15);border-radius:999px;cursor:pointer;font-family:inherit;transition:all .25s"><span id="at-toggle-icon" style="display:inline-block;transition:transform .25s;font-size:10px">▼</span> Filtri</button>';
+  h+='</div>';
+  h+='<div id="ateco-filters-body" style="overflow:hidden;max-height:0;opacity:0;transition:max-height .35s cubic-bezier(0.4,0,0.2,1),opacity .25s ease,margin-top .25s ease;margin-top:0">';
+  h+='<div class="ateco-filter" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:14px">';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">ANNO</label><select id="at-anno" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">UNIONE</label><select id="at-unione" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">MESTIERE</label><select id="at-mest" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
@@ -90,7 +95,7 @@ function atecoBuildUI(){
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">SESSO</label><select id="at-sex" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div><label style="display:block;font-size:11px;font-weight:700;margin-bottom:6px;color:#333">NAZIONALITÀ</label><select id="at-naz" style="width:100%;padding:10px;border:1px solid #E5E7EB;border-radius:6px;background:white;color:#333"><option value="">Tutti</option></select></div>';
   h+='<div style="display:flex;align-items:flex-end"><button id="at-reset" class="ateco-reset-btn" style="width:100%;padding:10px;background:linear-gradient(135deg,#0047AB,#003380);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;box-shadow:0 4px 6px rgba(0,71,171,0.3)">Reset</button></div>';
-  h+='</div></div>';
+  h+='</div></div></div>';
 
   // KPI
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px">';
@@ -460,4 +465,24 @@ function escapeHtml(text){
   var div=document.createElement('div');
   div.textContent=text;
   return div.innerHTML;
+}
+
+function atecoToggleFiltri() {
+  var body = document.getElementById('ateco-filters-body');
+  var icon = document.getElementById('at-toggle-icon');
+  var btn  = document.getElementById('at-toggle-btn');
+  if (!body) return;
+  var collapsed = body.style.maxHeight === '0px' || body.style.maxHeight === '0' || body.style.maxHeight === '';
+  if (collapsed) {
+    body.style.maxHeight = '400px';
+    body.style.opacity   = '1';
+    body.style.marginTop = '0';
+    if (icon) icon.style.transform = 'rotate(0deg)';
+    if (btn)  btn.innerHTML = '<span id="at-toggle-icon" style="display:inline-block;transition:transform .25s;font-size:10px;transform:rotate(0deg)">▼</span> Chiudi';
+  } else {
+    body.style.maxHeight = '0';
+    body.style.opacity   = '0';
+    body.style.marginTop = '0';
+    if (btn)  btn.innerHTML = '<span id="at-toggle-icon" style="display:inline-block;transition:transform .25s;font-size:10px;transform:rotate(-90deg)">▼</span> Filtri';
+  }
 }
