@@ -458,10 +458,10 @@ function contrattiRenderKPI() {
         'overflow:hidden;box-shadow:var(--shadow-glass);margin-bottom:0;',
       '}',
       '.ck-cell{',
-        'background:#fff;padding:16px 12px 14px;',
-        'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;',
+        'background:#fff;padding:14px 12px 14px;',
+        'display:flex;flex-direction:column;align-items:center;justify-content:space-between;gap:8px;',
         'transition:all .2s cubic-bezier(0.4,0,0.2,1);cursor:default;',
-        'text-align:center;',
+        'text-align:center;min-height:90px;',
       '}',
       'body.dark-mode .ck-cell{background:var(--surface);}',
       '.ck-cell:hover{',
@@ -472,14 +472,15 @@ function contrattiRenderKPI() {
       '}',
       'body.dark-mode .ck-cell:hover{background:var(--surface2);}',
       '.ck-cell-label{',
-        'font-family:var(--font-display);font-size:10px;font-weight:700;',
-        'color:var(--primary);text-transform:uppercase;letter-spacing:.08em;',
+        'font-family:var(--font-display);font-size:11px;font-weight:700;',
+        'color:var(--primary);text-transform:none;letter-spacing:0;',
         'text-align:center;line-height:1.3;word-break:break-word;',
+        'align-self:flex-start;width:100%;',
       '}',
       '.ck-cell-num{',
         'font-family:var(--font-display);font-size:32px;font-weight:800;',
         'color:var(--text);letter-spacing:-0.04em;line-height:1;',
-        'font-variant-numeric:tabular-nums;',
+        'font-variant-numeric:tabular-nums;align-self:flex-end;',
       '}',
       '@keyframes ckPop{0%{transform:scale(.88);opacity:.4}65%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}',
       '.ck-cell-num.popped{animation:ckPop .38s cubic-bezier(0.34,1.56,0.64,1) forwards;}',
@@ -498,8 +499,9 @@ function contrattiRenderKPI() {
 
   // Una cella per ogni tipocontratto
   serviziOrdinati.forEach(function(srv, i) {
+    var label = srv.charAt(0).toUpperCase() + srv.slice(1).toLowerCase();
     html += '<div class="ck-cell">' +
-      '<div class="ck-cell-label">' + srv + '</div>' +
+      '<div class="ck-cell-label">' + label + '</div>' +
       '<div class="ck-cell-num" id="ck-' + i + '">–</div>' +
       '</div>';
   });
