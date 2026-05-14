@@ -19,16 +19,15 @@ async function loadDashboard(){
     
     if(allData.length>0){
       G('upload-zone').style.display='none';
-      G('tab-overview').classList.add('active');
       rebuildFilters();
       renderOverview();
       renderPromoTrend();
+      renderHome();
     }else if(isAdmin()){
       // Admin senza dati tesseramento: mostra l'upload zone, ma i tab restano accessibili
       G('upload-zone').style.display='flex';
     }else{
       // Utente non admin senza dati tesseramento: messaggio informativo nel tab overview
-      G('tab-overview').classList.add('active');
       G('tab-overview').innerHTML='<div style="text-align:center;padding:80px 20px;color:var(--text-dim)"><div style="font-size:16px;font-weight:700;margin-bottom:8px;color:var(--text-sub)">Nessun dato tesseramento disponibile</div><div style="font-size:13px">Attendi che l\'amministratore carichi i dati, oppure consulta il tab <b style="color:var(--blue)">🗂️ Interroga archivio</b></div></div>';
     }
   }catch(e){toast('Errore: '+e.message,'error');}
@@ -988,4 +987,46 @@ function rReport(id, data, key, colors) {
   });
   
   rTable('table-' + id, a, false);
+}
+
+// ── HOME TAB ──
+function renderHome(){
+  if(!allData || allData.length === 0) return;
+  var tot = allData.reduce(function(s,r){return s+r.importo;},0);
+  var cnt = allData.length;
+  var avg = cnt ? tot/cnt : 0;
+  homeCountUp('home-kpi-tot', tot, true);
+  homeCountUp('home-kpi-cnt', cnt, false);
+  homeCountUp('home-kpi-avg', avg, true);
+  dbCount().then(function(n){
+    homeCountUp('home-kpi-db', n, false);
+  }).catch(function(){
+    homeCountUp('home-kpi-db', allData.length, false);
+  });
+}
+
+function homeCountUp(elId, finalVal, isCurrency){
+  var el = G(elId);
+  if(!el) return;
+  var duration = 900;
+  var steps = 40;
+  var interval = duration / steps;
+  var current = 0;
+  var increment = finalVal / steps;
+  el.classList.add('counting');
+  var timer = setInterval(function(){
+    current += increment;
+    if(current >= finalVal){
+      current = finalVal;
+      clearInterval(timer);
+      el.classList.remove('counting');
+      el.classList.add('popped');
+      setTimeout(function(){ el.classList.remove('popped'); }, 500);
+    }
+    if(isCurrency){
+      el.textContent = '\u20AC ' + fmt(current, 0);
+    } else {
+      el.textContent = Math.round(current).toLocaleString('it-IT');
+    }
+  }, interval);
 }

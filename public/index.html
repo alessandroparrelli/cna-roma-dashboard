@@ -131,7 +131,8 @@
 
 <!-- TABS -->
 <div class="tabs-bar" id="tabs-bar" style="display:none">
-  <button class="tab-btn active" data-tab="tab-overview">📊 Tesseramento | Andamento</button>
+  <button class="tab-btn active" data-tab="tab-home">🏠 Home</button>
+  <button class="tab-btn" data-tab="tab-overview">📊 Tesseramento | Andamento</button>
   <button class="tab-btn" data-tab="tab-promotori">📈 Tesseramento | Analisi</button>
   <button class="tab-btn" data-tab="tab-ateco">🏭 Ateco</button>
   <button class="tab-btn" data-tab="tab-anagrafiche">🗂️ Archivio Imprese CNA</button>
@@ -158,8 +159,68 @@
   </div>
 </div>
 
+<!-- TAB: HOME -->
+<div class="page active" id="tab-home">
+  <div class="home-hero">
+    <p class="hero-sub">DASHBOARD · TESSERAMENTO</p>
+    <h2 class="hero-title">Dashboard <span class="hero-accent">Tesseramento</span> CNA Roma</h2>
+    <p class="hero-desc">Il luogo dove analizzare l'andamento associativo della CNA di Roma. Monitora i dati di tesseramento, le performance dei promotori e l'archivio imprese in tempo reale.</p>
+  </div>
+  <div class="home-kpi-strip" id="home-kpi-strip">
+    <div class="home-kpi-card home-c1">
+      <div class="home-kpi-label">Totale Importo</div>
+      <div class="home-kpi-value" id="home-kpi-tot">–</div>
+      <div class="home-kpi-sub">Valore complessivo tesseramento</div>
+    </div>
+    <div class="home-kpi-card home-c2">
+      <div class="home-kpi-label">Nr. Contratti</div>
+      <div class="home-kpi-value" id="home-kpi-cnt">–</div>
+      <div class="home-kpi-sub">Contratti registrati</div>
+    </div>
+    <div class="home-kpi-card home-c3">
+      <div class="home-kpi-label">Importo Medio</div>
+      <div class="home-kpi-value" id="home-kpi-avg">–</div>
+      <div class="home-kpi-sub">Media per contratto</div>
+    </div>
+    <div class="home-kpi-card home-c4">
+      <div class="home-kpi-label">Totale DB</div>
+      <div class="home-kpi-value" id="home-kpi-db">–</div>
+      <div class="home-kpi-sub">Record su Supabase</div>
+    </div>
+  </div>
+  <div class="home-nav-section">
+    <div class="section-title"><span class="section-dot" style="background:var(--blue)"></span>Accesso rapido alle sezioni</div>
+    <div class="home-nav-grid">
+      <button class="home-nav-btn home-nav-andamento" onclick="document.querySelector('[data-tab=tab-overview]').click()">
+        <div class="home-nav-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        </div>
+        <div class="home-nav-label">Tesseramento · Andamento</div>
+        <div class="home-nav-desc">KPI, grafici per tipo rete, promotore, A cura di</div>
+        <svg class="home-nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="home-nav-btn home-nav-analisi" onclick="document.querySelector('[data-tab=tab-promotori]').click()">
+        <div class="home-nav-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        </div>
+        <div class="home-nav-label">Tesseramento · Analisi</div>
+        <div class="home-nav-desc">Schede promotori, sparkline, trend per anno</div>
+        <svg class="home-nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+      <button class="home-nav-btn home-nav-ateco" onclick="document.querySelector('[data-tab=tab-ateco]').click()">
+        <div class="home-nav-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        </div>
+        <div class="home-nav-label">Ateco</div>
+        <div class="home-nav-desc">Analisi unioni e mestieri per codice Ateco</div>
+        <svg class="home-nav-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- TAB: OVERVIEW -->
-<div class="page active" id="tab-overview">
+<div class="page" id="tab-overview">
   <div class="filters-bar">
     <div class="filter-group"><label>Anno</label><select id="f-anno"><option value="">Tutti</option></select></div>
     <div class="filter-group"><label>Mese</label><select id="f-mese"><option value="">Tutti</option></select></div>
