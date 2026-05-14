@@ -436,7 +436,6 @@ function contrattiRenderKPI() {
   var strip = G('contratti-kpi-strip');
   if (!strip) return;
 
-  // Conta solo contratti attivi (datadisdetta=null già filtrato in contrattiAll)
   var totale = contrattiAll.length;
   var serviziCount = {};
   contrattiAll.forEach(function(r) {
@@ -446,106 +445,68 @@ function contrattiRenderKPI() {
   });
   var serviziOrdinati = Object.keys(serviziCount).sort();
 
-  // Palette colori per le colonne
-  var palette = [
-    { color: 'var(--primary)',  bg: 'rgba(0,92,169,.08)',   glow: 'rgba(0,92,169,.22)' },
-    { color: 'var(--orange)',   bg: 'rgba(249,115,22,.08)', glow: 'rgba(249,115,22,.22)' },
-    { color: 'var(--success)',  bg: 'rgba(16,185,129,.08)', glow: 'rgba(16,185,129,.22)' },
-    { color: 'var(--accent)',   bg: 'rgba(236,72,153,.08)', glow: 'rgba(236,72,153,.22)' },
-    { color: 'var(--purple)',   bg: 'rgba(139,92,246,.08)', glow: 'rgba(139,92,246,.22)' },
-    { color: 'var(--info)',     bg: 'rgba(6,182,212,.08)',  glow: 'rgba(6,182,212,.22)' },
-    { color: 'var(--warning)',  bg: 'rgba(245,158,11,.08)', glow: 'rgba(245,158,11,.22)' },
-  ];
-
-  // Costruisce la tabella compatta
-  var totalePalette = palette[0];
-  var html = '<div class="ck-table-wrap">' +
-    '<table class="ck-table">' +
-    '<thead><tr>' +
-    '<th class="ck-th" style="color:' + totalePalette.color + '">' +
-      '<span class="ck-th-dot" style="background:' + totalePalette.color + '"></span>' +
-      'Totale attivi' +
-    '</th>';
-
-  serviziOrdinati.forEach(function(srv, i) {
-    var p = palette[(i + 1) % palette.length];
-    html += '<th class="ck-th" style="color:' + p.color + '">' +
-      '<span class="ck-th-dot" style="background:' + p.color + '"></span>' +
-      srv +
-    '</th>';
-  });
-
-  html += '</tr></thead><tbody><tr>' +
-    '<td class="ck-td" data-glow="' + totalePalette.glow + '" style="--ck-bg:' + totalePalette.bg + ';--ck-color:' + totalePalette.color + '">' +
-      '<span class="ck-num" id="ck-totale">–</span>' +
-    '</td>';
-
-  serviziOrdinati.forEach(function(srv, i) {
-    var p = palette[(i + 1) % palette.length];
-    html += '<td class="ck-td" data-glow="' + p.glow + '" style="--ck-bg:' + p.bg + ';--ck-color:' + p.color + '">' +
-      '<span class="ck-num" id="ck-' + i + '">–</span>' +
-    '</td>';
-  });
-
-  html += '</tr></tbody></table></div>';
-  strip.innerHTML = html;
-  strip.style.gridTemplateColumns = '';
-  strip.style.display = 'block';
-
-  // Inietta CSS se non esiste
-  if (!document.getElementById('ck-table-style')) {
+  // Inietta CSS una sola volta
+  if (!document.getElementById('ck-grid-style')) {
     var s = document.createElement('style');
-    s.id = 'ck-table-style';
+    s.id = 'ck-grid-style';
     s.textContent = [
-      '.ck-table-wrap{',
-        'background:#fff;border-radius:var(--radius-xl);',
-        'border:1px solid var(--border);box-shadow:var(--shadow-glass);',
-        'overflow:hidden;margin-bottom:0;',
+      '.ck-grid{',
+        'display:grid;',
+        'grid-template-columns:repeat(auto-fit,minmax(130px,1fr));',
+        'gap:1px;background:var(--border);',
+        'border:1px solid var(--border);border-radius:var(--radius-xl);',
+        'overflow:hidden;box-shadow:var(--shadow-glass);margin-bottom:0;',
       '}',
-      'body.dark-mode .ck-table-wrap{background:var(--surface);}',
-      '.ck-table{width:100%;border-collapse:collapse;table-layout:auto;}',
-      '.ck-th{',
-        'padding:12px 20px;text-align:center;font-size:11px;font-weight:700;',
-        'text-transform:uppercase;letter-spacing:.07em;',
-        'border-bottom:2px solid var(--border);white-space:nowrap;',
-        'background:var(--surface2);',
+      '.ck-cell{',
+        'background:#fff;padding:16px 12px 14px;',
+        'display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;',
+        'transition:all .2s cubic-bezier(0.4,0,0.2,1);cursor:default;',
+        'text-align:center;',
       '}',
-      'body.dark-mode .ck-th{background:var(--surface3);}',
-      '.ck-th:not(:last-child){border-right:1px solid var(--border);}',
-      '.ck-th-dot{',
-        'display:inline-block;width:6px;height:6px;border-radius:50%;',
-        'margin-right:6px;vertical-align:middle;margin-top:-2px;',
+      'body.dark-mode .ck-cell{background:var(--surface);}',
+      '.ck-cell:hover{',
+        'background:#fff;',
+        'box-shadow:0 4px 20px rgba(0,92,169,.15);',
+        'transform:translateY(-2px);z-index:2;position:relative;',
+        'border-radius:var(--radius-md);',
       '}',
-      '.ck-td{',
-        'padding:18px 20px;text-align:center;vertical-align:middle;',
-        'background:var(--ck-bg,transparent);',
-        'transition:all .22s cubic-bezier(0.4,0,0.2,1);cursor:default;',
+      'body.dark-mode .ck-cell:hover{background:var(--surface2);}',
+      '.ck-cell-label{',
+        'font-family:var(--font-display);font-size:10px;font-weight:700;',
+        'color:var(--primary);text-transform:uppercase;letter-spacing:.08em;',
+        'text-align:center;line-height:1.3;word-break:break-word;',
       '}',
-      '.ck-td:not(:last-child){border-right:1px solid var(--border);}',
-      '.ck-td:hover{',
-        'background:var(--ck-bg,transparent)!important;',
-        'box-shadow:inset 0 0 0 2px var(--ck-color,var(--primary)),0 4px 20px var(--ck-glow,rgba(0,0,0,.1));',
-        'transform:translateY(-2px) scale(1.02);border-radius:4px;',
-      '}',
-      '.ck-num{',
-        'display:block;',
-        'font-family:var(--font-display);font-size:34px;font-weight:800;',
+      '.ck-cell-num{',
+        'font-family:var(--font-display);font-size:32px;font-weight:800;',
         'color:var(--text);letter-spacing:-0.04em;line-height:1;',
-        'font-variant-numeric:tabular-nums;text-align:center;',
+        'font-variant-numeric:tabular-nums;',
       '}',
-      '@keyframes ckPop{0%{transform:scale(.9);opacity:.5}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}',
-      '.ck-num.popped{animation:ckPop .4s cubic-bezier(0.34,1.56,0.64,1) forwards;}',
+      '@keyframes ckPop{0%{transform:scale(.88);opacity:.4}65%{transform:scale(1.05)}100%{transform:scale(1);opacity:1}}',
+      '.ck-cell-num.popped{animation:ckPop .38s cubic-bezier(0.34,1.56,0.64,1) forwards;}',
     ].join('');
     document.head.appendChild(s);
   }
 
-  // Applica glow via JS su hover (CSS var non supporta box-shadow dinamico)
-  strip.querySelectorAll('.ck-td').forEach(function(td) {
-    var glow = td.getAttribute('data-glow') || 'rgba(0,0,0,.1)';
-    td.addEventListener('mouseenter', function() {
-      this.style.setProperty('--ck-glow', glow);
-    });
+  // Costruisce la griglia
+  var html = '<div class="ck-grid">';
+
+  // Cella Totale
+  html += '<div class="ck-cell">' +
+    '<div class="ck-cell-label">Totale attivi</div>' +
+    '<div class="ck-cell-num" id="ck-totale">–</div>' +
+    '</div>';
+
+  // Una cella per ogni tipocontratto
+  serviziOrdinati.forEach(function(srv, i) {
+    html += '<div class="ck-cell">' +
+      '<div class="ck-cell-label">' + srv + '</div>' +
+      '<div class="ck-cell-num" id="ck-' + i + '">–</div>' +
+      '</div>';
   });
+
+  html += '</div>';
+  strip.innerHTML = html;
+  strip.style.display = 'block';
 
   // CountUp
   homeCountUp('ck-totale', totale, false);
