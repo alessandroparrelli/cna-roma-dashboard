@@ -1462,3 +1462,9 @@ body.dark-mode .home-year-select{background:var(--surface);color:var(--text);}
 .home-ac3::after{background:radial-gradient(circle,#F59E0B,transparent 70%);}
 .home-ac4::after{background:radial-gradient(circle,var(--accent),transparent 70%);}
 .home-ac5::after{background:radial-gradient(circle,var(--success),transparent 70%);}
+
+/* ════════════ ATECO KPI CARD COLORS (ak2=rosso, ak3=ambra) ════════════ */
+.ateco-kpi.ak2::before{background:#DC2626;}
+.ateco-kpi.ak2::after{background:radial-gradient(circle,#DC2626,transparent 70%);}
+.ateco-kpi.ak3::before{background:#F59E0B;}
+.ateco-kpi.ak3::after{background:radial-gradient(circle,#F59E0B,transparent 70%);}
