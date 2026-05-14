@@ -813,7 +813,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // ════════════ FILTRI TOGGLE ════════════
 function initFiltersToggle() {
-  document.querySelectorAll('.filters-bar').forEach(function(bar) {
+  document.querySelectorAll('.filters-bar:not(.no-toggle)').forEach(function(bar) {
     if (bar.dataset.toggleInit) return;
     bar.dataset.toggleInit = '1';
 
