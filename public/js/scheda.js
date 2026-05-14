@@ -9,10 +9,10 @@ document.addEventListener('click',function(e){
 });
 
 // Wire mobile drawer buttons to main handlers
-G('btn-logout-mob').addEventListener('click',function(){closeDrawer();doLogout();});
-G('btn-reset-mob').addEventListener('click',function(){closeDrawer();G('btn-reset').click();});
-G('btn-go-admin-mob').addEventListener('click',function(){closeDrawer();showAdminPanel();});
-G('file-add-mob').addEventListener('change',function(e){handleFile(e.target.files[0],true);e.target.value='';closeDrawer();});
+G('btn-logout').addEventListener('click',function(){closeDrawer();doLogout();});
+G('btn-reset').addEventListener('click',function(){closeDrawer();G('btn-reset').click();});
+G('btn-go-admin').addEventListener('click',function(){closeDrawer();showAdminPanel();});
+G('file-add').addEventListener('change',function(e){handleFile(e.target.files[0],true);e.target.value='';closeDrawer();});
 
 // sync mobile admin visibility with desktop
 function syncMobileAdmin(){

@@ -404,10 +404,10 @@ document.addEventListener('DOMContentLoaded', function() {
     var btnDarkmode = G('btn-darkmode');
     if (btnDarkmode) btnDarkmode.addEventListener('click', toggleDarkMode);
     
-    var btnDarkmodeMob = G('btn-darkmode-mob');
+    var btnDarkmodeMob = G('btn-darkmode');
     if (btnDarkmodeMob) btnDarkmodeMob.addEventListener('click', function(){toggleDarkMode();closeDrawer();});
     
-    var btnInfoMob = G('btn-info-mob');
+    var btnInfoMob = G('btn-info');
     if (btnInfoMob) btnInfoMob.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
   }, 100);
 });
@@ -686,16 +686,16 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log('✅ btn-darkmode listener attaccato');
     }
     
-    var btnDarkmodeMob = document.getElementById('btn-darkmode-mob');
+    var btnDarkmodeMob = document.getElementById('btn-darkmode');
     if (btnDarkmodeMob) {
       btnDarkmodeMob.addEventListener('click', function(){toggleDarkMode();closeDrawer();});
-      console.log('✅ btn-darkmode-mob listener attaccato');
+      console.log('✅ btn-darkmode listener attaccato');
     }
     
-    var btnInfoMob = document.getElementById('btn-info-mob');
+    var btnInfoMob = document.getElementById('btn-info');
     if (btnInfoMob) {
       btnInfoMob.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
-      console.log('✅ btn-info-mob listener attaccato');
+      console.log('✅ btn-info listener attaccato');
     }
     
     console.log('🎉 TUTTI i listener attaccati!');

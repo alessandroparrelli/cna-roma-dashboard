@@ -154,7 +154,7 @@ function showApp(){
   // Avatar nel chip
   updateChipAvatar();
   
-  if(isAdmin())G('admin-actions').style.display='flex';
+  if(isAdmin()){ var aa=G('mobile-admin-actions'); if(aa) aa.style.display='flex'; }
   
   // Export solo per admin e supervisore
   var canExport = isAdmin() || isSupervisore();
