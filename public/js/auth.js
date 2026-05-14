@@ -154,7 +154,13 @@ function showApp(){
   // Avatar nel chip
   updateChipAvatar();
   
-  if(isAdmin()){ var aa=G('mobile-admin-actions'); if(aa) aa.style.display='flex'; }
+  if(isAdmin()){
+    var aa=G('mobile-admin-actions'); if(aa) aa.style.display='flex';
+    // Mostra tab Reportistica solo agli admin
+    var repBtn=G('tab-btn-reportistica'); if(repBtn) repBtn.style.display='';
+    // Inizializza il modulo reportistica
+    setTimeout(function(){ if(typeof reportisticaInit==='function') reportisticaInit(); }, 500);
+  }
   
   // Export solo per admin e supervisore
   var canExport = isAdmin() || isSupervisore();

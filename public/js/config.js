@@ -33,6 +33,11 @@ function canAccessTab(tabId){
     return role === 'admin';
   }
   
+  // Tab "Reportistica" solo per admin
+  if(tabId === 'tab-reportistica') {
+    return role === 'admin';
+  }
+  
   // Tutti gli altri tab sono visibili a tutti
   return true;
 }
