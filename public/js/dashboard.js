@@ -8,6 +8,7 @@ async function loadDashboard(){
     // La tabs-bar è sempre visibile dopo login: il tab Anagrafiche
     // è un modulo indipendente che legge da altre tabelle.
     G('tabs-bar').style.display='flex';
+    var appFooter = G('app-footer'); if(appFooter) appFooter.style.display='block';
     
     // FILTRA TAB IN BASE AL RUOLO
     document.querySelectorAll('.tab-btn').forEach(function(btn){
