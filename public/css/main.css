@@ -1319,7 +1319,7 @@ body.dark-mode .btn-toggle-filters{background:rgba(0,92,169,.15);border-color:rg
 /* ════════════ HOME PAGE ════════════ */
 
 /* ── Hero ── */
-.home-hero{padding:56px 0 40px;max-width:720px;}
+.home-hero{padding:24px 0 28px;max-width:720px;}
 .hero-sub{
   font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
   color:var(--primary);margin-bottom:14px;
