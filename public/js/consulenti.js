@@ -314,11 +314,11 @@ function consulentiRender() {
         '<div style="font-size:20px;font-weight:800;color:#1e293b;line-height:1">' + c.numImprese + '</div>' +
         '<div style="font-size:10px;color:#94a3b8;margin-top:1px">imprese</div>' +
       '</td>' +
-      '<td style="min-width:180px"><div style="display:flex;flex-wrap:wrap;gap:2px">' + tipiHtml + '</div></td>' +
       '<td style="text-align:center;width:100px">' +
         '<div style="font-size:16px;font-weight:800;color:#005CA9">' + c.pctTotale + '<span style="font-size:11px;font-weight:500">%</span></div>' +
         '<div class="consulenti-pct-bar" style="margin:4px auto 0"><div class="consulenti-pct-fill" style="background:#005CA9;width:' + Math.min(parseFloat(c.pctTotale), 100) + '%"></div></div>' +
       '</td>' +
+      '<td style="min-width:180px"><div style="display:flex;flex-wrap:wrap;gap:2px">' + tipiHtml + '</div></td>' +
       '<td style="text-align:center;width:90px">' +
         '<div class="consulenti-assoc-chip" style="background:#F0FDF4;color:#16a34a;margin:0 auto 4px">' +
           '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' + c.nAssociati +
@@ -475,20 +475,6 @@ function consulentiExpandContent(consulente) {
     html += '</div>';
   }
   html += '</div>';
-
-  // BOX 5 — Raggruppamenti
-  if (Object.keys(consulente.raggruppamenti).length > 0) {
-    html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)">';
-    html += '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">🗂️ Raggruppamenti</div>';
-    Object.keys(consulente.raggruppamenti).sort(function(a,b){ return consulente.raggruppamenti[b]-consulente.raggruppamenti[a]; }).forEach(function(rg) {
-      var cnt = consulente.raggruppamenti[rg];
-      var pct = totaleCons > 0 ? ((cnt/totaleCons)*100).toFixed(1) : '0.0';
-      html += '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:3px 0;border-bottom:1px solid #F1F5F9">';
-      html += '<span style="color:#334155">' + escHtml(rg) + '</span>';
-      html += '<span style="font-weight:700;color:#EA580C">' + cnt + ' <span style="color:#94a3b8;font-weight:400">(' + pct + '%)</span></span></div>';
-    });
-    html += '</div>';
-  }
 
   html += '</div></div>';
   return html;
