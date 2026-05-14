@@ -1486,3 +1486,68 @@ body.dark-mode .home-year-select{background:var(--surface);color:var(--text);}
 .kpi-strip-6{grid-template-columns:repeat(6,1fr)!important;}
 @media(max-width:1200px){.kpi-strip-6{grid-template-columns:repeat(3,1fr)!important;}}
 @media(max-width:700px){.kpi-strip-6{grid-template-columns:repeat(2,1fr)!important;}}
+
+/* ════════════ ICON BADGE — stile signature ════════════ */
+/* Cerchio colorato attorno alle icone nei report-title e nei btn icona */
+.report-title svg,
+.filters-bar-title svg,
+.section-title svg,
+.admin-card-header svg,
+.home-year-label svg {
+  flex-shrink:0;
+}
+
+/* Icon badge: cerchio colorato per icone standalone (darkmode, info) */
+.btn-secondary svg,
+.btn-info svg,
+.btn-logout svg,
+.btn-admin svg,
+.btn-danger svg {
+  flex-shrink:0;
+}
+
+/* Report title icon badge */
+.report-title{
+  display:flex;align-items:center;gap:10px;
+}
+.report-title .icon-badge{
+  width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.r-tiporete .icon-badge{background:rgba(0,92,169,.1);color:var(--blue);}
+.r-promotore .icon-badge{background:rgba(236,72,153,.1);color:var(--accent);}
+.r-acuradi .icon-badge{background:rgba(139,92,246,.1);color:var(--accent3);}
+
+/* Icone sezione-titolo con badge */
+.section-title .icon-badge{
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  background:rgba(0,92,169,.1);color:var(--blue);
+}
+
+/* Btn header: icona dentro cerchio */
+.btn-secondary,
+.btn-info,
+.btn-logout,
+.btn-admin,
+.btn-danger {
+  gap:7px;
+}
+header .btn svg,
+.mobile-drawer .btn svg {
+  width:15px;height:15px;
+}
+
+/* ── Icon badge dentro btn ── */
+.btn .icon-badge{
+  width:26px;height:26px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+/* Report title icon badge dimensione */
+.report-title .icon-badge{
+  width:30px;height:30px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+  background:rgba(0,92,169,.1);color:var(--blue);
+}

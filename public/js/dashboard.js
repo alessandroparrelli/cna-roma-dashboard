@@ -162,12 +162,9 @@ async function renderOverview(){
   var data=getFiltered(),tot=data.reduce(function(s,r){return s+r.importo;},0),cnt=data.length;
   var avg=cnt?tot/cnt:0;
 
-  G('kpi-tot').textContent='€ '+fmt(tot);
-  G('kpi-cnt').textContent=cnt;
-  G('kpi-avg').textContent='€ '+fmt(avg,0);
   G('filtered-count').textContent=cnt+' record';
   G('data-info-text').textContent='DB: '+allData.length+' totali'+(cnt<allData.length?' · Filtrati: '+cnt:'');
-  dbCount().then(function(n){G('kpi-db').textContent=n; homeCountUp('kpi-db',n,false);}).catch(function(){G('kpi-db').textContent=allData.length;});
+  dbCount().then(function(n){homeCountUp('kpi-db',n,false);}).catch(function(){G('kpi-db').textContent=allData.length;});
   homeCountUp('kpi-tot', tot, true);
   homeCountUp('kpi-cnt', cnt, false);
   homeCountUp('kpi-avg', avg, true);
