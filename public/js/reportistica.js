@@ -1,13 +1,15 @@
 // ══════════════════════════════════════════════════════════════════════════════
-// REPORTISTICA.JS — Tab Reportistica Admin CNA Roma Dashboard
-// Genera report PDF professionale mensile da dati Analisi + Ateco
+// REPORTISTICA.JS v2 — Tab Reportistica Admin CNA Roma
+// Genera report PDF identico al modello allegato
+// Approccio: html2canvas su HTML renderizzato → jsPDF
 // ══════════════════════════════════════════════════════════════════════════════
-console.log('✅ reportistica.js CARICATO');
+console.log('✅ reportistica.js v2 CARICATO');
 
-var reportisticaLoaded = false;
 var reportisticaLoading = false;
+var repAllData = [];
+var LOGO_URL = 'https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png';
 
-// ── INIT TAB ──────────────────────────────────────────────────────────────────
+// ── INIT ──────────────────────────────────────────────────────────────────────
 function reportisticaInit() {
   if (!isAdmin()) return;
   buildReportisticaUI();
@@ -16,972 +18,649 @@ function reportisticaInit() {
 function buildReportisticaUI() {
   var tab = G('tab-reportistica');
   if (!tab) return;
-
-  // Popola selettori anno/mese
   var anniOpt = '';
   for (var y = 2026; y >= 2020; y--) {
     anniOpt += '<option value="' + y + '"' + (y === new Date().getFullYear() ? ' selected' : '') + '>' + y + '</option>';
   }
-  var mesiOpt = MESI.slice(1).map(function (m, i) {
+  var mesiOpt = MESI.slice(1).map(function(m, i) {
     var num = i + 1;
-    var sel = num === new Date().getMonth() + 1 ? ' selected' : '';
-    return '<option value="' + num + '"' + sel + '>' + m + '</option>';
+    return '<option value="' + num + '"' + (num === new Date().getMonth() + 1 ? ' selected' : '') + '>' + m + '</option>';
   }).join('');
 
-  tab.innerHTML = `
-    <div style="max-width:1100px;margin:0 auto;padding:24px 20px">
+  tab.innerHTML = '<div style="max-width:1100px;margin:0 auto;padding:24px 20px 60px">'
+    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">'
+    + '<div><h2 style="margin:0;font-size:22px;font-weight:800;color:var(--text)">📋 Generatore Report Mensile</h2>'
+    + '<p style="margin:4px 0 0;font-size:13px;color:var(--text-secondary)">Report professionale PDF — solo amministratori</p></div>'
+    + '<span style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:#EF4444">SOLO ADMIN</span></div>'
+    + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:var(--shadow-sm)">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">● Configurazione</div>'
+    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;align-items:end">'
+    + '<div><label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase">Anno</label>'
+    + '<select id="rep-anno" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px">' + anniOpt + '</select></div>'
+    + '<div><label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase">Mese</label>'
+    + '<select id="rep-mese" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px">' + mesiOpt + '</select></div>'
+    + '<div><button onclick="repCaricaEAnteprima()" id="rep-btn-carica" style="width:100%;padding:10px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🔄 Carica Dati</button></div>'
+    + '<div><button onclick="repGeneraPDF()" id="rep-btn-pdf" style="width:100%;padding:10px 16px;background:#1e293b;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📄 Genera PDF</button></div>'
+    + '</div></div>'
+    + '<div id="rep-status" style="display:none;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">'
+    + '<span id="rep-status-text" style="font-size:13px;color:var(--text-secondary)">Caricamento…</span></div>'
+    + '<div id="rep-anteprima" style="display:none">'
+    + '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px">● Anteprima — <span id="rep-periodo-label" style="color:var(--primary)"></span></div>'
+    + '<div id="rep-pages-container"></div></div></div>';
 
-      <!-- HEADER SEZIONE -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">
-        <div>
-          <h2 style="margin:0;font-size:22px;font-weight:800;color:var(--text)">
-            <span style="color:var(--primary)">📋</span> Generatore Report Mensile
-          </h2>
-          <p style="margin:4px 0 0 0;font-size:13px;color:var(--text-secondary)">
-            Report professionale PDF con logo e intestazioni — solo per amministratori
-          </p>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:8px 14px">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>
-          <span style="font-size:12px;font-weight:700;color:#EF4444">SOLO ADMIN</span>
-        </div>
-      </div>
-
-      <!-- CONFIGURAZIONE REPORT -->
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:var(--shadow-sm)">
-        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">
-          <span style="width:8px;height:8px;background:var(--primary);border-radius:50%;display:inline-block"></span>
-          Configurazione Report
-        </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px;align-items:end">
-          <div>
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Anno</label>
-            <select id="rep-anno" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;font-weight:600">
-              ${anniOpt}
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Mese di riferimento</label>
-            <select id="rep-mese" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;font-weight:600">
-              ${mesiOpt}
-            </select>
-          </div>
-          <div>
-            <label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px">Tipo Report</label>
-            <select id="rep-tipo" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;font-weight:600">
-              <option value="completo">Completo (Analisi + Ateco)</option>
-              <option value="analisi">Solo Analisi Tesseramento</option>
-              <option value="ateco">Solo Analisi Ateco</option>
-            </select>
-          </div>
-          <div style="display:flex;gap:10px">
-            <button onclick="caricaDatiReport()" id="rep-btn-carica"
-              style="flex:1;padding:10px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.33"/></svg>
-              Carica Dati
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <!-- STATUS CARICAMENTO -->
-      <div id="rep-status" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px;box-shadow:var(--shadow-sm)">
-        <div style="display:flex;align-items:center;gap:10px">
-          <div id="rep-spinner" style="width:18px;height:18px;border:3px solid var(--primary-glow);border-top-color:var(--primary);border-radius:50%;animation:spin 0.8s linear infinite"></div>
-          <span id="rep-status-text" style="font-size:13px;color:var(--text-secondary)">Caricamento in corso…</span>
-        </div>
-      </div>
-
-      <!-- ANTEPRIMA REPORT -->
-      <div id="rep-preview-wrap" style="display:none">
-
-        <!-- KPI MENSILI -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:var(--shadow-sm)">
-          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:16px;display:flex;align-items:center;gap:8px">
-            <span style="width:8px;height:8px;background:#3B82F6;border-radius:50%;display:inline-block"></span>
-            Anteprima Dati — <span id="rep-titolo-periodo" style="color:var(--primary)">...</span>
-          </div>
-          <div id="rep-kpi-strip" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:0"></div>
-        </div>
-
-        <!-- DIMENSIONE: TIPO RETE + PROMOTORE -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px" id="rep-grid-dimensioni">
-          <div id="rep-card-tiporete" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)">
-            <div style="background:#3B82F6;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
-              <span style="font-size:12px;font-weight:700;color:white">🔗 Tipo Rete</span>
-              <span id="rep-badge-tiporete" style="background:rgba(255,255,255,0.2);color:white;font-size:11px;padding:2px 8px;border-radius:20px">...</span>
-            </div>
-            <div style="padding:12px"><canvas id="rep-chart-tiporete" height="180"></canvas></div>
-            <div style="padding:0 12px 12px 12px"><table id="rep-table-tiporete" style="width:100%;font-size:11px;border-collapse:collapse"></table></div>
-          </div>
-          <div id="rep-card-promotore" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)">
-            <div style="background:#EC4899;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
-              <span style="font-size:12px;font-weight:700;color:white">👤 Promotore</span>
-              <span id="rep-badge-promotore" style="background:rgba(255,255,255,0.2);color:white;font-size:11px;padding:2px 8px;border-radius:20px">...</span>
-            </div>
-            <div style="padding:12px"><canvas id="rep-chart-promotore" height="180"></canvas></div>
-            <div style="padding:0 12px 12px 12px"><table id="rep-table-promotore" style="width:100%;font-size:11px;border-collapse:collapse"></table></div>
-          </div>
-        </div>
-
-        <!-- CONFRONTO ANNI (tabella) -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow-sm)">
-          <div style="background:#8B5CF6;padding:12px 16px;display:flex;align-items:center;justify-content:space-between">
-            <span style="font-size:12px;font-weight:700;color:white">📊 Confronto anni — Mese selezionato</span>
-            <span id="rep-badge-confronto" style="background:rgba(255,255,255,0.2);color:white;font-size:11px;padding:2px 8px;border-radius:20px">...</span>
-          </div>
-          <div style="padding:12px;overflow-x:auto">
-            <table id="rep-table-confronto" style="width:100%;font-size:11px;border-collapse:collapse"></table>
-          </div>
-          <div style="padding:0 12px 12px 12px"><canvas id="rep-chart-trend" height="120"></canvas></div>
-        </div>
-
-        <!-- SERIE STORICA -->
-        <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow-sm)">
-          <div style="background:#DC2626;padding:12px 16px">
-            <span style="font-size:12px;font-weight:700;color:white">📅 Serie Storica Mensile</span>
-          </div>
-          <div style="padding:12px;overflow-x:auto">
-            <table id="rep-table-storica" style="width:100%;font-size:11px;border-collapse:collapse"></table>
-          </div>
-        </div>
-
-        <!-- ATECO PREVIEW -->
-        <div id="rep-ateco-section" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:16px;box-shadow:var(--shadow-sm)">
-          <div style="background:#0D9488;padding:12px 16px">
-            <span style="font-size:12px;font-weight:700;color:white">🏭 Analisi Ateco — Anno selezionato</span>
-          </div>
-          <div style="padding:16px">
-            <div id="rep-ateco-kpi" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px" id="rep-ateco-grids">
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">TOP UNIONI</div>
-                <table id="rep-table-unioni" style="width:100%;font-size:11px;border-collapse:collapse"></table>
-              </div>
-              <div>
-                <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:8px">TOP MESTIERI</div>
-                <table id="rep-table-mestieri" style="width:100%;font-size:11px;border-collapse:collapse"></table>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- BOTTONE GENERA PDF -->
-        <div style="display:flex;justify-content:flex-end;gap:12px;margin-top:8px;padding-bottom:24px">
-          <button onclick="caricaDatiReport()" style="padding:12px 20px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-weight:600;font-size:13px;cursor:pointer">
-            🔄 Aggiorna Dati
-          </button>
-          <button onclick="generaReportPDFMensile()" id="rep-btn-pdf"
-            style="padding:12px 24px;background:linear-gradient(135deg,#005CA9,#0073C8);color:white;border:none;border-radius:8px;font-weight:700;font-size:14px;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 4px 14px rgba(0,92,169,0.3)">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="12" y1="9" x2="12" y2="13"/></svg>
-            Genera Report PDF
-          </button>
-        </div>
-
-      </div>
-
-    </div>
-  `;
-
-  // Auto-carica all'apertura della tab
-  caricaDatiReport();
+  repCaricaEAnteprima();
 }
 
-// ── CARICA DATI ──────────────────────────────────────────────────────────────
-async function caricaDatiReport() {
+async function repCaricaEAnteprima() {
   if (reportisticaLoading) return;
   reportisticaLoading = true;
-
   var anno = parseInt(G('rep-anno').value);
   var mese = parseInt(G('rep-mese').value);
-  var tipo = G('rep-tipo').value;
-
-  setRepStatus(true, 'Caricamento dati tesseramento…');
-
+  repSetStatus(true, 'Caricamento dati da Supabase…');
+  G('rep-anteprima').style.display = 'none';
   try {
-    // Carica tutti i record
-    var allRec = await sbGetAll(TR);
-
-    setRepStatus(true, 'Elaborazione dati…');
-
-    // Filtra per mese selezionato
-    var recMese = allRec.filter(function (r) {
-      return parseInt(r.mese) === mese && parseInt(r.anno) === anno;
+    repAllData = await sbGetAll(TR);
+    repSetStatus(true, 'Elaborazione e rendering…');
+    G('rep-periodo-label').textContent = MESI[mese] + ' ' + anno;
+    G('rep-pages-container').innerHTML = '';
+    var pages = repBuildAllPages(repAllData, anno, mese);
+    pages.forEach(function(pageHtml, i) {
+      var wrapper = document.createElement('div');
+      wrapper.style.cssText = 'margin-bottom:28px;box-shadow:0 4px 24px rgba(0,0,0,0.13);border-radius:4px;overflow:hidden;background:white';
+      wrapper.setAttribute('data-page', i + 1);
+      wrapper.innerHTML = pageHtml;
+      G('rep-pages-container').appendChild(wrapper);
     });
-
-    // Filtra per anno selezionato (YTD)
-    var recAnno = allRec.filter(function (r) {
-      return parseInt(r.anno) === anno;
-    });
-
-    // Tutti gli anni per serie storica
-    var recAll = allRec;
-
-    if (tipo !== 'ateco') {
-      renderKPIMensili(recMese, recAnno, anno, mese);
-      renderDimensioni(recMese, anno, mese);
-      renderConfronto(recAll, mese);
-      renderSerieStorica(recAll);
-    }
-
-    if (tipo !== 'analisi') {
-      setRepStatus(true, 'Caricamento dati Ateco…');
-      var atecoRec = allRec.filter(function (r) { return parseInt(r.anno) === anno; });
-      renderAtecoPreview(atecoRec, anno);
-    } else {
-      if (G('rep-ateco-section')) G('rep-ateco-section').style.display = 'none';
-    }
-
-    G('rep-titolo-periodo').textContent = MESI[mese] + ' ' + anno;
-    setRepStatus(false);
-    G('rep-preview-wrap').style.display = 'block';
-
-  } catch (e) {
-    console.error('Errore caricaDatiReport:', e);
-    setRepStatus(false);
-    toast('Errore caricamento dati: ' + e.message, 'error');
+    setTimeout(function(){ repRenderAllCharts(repAllData, anno, mese); }, 150);
+    G('rep-anteprima').style.display = 'block';
+    repSetStatus(false);
+  } catch(e) {
+    console.error(e);
+    repSetStatus(false);
+    toast('Errore: ' + e.message, 'error');
   } finally {
     reportisticaLoading = false;
   }
 }
 
-function setRepStatus(show, msg) {
+function repSetStatus(show, msg) {
   var el = G('rep-status');
   if (!el) return;
   el.style.display = show ? 'block' : 'none';
   if (msg && G('rep-status-text')) G('rep-status-text').textContent = msg;
 }
 
-// ── RENDER KPI MENSILI ────────────────────────────────────────────────────────
-function renderKPIMensili(recMese, recAnno, anno, mese) {
-  var totM = recMese.reduce(function (s, r) { return s + (parseFloat(r.importo) || 0); }, 0);
-  var cntM = recMese.length;
-  var avgM = cntM > 0 ? totM / cntM : 0;
-
-  var totA = recAnno.reduce(function (s, r) { return s + (parseFloat(r.importo) || 0); }, 0);
-  var cntA = recAnno.length;
-
-  // Confronto vs anno precedente (stesso mese)
-  var kpis = [
-    { label: 'Totale Importo', value: '€ ' + fmt(totM, 0), sub: MESI[mese] + ' ' + anno, color: '#3B82F6' },
-    { label: 'Nr. Contratti', value: cntM, sub: 'Mese corrente', color: '#10B981' },
-    { label: 'Importo Medio', value: '€ ' + fmt(avgM, 0), sub: 'Per contratto', color: '#8B5CF6' },
-    { label: 'Totale YTD', value: '€ ' + fmt(totA, 0), sub: 'Gen–' + MESI[mese] + ' ' + anno, color: '#F59E0B' },
-    { label: 'Contratti YTD', value: cntA, sub: 'Anno in corso', color: '#EC4899' },
-  ];
-
-  var html = kpis.map(function (k) {
-    return '<div style="border:1px solid #e5e7eb;border-radius:10px;padding:14px;border-top:3px solid ' + k.color + ';background:var(--surface)">' +
-      '<div style="font-size:10px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px">' + k.label + '</div>' +
-      '<div style="font-size:22px;font-weight:800;color:var(--text);margin-top:4px">' + k.value + '</div>' +
-      '<div style="font-size:10px;color:var(--text-secondary);margin-top:2px">' + k.sub + '</div>' +
-      '</div>';
-  }).join('');
-
-  G('rep-kpi-strip').innerHTML = html;
-}
-
-// ── RENDER DIMENSIONI (Tipo Rete + Promotore) ─────────────────────────────────
-function renderDimensioni(recMese, anno, mese) {
-  // TIPO RETE
-  var byRete = {};
-  recMese.forEach(function (r) {
-    var k = r.tipo_rete || r.tiporete || r.rete || 'N/D';
-    if (!byRete[k]) byRete[k] = { cnt: 0, tot: 0 };
-    byRete[k].cnt++;
-    byRete[k].tot += parseFloat(r.importo) || 0;
-  });
-  var totaleMese = recMese.reduce(function (s, r) { return s + (parseFloat(r.importo) || 0); }, 0);
-  var reteKeys = Object.keys(byRete).sort(function (a, b) { return byRete[b].tot - byRete[a].tot; });
-
-  G('rep-badge-tiporete').textContent = reteKeys.length + ' voci';
-  renderMiniChart('rep-chart-tiporete', reteKeys, reteKeys.map(function (k) { return byRete[k].tot; }), ['#3B82F6', '#F59E0B', '#10B981', '#EC4899', '#8B5CF6']);
-  renderDimTable('rep-table-tiporete', reteKeys, byRete, totaleMese);
-
-  // PROMOTORE
-  var byPromo = {};
-  recMese.forEach(function (r) {
-    var k = r.promotore || r.a_cura_di || r.acuradi || 'N/D';
-    if (!byPromo[k]) byPromo[k] = { cnt: 0, tot: 0 };
-    byPromo[k].cnt++;
-    byPromo[k].tot += parseFloat(r.importo) || 0;
-  });
-  var promoKeys = Object.keys(byPromo).sort(function (a, b) { return byPromo[b].tot - byPromo[a].tot; });
-
-  G('rep-badge-promotore').textContent = promoKeys.length + ' voci';
-  renderMiniChart('rep-chart-promotore', promoKeys, promoKeys.map(function (k) { return byPromo[k].tot; }), COLORS_PROMO);
-  renderDimTable('rep-table-promotore', promoKeys, byPromo, totaleMese);
-}
-
-function renderMiniChart(canvasId, labels, values, colors) {
-  var canvas = G(canvasId);
-  if (!canvas) return;
-  var ctxKey = 'repChart_' + canvasId;
-  if (charts[ctxKey]) { charts[ctxKey].destroy(); delete charts[ctxKey]; }
-  var ctx = canvas.getContext('2d');
-  charts[ctxKey] = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels.map(function (l) { return l.length > 18 ? l.substring(0, 16) + '…' : l; }),
-      datasets: [{
-        data: values,
-        backgroundColor: labels.map(function (_, i) { return colors[i % colors.length]; }),
-        borderRadius: 4,
-        borderSkipped: false
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-        y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 }, callback: function (v) { return '€' + (v >= 1000 ? (v / 1000).toFixed(0) + 'k' : v); } } }
-      }
-    }
-  });
-}
-
-function renderDimTable(tableId, keys, data, totale) {
-  var tbl = G(tableId);
-  if (!tbl) return;
-  var h = '<thead><tr style="border-bottom:2px solid #e5e7eb">' +
-    '<th style="text-align:left;padding:5px 6px;font-size:10px;color:#666;text-transform:uppercase">Categoria</th>' +
-    '<th style="text-align:right;padding:5px 6px;font-size:10px;color:#666">Nr.</th>' +
-    '<th style="text-align:right;padding:5px 6px;font-size:10px;color:#666">Importo</th>' +
-    '<th style="text-align:right;padding:5px 6px;font-size:10px;color:#666">% Tot.</th>' +
-    '<th style="text-align:right;padding:5px 6px;font-size:10px;color:#666">Media</th>' +
-    '</tr></thead><tbody>';
-  keys.forEach(function (k) {
-    var d = data[k];
-    var pct = totale > 0 ? (d.tot / totale * 100).toFixed(1) : '0.0';
-    var avg = d.cnt > 0 ? d.tot / d.cnt : 0;
-    h += '<tr style="border-bottom:1px solid #f1f5f9">' +
-      '<td style="padding:5px 6px;font-size:11px;font-weight:600">' + k + '</td>' +
-      '<td style="padding:5px 6px;font-size:11px;text-align:right">' + d.cnt + '</td>' +
-      '<td style="padding:5px 6px;font-size:11px;text-align:right;font-weight:600">€ ' + fmt(d.tot, 0) + '</td>' +
-      '<td style="padding:5px 6px;font-size:11px;text-align:right;color:#6366f1">' + pct + '%</td>' +
-      '<td style="padding:5px 6px;font-size:11px;text-align:right;color:#059669">€ ' + fmt(avg, 0) + '</td>' +
-      '</tr>';
-  });
-  // Totale
-  var cntTot = keys.reduce(function (s, k) { return s + data[k].cnt; }, 0);
-  var avgTot = cntTot > 0 ? totale / cntTot : 0;
-  h += '<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e5e7eb">' +
-    '<td style="padding:6px;font-size:11px">Totale</td>' +
-    '<td style="padding:6px;font-size:11px;text-align:right">' + cntTot + '</td>' +
-    '<td style="padding:6px;font-size:11px;text-align:right">€ ' + fmt(totale, 0) + '</td>' +
-    '<td style="padding:6px;font-size:11px;text-align:right">100%</td>' +
-    '<td style="padding:6px;font-size:11px;text-align:right">€ ' + fmt(avgTot, 0) + '</td>' +
-    '</tr></tbody>';
-  tbl.innerHTML = h;
-}
-
-// ── CONFRONTO ANNI ────────────────────────────────────────────────────────────
-function renderConfronto(recAll, mese) {
-  // Raggruppa per promotore × anno, filtrato per mese selezionato
-  var anni = [];
-  var byPromoAnno = {};
-  var totPerAnno = {};
-
-  recAll.forEach(function (r) {
-    if (parseInt(r.mese) !== mese) return;
-    var a = String(r.anno || '');
-    var p = r.promotore || r.a_cura_di || r.acuradi || 'N/D';
-    if (!a) return;
-    if (anni.indexOf(a) === -1) anni.push(a);
-    if (!byPromoAnno[p]) byPromoAnno[p] = {};
-    if (!byPromoAnno[p][a]) byPromoAnno[p][a] = { cnt: 0, tot: 0 };
-    byPromoAnno[p][a].cnt++;
-    byPromoAnno[p][a].tot += parseFloat(r.importo) || 0;
-    if (!totPerAnno[a]) totPerAnno[a] = 0;
-    totPerAnno[a] += parseFloat(r.importo) || 0;
-  });
-
-  anni.sort();
-  var promos = Object.keys(byPromoAnno).sort(function (a, b) {
-    var la = anni.reduce(function (s, y) { return s + (byPromoAnno[a][y] ? byPromoAnno[a][y].cnt : 0); }, 0);
-    var lb = anni.reduce(function (s, y) { return s + (byPromoAnno[b][y] ? byPromoAnno[b][y].cnt : 0); }, 0);
-    return lb - la;
-  });
-
-  G('rep-badge-confronto').textContent = promos.length + ' promotori';
-
-  // Tabella
-  var h = '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e5e7eb">' +
-    '<th style="text-align:left;padding:6px 8px;font-size:10px;color:#666;text-transform:uppercase;white-space:nowrap">Promotore</th>';
-  anni.forEach(function (a) {
-    h += '<th colspan="2" style="text-align:center;padding:6px 8px;font-size:10px;color:#666;border-left:1px solid #e5e7eb">' + a + '</th>';
-  });
-  h += '<th style="text-align:right;padding:6px 8px;font-size:10px;color:#666;border-left:2px solid #e5e7eb">Δ ' + (anni[anni.length - 1] || '') + '→' + (anni[anni.length - 2] || '') + '</th></tr>';
-  h += '<tr style="border-bottom:1px solid #e5e7eb">' +
-    '<th style="padding:4px 8px"></th>';
-  anni.forEach(function () {
-    h += '<th style="padding:4px 6px;font-size:9px;color:#999;text-align:right;border-left:1px solid #f1f5f9">Nr.</th><th style="padding:4px 6px;font-size:9px;color:#999;text-align:right">% Tot.</th>';
-  });
-  h += '<th></th></tr></thead><tbody>';
-
-  promos.forEach(function (p) {
-    h += '<tr style="border-bottom:1px solid #f1f5f9">';
-    h += '<td style="padding:5px 8px;font-size:11px;font-weight:600;white-space:nowrap">' + p + '</td>';
-    var lastCnt = 0, prevCnt = 0;
-    anni.forEach(function (a, ai) {
-      var d = byPromoAnno[p][a] || { cnt: 0, tot: 0 };
-      var tot = totPerAnno[a] || 0;
-      var pct = tot > 0 ? (d.cnt / tot * 100).toFixed(1) : '0.0';
-      if (ai === anni.length - 1) lastCnt = d.cnt;
-      if (ai === anni.length - 2) prevCnt = d.cnt;
-      h += '<td style="padding:5px 6px;font-size:11px;text-align:right;border-left:1px solid #f1f5f9">' + d.cnt + '</td>';
-      h += '<td style="padding:5px 6px;font-size:11px;text-align:right;color:#6366f1">' + pct + '%</td>';
-    });
-    // Delta
-    var delta = prevCnt > 0 ? ((lastCnt - prevCnt) / prevCnt * 100) : (lastCnt > 0 ? 100 : 0);
-    var dColor = delta > 0 ? '#10B981' : delta < 0 ? '#EF4444' : '#6B7280';
-    var dArrow = delta > 0 ? '▲' : delta < 0 ? '▼' : '–';
-    h += '<td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:700;color:' + dColor + ';border-left:2px solid #e5e7eb">' + dArrow + ' ' + Math.abs(delta).toFixed(1) + '%</td>';
-    h += '</tr>';
-  });
-
-  // Totale riga
-  h += '<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e5e7eb">';
-  h += '<td style="padding:6px 8px;font-size:11px">TOTALE</td>';
-  var anniTotCnt = {};
-  anni.forEach(function (a) {
-    var tot = promos.reduce(function (s, p) { return s + (byPromoAnno[p][a] ? byPromoAnno[p][a].cnt : 0); }, 0);
-    anniTotCnt[a] = tot;
-    h += '<td style="padding:6px;font-size:11px;text-align:right;border-left:1px solid #e5e7eb">' + tot + '</td><td style="padding:6px;font-size:11px;text-align:right">100%</td>';
-  });
-  var lastA = anni[anni.length - 1], prevA = anni[anni.length - 2];
-  var dtot = prevA && anniTotCnt[prevA] > 0 ? ((anniTotCnt[lastA] - anniTotCnt[prevA]) / anniTotCnt[prevA] * 100) : 0;
-  var dtColor = dtot > 0 ? '#10B981' : dtot < 0 ? '#EF4444' : '#6B7280';
-  var dtArrow = dtot > 0 ? '▲' : dtot < 0 ? '▼' : '–';
-  h += '<td style="padding:6px;font-size:11px;text-align:right;font-weight:700;color:' + dtColor + ';border-left:2px solid #e5e7eb">' + dtArrow + ' ' + Math.abs(dtot).toFixed(1) + '%</td>';
-  h += '</tr></tbody>';
-
-  G('rep-table-confronto').innerHTML = h;
-
-  // Grafico trend
-  var ctxKey = 'repChartTrend';
-  if (charts[ctxKey]) { charts[ctxKey].destroy(); delete charts[ctxKey]; }
-  var canvas = G('rep-chart-trend');
-  if (canvas) {
-    charts[ctxKey] = new Chart(canvas.getContext('2d'), {
-      type: 'line',
-      data: {
-        labels: anni,
-        datasets: [{
-          label: 'Nr. Contratti',
-          data: anni.map(function (a) { return anniTotCnt[a] || 0; }),
-          borderColor: '#8B5CF6', backgroundColor: 'rgba(139,92,246,0.08)',
-          tension: 0.4, fill: true, pointBackgroundColor: '#8B5CF6', pointRadius: 5
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-          y: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { font: { size: 10 } } }
-        }
-      }
-    });
-  }
-}
-
-// ── SERIE STORICA ─────────────────────────────────────────────────────────────
-function renderSerieStorica(recAll) {
-  var anni = [];
-  var matrice = {}; // mese → anno → cnt
-
-  recAll.forEach(function (r) {
-    var a = String(r.anno || '');
-    var m = parseInt(r.mese);
-    if (!a || !m) return;
-    if (anni.indexOf(a) === -1) anni.push(a);
-    if (!matrice[m]) matrice[m] = {};
-    if (!matrice[m][a]) matrice[m][a] = 0;
-    matrice[m][a]++;
-  });
-
-  anni.sort();
-  var lastA = anni[anni.length - 1];
-  var prevA = anni[anni.length - 2];
-
-  var h = '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e5e7eb">' +
-    '<th style="text-align:left;padding:6px 8px;font-size:10px;color:#666;text-transform:uppercase">Mese</th>';
-  anni.forEach(function (a) {
-    var isLast = a === lastA;
-    h += '<th style="text-align:right;padding:6px 8px;font-size:10px;color:' + (isLast ? 'var(--primary)' : '#666') + ';' + (isLast ? 'font-weight:800' : '') + '">' + a + '</th>';
-  });
-  if (prevA) {
-    h += '<th style="text-align:right;padding:6px 8px;font-size:10px;color:#EF4444">su ' + prevA + '</th>';
-    h += '<th style="text-align:right;padding:6px 8px;font-size:10px;color:#6B7280">su ' + (anni[anni.length - 3] || prevA) + '</th>';
-  }
-  h += '</tr></thead><tbody>';
-
-  for (var m = 1; m <= 12; m++) {
-    var row = matrice[m] || {};
-    var hasData = Object.keys(row).length > 0;
-    if (!hasData && m > new Date().getMonth() + 1) continue; // Nascondi mesi futuri senza dati
-    var lastVal = row[lastA] || 0;
-    var prevVal = prevA ? (row[prevA] || 0) : 0;
-    var prevPrevA = anni[anni.length - 3];
-    var prevPrevVal = prevPrevA ? (row[prevPrevA] || 0) : 0;
-    var diff1 = prevVal > 0 ? lastVal - prevVal : null;
-    var diff2 = prevPrevVal > 0 ? lastVal - prevPrevVal : null;
-
-    var bg = m % 2 === 0 ? 'background:#f8fafc' : '';
-    h += '<tr style="border-bottom:1px solid #f1f5f9;' + bg + '">';
-    h += '<td style="padding:5px 8px;font-size:11px;font-weight:700">' + MESI[m] + '</td>';
-    anni.forEach(function (a) {
-      var v = row[a] || 0;
-      var isLast = a === lastA;
-      h += '<td style="padding:5px 8px;font-size:11px;text-align:right;' + (isLast ? 'font-weight:700;color:var(--primary)' : 'color:var(--text-secondary)') + '">' + (v || (hasData ? '–' : '')) + '</td>';
-    });
-    if (prevA) {
-      var d1c = diff1 === null ? '#6B7280' : diff1 > 0 ? '#10B981' : diff1 < 0 ? '#EF4444' : '#6B7280';
-      var d1t = diff1 === null ? '–' : (diff1 > 0 ? '+' : '') + diff1;
-      var d2c = diff2 === null ? '#6B7280' : diff2 > 0 ? '#10B981' : diff2 < 0 ? '#EF4444' : '#6B7280';
-      var d2t = diff2 === null ? '–' : (diff2 > 0 ? '+' : '') + diff2;
-      h += '<td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:700;color:' + d1c + '">' + d1t + '</td>';
-      h += '<td style="padding:5px 8px;font-size:11px;text-align:right;color:' + d2c + '">' + d2t + '</td>';
-    }
-    h += '</tr>';
-  }
-
-  // Totale
-  h += '<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e5e7eb">';
-  h += '<td style="padding:6px 8px;font-size:11px">Totale</td>';
-  var totAnni = {};
-  anni.forEach(function (a) {
-    var t = Object.values(matrice).reduce(function (s, row) { return s + (row[a] || 0); }, 0);
-    totAnni[a] = t;
-    var isLast = a === lastA;
-    h += '<td style="padding:6px 8px;font-size:11px;text-align:right;' + (isLast ? 'color:var(--primary)' : '') + '">' + t + '</td>';
-  });
-  if (prevA) {
-    var tDiff = totAnni[lastA] - (totAnni[prevA] || 0);
-    var tDiff2 = totAnni[lastA] - (totAnni[anni[anni.length - 3]] || 0);
-    h += '<td style="padding:6px;font-size:11px;text-align:right;font-weight:700;color:' + (tDiff > 0 ? '#10B981' : '#EF4444') + '">' + (tDiff > 0 ? '+' : '') + tDiff + '</td>';
-    h += '<td style="padding:6px;font-size:11px;text-align:right;color:' + (tDiff2 > 0 ? '#10B981' : '#EF4444') + '">' + (tDiff2 > 0 ? '+' : '') + tDiff2 + '</td>';
-  }
-  h += '</tr></tbody>';
-
-  G('rep-table-storica').innerHTML = h;
-}
-
-// ── ATECO PREVIEW ─────────────────────────────────────────────────────────────
-function renderAtecoPreview(recAteco, anno) {
-  var sec = G('rep-ateco-section');
-  if (sec) sec.style.display = 'block';
-
-  var tot = recAteco.length;
-  var byUnione = {}, byMestiere = {};
-  var donne = 0, stranieri = 0;
-
-  recAteco.forEach(function (r) {
-    var u = r.unione || 'N/D';
-    var m = r.mestiere || 'N/D';
-    if (!byUnione[u]) byUnione[u] = 0;
-    byUnione[u]++;
-    if (!byMestiere[m]) byMestiere[m] = 0;
-    byMestiere[m]++;
-    if (String(r.sesso || '').trim() === 'Femmina') donne++;
-    if (String(r.nazionalita || '').trim() === 'Straniero') stranieri++;
-  });
-
-  // KPI Ateco
-  var kpiAteco = [
-    { label: 'Imprese Totali', value: tot.toLocaleString('it-IT'), color: '#0D9488' },
-    { label: 'Unioni', value: Object.keys(byUnione).length, color: '#0284C7' },
-    { label: 'Mestieri', value: Object.keys(byMestiere).length, color: '#7C3AED' },
-    { label: '% Donne', value: tot > 0 ? (donne / tot * 100).toFixed(1) + '%' : '0%', color: '#EC4899' },
-    { label: '% Stranieri', value: tot > 0 ? (stranieri / tot * 100).toFixed(1) + '%' : '0%', color: '#F59E0B' },
-  ];
-
-  G('rep-ateco-kpi').innerHTML = kpiAteco.map(function (k) {
-    return '<div style="border:1px solid #e5e7eb;border-radius:8px;padding:12px;border-left:3px solid ' + k.color + '">' +
-      '<div style="font-size:10px;font-weight:700;color:#666;text-transform:uppercase">' + k.label + '</div>' +
-      '<div style="font-size:20px;font-weight:800;color:#333;margin-top:3px">' + k.value + '</div>' +
-      '</div>';
-  }).join('');
-
-  // Top unioni
-  var topUnioni = Object.entries(byUnione).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 10);
-  var topMestieri = Object.entries(byMestiere).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 10);
-
-  function renderTopTable(tableId, items, totale) {
-    var tbl = G(tableId);
-    if (!tbl) return;
-    var h = '<thead><tr style="border-bottom:2px solid #e5e7eb">' +
-      '<th style="text-align:left;padding:5px 6px;font-size:10px;color:#666">Nome</th>' +
-      '<th style="text-align:right;padding:5px 6px;font-size:10px;color:#666">Nr.</th>' +
-      '<th style="text-align:right;padding:5px 6px;font-size:10px;color:#666">%</th>' +
-      '</tr></thead><tbody>';
-    items.forEach(function (item) {
-      var pct = totale > 0 ? (item[1] / totale * 100).toFixed(1) : '0';
-      h += '<tr style="border-bottom:1px solid #f1f5f9">' +
-        '<td style="padding:4px 6px;font-size:11px">' + item[0] + '</td>' +
-        '<td style="padding:4px 6px;font-size:11px;text-align:right;font-weight:700">' + item[1] + '</td>' +
-        '<td style="padding:4px 6px;font-size:11px;text-align:right;color:#0D9488">' + pct + '%</td>' +
-        '</tr>';
-    });
-    h += '</tbody>';
-    tbl.innerHTML = h;
-  }
-
-  renderTopTable('rep-table-unioni', topUnioni, tot);
-  renderTopTable('rep-table-mestieri', topMestieri, tot);
-}
-
 // ══════════════════════════════════════════════════════════════════════════════
-// GENERAZIONE PDF PROFESSIONALE
+// COSTRUZIONE PAGINE
 // ══════════════════════════════════════════════════════════════════════════════
-
-async function generaReportPDFMensile() {
-  if (!isAdmin()) { toast('Accesso non autorizzato', 'error'); return; }
-
-  var anno = G('rep-anno').value;
-  var mese = parseInt(G('rep-mese').value);
-  var tipo = G('rep-tipo').value;
-
-  var btn = G('rep-btn-pdf');
-  btn.disabled = true;
-  btn.innerHTML = '<div style="width:14px;height:14px;border:2px solid rgba(255,255,255,0.4);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;margin-right:8px"></div> Generazione in corso…';
-
-  showLoad('Preparazione report…');
-
-  try {
-    var LOGO_URL = 'https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png';
-    var meseStr = MESI[mese] + ' ' + anno;
-    var oggi = new Date().toLocaleDateString('it-IT', { day: '2-digit', month: 'long', year: 'numeric' });
-
-    // Carica logo
-    var logoDataUrl = await loadImageAsDataUrl(LOGO_URL);
-
-    // Cattura grafici
-    var chartTipoRete = captureCanvas('rep-chart-tiporete');
-    var chartPromo = captureCanvas('rep-chart-promotore');
-    var chartTrend = captureCanvas('rep-chart-trend');
-
-    // Setup jsPDF
-    var { jsPDF } = window.jspdf;
-    var pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    var PW = 210, PH = 297, ML = 14, MR = 14, MT = 14;
-    var CW = PW - ML - MR;
-
-    var pageNum = 0;
-    function newPage() {
-      if (pageNum > 0) pdf.addPage();
-      pageNum++;
-      drawPageFrame(pdf, logoDataUrl, meseStr, oggi, pageNum, PW, PH, ML);
-    }
-
-    // ── PAGINA 1: KPI + Dimensioni ──
-    newPage();
-    var y = 50;
-
-    // Titolo sezione
-    pdf.setFillColor(0, 92, 169);
-    pdf.rect(ML, y, CW, 7, 'F');
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFontSize(9); pdf.setFont('helvetica', 'bold');
-    pdf.text('DATO MENSILE: ' + meseStr.toUpperCase(), ML + 4, y + 5);
-    y += 12;
-
-    // KPI Cards row
-    var kpiEl = G('rep-kpi-strip');
-    if (kpiEl) {
-      var kpiCards = kpiEl.querySelectorAll('div[style]');
-      var kpiW = CW / Math.min(kpiCards.length, 5);
-      var kpiColors = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899'];
-      kpiCards.forEach(function (card, i) {
-        if (i >= 5) return;
-        var kx = ML + i * kpiW;
-        var labelEl = card.querySelector('div:nth-child(1)');
-        var valEl = card.querySelector('div:nth-child(2)');
-        var subEl = card.querySelector('div:nth-child(3)');
-        var label = labelEl ? labelEl.textContent : '';
-        var val = valEl ? valEl.textContent : '';
-        var sub = subEl ? subEl.textContent : '';
-
-        pdf.setDrawColor(220, 220, 220);
-        pdf.setFillColor(255, 255, 255);
-        pdf.roundedRect(kx, y, kpiW - 1, 22, 2, 2, 'FD');
-        // top border color
-        var rgb = hexToRgb(kpiColors[i]);
-        pdf.setFillColor(rgb.r, rgb.g, rgb.b);
-        pdf.rect(kx, y, kpiW - 1, 1.5, 'F');
-
-        pdf.setTextColor(100, 100, 100);
-        pdf.setFontSize(6.5); pdf.setFont('helvetica', 'bold');
-        pdf.text(label.toUpperCase(), kx + 3, y + 6);
-        pdf.setTextColor(30, 30, 30);
-        pdf.setFontSize(13); pdf.setFont('helvetica', 'bold');
-        pdf.text(val, kx + 3, y + 14);
-        pdf.setTextColor(120, 120, 120);
-        pdf.setFontSize(6.5); pdf.setFont('helvetica', 'normal');
-        pdf.text(sub, kx + 3, y + 19);
-      });
-    }
-    y += 27;
-
-    // Sezione "Report per dimensione"
-    drawSectionTitle(pdf, 'REPORT PER DIMENSIONE', ML, y, CW); y += 9;
-
-    var halfW = (CW - 4) / 2;
-
-    // Card Tipo Rete
-    y = drawDimCard(pdf, 'TIPO RETE', ML, y, halfW, chartTipoRete, 'rep-table-tiporete', '#3B82F6');
-    var yAfterTipoRete = y;
-
-    // Card Promotore (stessa riga)
-    y = drawDimCard(pdf, 'PROMOTORE', ML + halfW + 4, yAfterTipoRete - (yAfterTipoRete - 91), halfW, chartPromo, 'rep-table-promotore', '#EC4899');
-    y = Math.max(y, yAfterTipoRete);
-
-    // ── PAGINA 2: Confronto anni + Serie storica ──
-    newPage();
-    y = 50;
-
-    drawSectionTitle(pdf, 'RAFFRONTO MESE CON ANNI PRECEDENTI: ' + MESI[mese].toUpperCase(), ML, y, CW); y += 9;
-
-    // Tabella confronto
-    y = drawHTMLTable(pdf, 'rep-table-confronto', ML, y, CW, '#8B5CF6');
-    y += 6;
-
-    // Grafico trend
-    if (chartTrend) {
-      pdf.setDrawColor(220, 220, 220);
-      pdf.setFillColor(250, 250, 252);
-      pdf.roundedRect(ML, y, CW, 38, 2, 2, 'FD');
-      pdf.addImage(chartTrend, 'PNG', ML + 2, y + 2, CW - 4, 34);
-      y += 42;
-    }
-
-    drawSectionTitle(pdf, 'SERIE STORICA MENSILE', ML, y, CW); y += 9;
-    y = drawHTMLTable(pdf, 'rep-table-storica', ML, y, CW, '#DC2626');
-
-    // ── PAGINA 3: Ateco (se richiesto) ──
-    if (tipo !== 'analisi') {
-      newPage();
-      y = 50;
-
-      drawSectionTitle(pdf, 'ANALISI ATECO — ANNO ' + anno, ML, y, CW); y += 9;
-
-      // KPI Ateco
-      var atecoKpiEl = G('rep-ateco-kpi');
-      if (atecoKpiEl) {
-        var atecoCards = atecoKpiEl.querySelectorAll('div[style]');
-        var akW = CW / Math.min(atecoCards.length, 5);
-        var akColors = ['#0D9488', '#0284C7', '#7C3AED', '#EC4899', '#F59E0B'];
-        atecoCards.forEach(function (card, i) {
-          if (i >= 5) return;
-          var ax = ML + i * akW;
-          var lbl = card.querySelector('div:nth-child(1)');
-          var val = card.querySelector('div:nth-child(2)');
-          var rgb = hexToRgb(akColors[i]);
-
-          pdf.setDrawColor(220, 220, 220);
-          pdf.setFillColor(255, 255, 255);
-          pdf.roundedRect(ax, y, akW - 1, 16, 2, 2, 'FD');
-          pdf.setFillColor(rgb.r, rgb.g, rgb.b);
-          pdf.rect(ax, y, 1.5, 16, 'F');
-
-          pdf.setTextColor(100, 100, 100);
-          pdf.setFontSize(6); pdf.setFont('helvetica', 'bold');
-          pdf.text(lbl ? lbl.textContent.toUpperCase() : '', ax + 4, y + 6);
-          pdf.setTextColor(30, 30, 30);
-          pdf.setFontSize(12); pdf.setFont('helvetica', 'bold');
-          pdf.text(val ? val.textContent : '', ax + 4, y + 13);
-        });
-        y += 20;
-      }
-
-      var halfWA = (CW - 4) / 2;
-      drawSectionTitle(pdf, 'TOP 10 UNIONI', ML, y, halfWA); 
-      drawSectionTitle(pdf, 'TOP 10 MESTIERI', ML + halfWA + 4, y, halfWA);
-      y += 9;
-
-      var yU = drawHTMLTable(pdf, 'rep-table-unioni', ML, y, halfWA, '#0D9488');
-      var yM = drawHTMLTable(pdf, 'rep-table-mestieri', ML + halfWA + 4, y, halfWA, '#7C3AED');
-      y = Math.max(yU, yM);
-    }
-
-    // ── SALVA ──
-    var filename = 'Report_CNA_Roma_' + MESI[mese] + '_' + anno + '_' + new Date().toISOString().slice(0, 10) + '.pdf';
-    pdf.save(filename);
-
-    toast('✓ Report generato: ' + filename, 'success');
-
-  } catch (e) {
-    console.error('Errore generazione PDF:', e);
-    toast('Errore PDF: ' + e.message, 'error');
-  } finally {
-    hideLoad();
-    btn.disabled = false;
-    btn.innerHTML = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Genera Report PDF';
-  }
+function repBuildAllPages(data, anno, mese) {
+  return [
+    repPag1_Mensile(data, anno, mese),
+    repPag2_Annuale(data, anno, mese),
+    repPag3_RaffrontoMese(data, anno, mese),
+    repPag4_RaffrontoYTD(data, anno, mese),
+    repPag5_SchedeA(data, anno, mese),
+    repPag6_SchedeB(data, anno, mese),
+    repPag7_SerieStorica(data, anno, mese),
+  ];
 }
 
-// ── HELPER: FRAME PAGINA ──────────────────────────────────────────────────────
-function drawPageFrame(pdf, logoDataUrl, meseStr, oggi, pageNum, PW, PH, ML) {
-  var CW = PW - ML * 2;
-
-  // Sfondo header
-  pdf.setFillColor(0, 92, 169);
-  pdf.rect(0, 0, PW, 34, 'F');
-
-  // Logo
-  if (logoDataUrl) {
-    try { pdf.addImage(logoDataUrl, 'PNG', ML, 5, 40, 24); } catch (e) {}
-  }
-
-  // Titolo report
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(16); pdf.setFont('helvetica', 'bold');
-  pdf.text('Dati tesseramento ' + meseStr, PW - ML, 14, { align: 'right' });
-  pdf.setFontSize(8); pdf.setFont('helvetica', 'normal');
-  pdf.setTextColor(200, 220, 240);
-  pdf.text('CNA Roma — Report mensile', PW - ML, 20, { align: 'right' });
-  pdf.text('Generato il ' + oggi, PW - ML, 26, { align: 'right' });
-
-  // Linea separator
-  pdf.setDrawColor(255, 255, 255);
-  pdf.setLineWidth(0.3);
-  pdf.line(ML, 36, PW - ML, 36);
-
-  // Footer
-  pdf.setFillColor(245, 247, 250);
-  pdf.rect(0, PH - 10, PW, 10, 'F');
-  pdf.setTextColor(150, 150, 150);
-  pdf.setFontSize(7); pdf.setFont('helvetica', 'normal');
-  pdf.text('CNA Roma — Confederazione Nazionale dell\'Artigianato e della Piccola e Media Impresa', ML, PH - 4);
-  pdf.text('Pagina ' + pageNum, PW - ML, PH - 4, { align: 'right' });
+// HEADER: bianco, logo proporzionato (non deformato), titolo Inter Bold nero
+function repHeader(titoloPagina, anno, mese) {
+  var meseStr = MESI[mese] + ' ' + anno;
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 28px 12px;border-bottom:2px solid #e2e8f0;background:white">'
+    + '<img src="' + LOGO_URL + '" style="height:50px;width:auto;max-width:180px;object-fit:contain;object-position:left center" crossorigin="anonymous" />'
+    + '<div style="text-align:right"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:20px;font-weight:800;color:#0f172a;line-height:1.2">Dati tesseramento ' + meseStr + '</div></div>'
+    + '</div>'
+    + '<div style="padding:10px 28px 6px;background:white"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;color:#0f172a">● ' + titoloPagina + '</div></div>';
 }
 
-function drawSectionTitle(pdf, title, x, y, w) {
-  pdf.setFillColor(248, 250, 252);
-  pdf.setDrawColor(220, 220, 220);
-  pdf.roundedRect(x, y, w, 7, 1, 1, 'FD');
-  pdf.setFontSize(8); pdf.setFont('helvetica', 'bold');
-  pdf.setTextColor(30, 30, 30);
-  pdf.text('● ' + title, x + 3, y + 5);
+function repFooter(n) {
+  return '<div style="padding:7px 28px;border-top:1px solid #e2e8f0;background:white;display:flex;justify-content:space-between;align-items:center">'
+    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif">CNA Roma — Confederazione Nazionale dell\'Artigianato</span>'
+    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif">' + n + '</span></div>';
 }
 
-function drawDimCard(pdf, title, x, y, w, chartImg, tableId, colorHex) {
-  var startY = y;
-  var rgb = hexToRgb(colorHex);
-  
-  // Header card
-  pdf.setFillColor(rgb.r, rgb.g, rgb.b);
-  pdf.roundedRect(x, y, w, 7, 1, 1, 'F');
-  pdf.setTextColor(255, 255, 255);
-  pdf.setFontSize(8); pdf.setFont('helvetica', 'bold');
-  pdf.text(title, x + 3, y + 5);
-  y += 9;
-
-  // Grafico
-  if (chartImg) {
-    pdf.addImage(chartImg, 'PNG', x, y, w, 35);
-    y += 37;
-  }
-
-  // Tabella
-  y = drawHTMLTable(pdf, tableId, x, y, w, colorHex);
-  return y + 2;
+function repPage(header, body, footer) {
+  return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px">'
+    + header
+    + '<div style="padding:14px 28px 18px;background:white">' + body + '</div>'
+    + footer + '</div>';
 }
 
-function drawHTMLTable(pdf, tableId, x, y, w, headerColorHex) {
-  var tbl = G(tableId);
-  if (!tbl) return y;
-
-  var headerRgb = hexToRgb(headerColorHex || '#3B82F6');
-  var rows = tbl.querySelectorAll('tr');
-  var ROW_H = 5.5;
-  var FONT_SIZE = 7;
-  var colCount = 0;
-  if (rows.length > 0) colCount = rows[0].querySelectorAll('th, td').length;
-  if (colCount === 0) return y;
-  var colW = w / colCount;
-
-  rows.forEach(function (row, ri) {
-    var cells = row.querySelectorAll('th, td');
-    var isHeader = row.parentElement && row.parentElement.tagName === 'THEAD';
-    var isTotal = ri === rows.length - 1;
-    var bg = isHeader ? headerRgb : (isTotal ? { r: 248, g: 250, b: 252 } : (ri % 2 === 0 ? { r: 255, g: 255, b: 255 } : { r: 248, g: 250, b: 252 }));
-
-    pdf.setFillColor(bg.r, bg.g, bg.b);
-    pdf.rect(x, y, w, ROW_H, 'F');
-
-    cells.forEach(function (cell, ci) {
-      var cx = x + ci * colW;
-      var cellText = (cell.textContent || '').trim();
-      var isRight = cell.style.textAlign === 'right' || (ci > 0 && !isHeader);
-
-      if (isHeader) {
-        pdf.setTextColor(255, 255, 255);
-        pdf.setFont('helvetica', 'bold');
-      } else if (isTotal) {
-        pdf.setTextColor(30, 30, 30);
-        pdf.setFont('helvetica', 'bold');
-      } else {
-        pdf.setTextColor(60, 60, 60);
-        pdf.setFont('helvetica', 'normal');
-      }
-
-      pdf.setFontSize(FONT_SIZE);
-      var maxLen = Math.floor(colW / 1.5);
-      if (cellText.length > maxLen) cellText = cellText.substring(0, maxLen - 1) + '…';
-
-      if (isRight) {
-        pdf.text(cellText, cx + colW - 1, y + ROW_H - 1.5, { align: 'right' });
-      } else {
-        pdf.text(cellText, cx + 1, y + ROW_H - 1.5);
-      }
-    });
-
-    y += ROW_H;
-    // Linea separatrice
-    pdf.setDrawColor(235, 235, 235);
-    pdf.setLineWidth(0.1);
-    pdf.line(x, y, x + w, y);
-  });
-
-  return y + 2;
-}
-
-// ── UTILS ─────────────────────────────────────────────────────────────────────
-function captureCanvas(id) {
-  var el = G(id);
-  if (!el || !el.toDataURL) return null;
-  try { return el.toDataURL('image/png'); } catch (e) { return null; }
-}
-
-function loadImageAsDataUrl(url) {
-  return new Promise(function (resolve) {
-    var img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function () {
-      var canvas = document.createElement('canvas');
-      canvas.width = img.width; canvas.height = img.height;
-      canvas.getContext('2d').drawImage(img, 0, 0);
-      try { resolve(canvas.toDataURL('image/png')); }
-      catch (e) { resolve(null); }
-    };
-    img.onerror = function () { resolve(null); };
-    img.src = url;
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function repFiltro(data, anno, mese, soloMese) {
+  return data.filter(function(r) {
+    if (parseInt(r.anno) !== anno) return false;
+    return soloMese ? (parseInt(r.mese) === mese) : (parseInt(r.mese) <= mese);
   });
 }
 
-function hexToRgb(hex) {
-  var r = parseInt(hex.slice(1, 3), 16);
-  var g = parseInt(hex.slice(3, 5), 16);
-  var b = parseInt(hex.slice(5, 7), 16);
-  return { r: r, g: g, b: b };
+function repGroup(data, campo) {
+  var out = {};
+  data.forEach(function(r) {
+    var k = r[campo] || 'N/D';
+    if (!out[k]) out[k] = {cnt:0, tot:0};
+    out[k].cnt++;
+    out[k].tot += parseFloat(r.importo) || 0;
+  });
+  return out;
 }
 
-// Alias locale per fmt (usa la funzione globale del dashboard)
-function fmt(n, dec) {
+function repGetPromo(data) {
+  var g = repGroup(data, 'promotore');
+  if (Object.keys(g).length < 2) g = repGroup(data, 'a_cura_di');
+  return g;
+}
+
+function repGetRete(data) {
+  var g = repGroup(data, 'tipo_rete');
+  if (Object.keys(g).length < 2) g = repGroup(data, 'tiporete');
+  return g;
+}
+
+function repFmt(n, dec) {
   if (typeof n !== 'number') n = parseFloat(n) || 0;
   var d = dec !== undefined ? dec : 2;
-  return n.toLocaleString('it-IT', { minimumFractionDigits: d, maximumFractionDigits: d });
+  return n.toLocaleString('it-IT', {minimumFractionDigits:d, maximumFractionDigits:d});
+}
+
+function repKPI(label, value, sub, delta, color) {
+  var dHtml = '';
+  if (delta !== null && delta !== undefined) {
+    var dc = delta < 0 ? '#EF4444' : '#10B981';
+    var da = delta < 0 ? '▼' : '▲';
+    dHtml = '<div style="margin-top:5px"><span style="background:' + dc + ';color:white;font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px">' + da + ' ' + Math.abs(delta).toFixed(1) + '% vs ' + (new Date().getFullYear()-1) + '</span></div>';
+  }
+  return '<div style="flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-top:3px solid ' + color + ';background:white">'
+    + '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">' + label + '</div>'
+    + '<div style="font-size:24px;font-weight:800;color:#0f172a;line-height:1">' + value + '</div>'
+    + '<div style="font-size:10px;color:#94a3b8;margin-top:3px">' + sub + '</div>'
+    + dHtml + '</div>';
+}
+
+function repDimTable(byKey, totale, color) {
+  var keys = Object.keys(byKey).sort(function(a,b){return byKey[b].tot-byKey[a].tot;});
+  var rows = keys.map(function(k) {
+    var d = byKey[k];
+    var pct = totale > 0 ? (d.tot/totale*100).toFixed(1) : '0.0';
+    var avg = d.cnt > 0 ? d.tot/d.cnt : 0;
+    var bw = totale > 0 ? Math.max(4, d.tot/totale*110) : 4;
+    return '<tr style="border-bottom:1px solid #f1f5f9">'
+      + '<td style="padding:5px 8px;font-size:11px;font-weight:600;color:#0f172a">' + k + '</td>'
+      + '<td style="padding:5px 8px;font-size:11px;text-align:right;color:#475569">' + d.cnt + '</td>'
+      + '<td style="padding:5px 8px;font-size:11px;text-align:right;color:#475569">€ ' + repFmt(d.tot,0) + '</td>'
+      + '<td style="padding:5px 8px"><div style="display:flex;align-items:center;gap:5px"><div style="width:' + bw + 'px;height:4px;background:' + color + ';border-radius:2px;flex-shrink:0"></div><span style="font-size:10px;color:#64748b">' + pct + '%</span></div></td>'
+      + '<td style="padding:5px 8px;font-size:11px;text-align:right;color:#475569">€ ' + repFmt(avg,0) + '</td></tr>';
+  }).join('');
+  var totCnt = keys.reduce(function(s,k){return s+byKey[k].cnt;},0);
+  var totAvg = totCnt>0 ? totale/totCnt : 0;
+  return '<table style="width:100%;border-collapse:collapse">'
+    + '<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'
+    + '<th style="padding:5px 8px;text-align:left;font-size:10px;color:#64748b;text-transform:uppercase">Categoria</th>'
+    + '<th style="padding:5px 8px;text-align:right;font-size:10px;color:#64748b;text-transform:uppercase">Nr.</th>'
+    + '<th style="padding:5px 8px;text-align:right;font-size:10px;color:#64748b;text-transform:uppercase">Importo ↓</th>'
+    + '<th style="padding:5px 8px;font-size:10px;color:#64748b;text-transform:uppercase">% Tot.</th>'
+    + '<th style="padding:5px 8px;text-align:right;font-size:10px;color:#64748b;text-transform:uppercase">Media</th>'
+    + '</tr></thead><tbody>' + rows + '</tbody>'
+    + '<tfoot><tr style="background:#f8fafc;border-top:2px solid #e2e8f0">'
+    + '<td style="padding:5px 8px;font-size:11px;font-weight:700">Totale</td>'
+    + '<td style="padding:5px 8px;font-size:11px;font-weight:700;text-align:right">' + totCnt + '</td>'
+    + '<td style="padding:5px 8px;font-size:11px;font-weight:700;text-align:right">€ ' + repFmt(totale,0) + '</td>'
+    + '<td style="padding:5px 8px;font-size:11px;font-weight:700">100%</td>'
+    + '<td style="padding:5px 8px;font-size:11px;font-weight:700;text-align:right">€ ' + repFmt(totAvg,0) + '</td>'
+    + '</tr></tfoot></table>';
+}
+
+function repCardSezione(titolo, color, icona, badge, tableHtml, chartId) {
+  var chartHtml = chartId ? '<div style="padding:8px 12px 4px"><canvas id="' + chartId + '" height="150"></canvas></div>' : '';
+  return '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
+    + '<div style="background:' + color + ';padding:9px 14px;display:flex;align-items:center;justify-content:space-between">'
+    + '<div style="display:flex;align-items:center;gap:7px;color:white;font-size:12px;font-weight:700">' + icona + ' ' + titolo + '</div>'
+    + '<span style="background:rgba(255,255,255,0.2);color:white;font-size:10px;padding:2px 10px;border-radius:20px">' + badge + '</span></div>'
+    + chartHtml
+    + '<div style="padding:0 12px 10px">' + tableHtml + '</div></div>';
+}
+
+function repKpiDB(data) {
+  return '<div style="flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-top:3px solid #F59E0B;background:white">'
+    + '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Totale DB</div>'
+    + '<div style="font-size:24px;font-weight:800;color:#0f172a;line-height:1">' + data.length.toLocaleString('it-IT') + '</div>'
+    + '<div style="font-size:10px;color:#94a3b8;margin-top:3px">Record su Supabase</div></div>';
+}
+
+// ── PAGINA 1: DATO MENSILE ────────────────────────────────────────────────────
+function repPag1_Mensile(data, anno, mese) {
+  var rec = repFiltro(data, anno, mese, true);
+  var tot = rec.reduce(function(s,r){return s+(parseFloat(r.importo)||0);},0);
+  var cnt = rec.length;
+  var avg = cnt>0?tot/cnt:0;
+  var recP = data.filter(function(r){return parseInt(r.anno)===(anno-1)&&parseInt(r.mese)===mese;});
+  var totP = recP.reduce(function(s,r){return s+(parseFloat(r.importo)||0);},0);
+  var cntP = recP.length;
+  var dImp = totP>0?(tot-totP)/totP*100:null;
+  var dCnt = cntP>0?(cnt-cntP)/cntP*100:null;
+  var dAvg = (totP>0&&cntP>0)?(avg-(totP/cntP))/(totP/cntP)*100:null;
+
+  var byRete = repGetRete(rec);
+  var byPromo = repGetPromo(rec);
+
+  var body = '<div style="display:flex;gap:10px;margin-bottom:18px">'
+    + repKPI('Totale Importo','€ '+repFmt(tot,0),'vs '+(anno-1),dImp,'#3B82F6')
+    + repKPI('Nr. Contratti',cnt,'vs '+(anno-1),dCnt,'#10B981')
+    + repKPI('Importo Medio','€ '+repFmt(avg,0),'Per contratto',dAvg,'#8B5CF6')
+    + repKpiDB(data) + '</div>'
+    + '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:10px">● Report per dimensione</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+    + repCardSezione('Tipo Rete','#3B82F6','🔗',Object.keys(byRete).length+' voci',repDimTable(byRete,tot,'#3B82F6'),'rep-c1-rete')
+    + repCardSezione('Promotore','#EC4899','👤',Object.keys(byPromo).length+' voci',repDimTable(byPromo,tot,'#EC4899'),'rep-c1-promo')
+    + '</div>';
+
+  return repPage(repHeader('Dato mensile: '+MESI[mese], anno, mese), body, repFooter('1'));
+}
+
+// ── PAGINA 2: DATO ANNUALE ────────────────────────────────────────────────────
+function repPag2_Annuale(data, anno, mese) {
+  var rec = repFiltro(data, anno, mese, false);
+  var tot = rec.reduce(function(s,r){return s+(parseFloat(r.importo)||0);},0);
+  var cnt = rec.length;
+  var avg = cnt>0?tot/cnt:0;
+  var recP = data.filter(function(r){return parseInt(r.anno)===(anno-1)&&parseInt(r.mese)<=mese;});
+  var totP = recP.reduce(function(s,r){return s+(parseFloat(r.importo)||0);},0);
+  var cntP = recP.length;
+  var dImp = totP>0?(tot-totP)/totP*100:null;
+  var dCnt = cntP>0?(cnt-cntP)/cntP*100:null;
+  var dAvg = (totP>0&&cntP>0)?(avg-(totP/cntP))/(totP/cntP)*100:null;
+
+  var byRete = repGetRete(rec);
+  var byPromo = repGetPromo(rec);
+
+  var body = '<div style="display:flex;gap:10px;margin-bottom:18px">'
+    + repKPI('Totale Importo','€ '+repFmt(tot,0),'Gen–'+MESI[mese]+' '+anno,dImp,'#3B82F6')
+    + repKPI('Nr. Contratti',cnt,'vs '+(anno-1),dCnt,'#10B981')
+    + repKPI('Importo Medio','€ '+repFmt(avg,0),'Per contratto',dAvg,'#8B5CF6')
+    + repKpiDB(data) + '</div>'
+    + '<div style="font-size:12px;font-weight:700;color:#0f172a;margin-bottom:10px">● Report per dimensione</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">'
+    + repCardSezione('Tipo Rete','#3B82F6','🔗',Object.keys(byRete).length+' voci',repDimTable(byRete,tot,'#3B82F6'),'rep-c2-rete')
+    + repCardSezione('Promotore','#EC4899','👤',Object.keys(byPromo).length+' voci',repDimTable(byPromo,tot,'#EC4899'),'rep-c2-promo')
+    + '</div>';
+
+  return repPage(repHeader('Dato annuale: '+anno, anno, mese), body, repFooter('2'));
+}
+
+// ── HELPER: TABELLA CONFRONTO ANNI ───────────────────────────────────────────
+function repBuildConfronto(data, anno, mese, soloMese, trendId) {
+  var anniSet={};
+  data.forEach(function(r){if(r.anno)anniSet[r.anno]=1;});
+  var anni = Object.keys(anniSet).map(Number).sort();
+
+  var promoSet={};
+  data.forEach(function(r){
+    if(soloMese&&parseInt(r.mese)!==mese) return;
+    if(!soloMese&&parseInt(r.mese)>mese) return;
+    var p=r.promotore||r.a_cura_di||'N/D';
+    promoSet[p]=1;
+  });
+  var promos = Object.keys(promoSet).sort();
+
+  var matrix={}, totPerAnno={};
+  data.forEach(function(r){
+    var a=parseInt(r.anno), m=parseInt(r.mese);
+    if(soloMese&&m!==mese) return;
+    if(!soloMese&&m>mese) return;
+    var p=r.promotore||r.a_cura_di||'N/D';
+    if(!matrix[p]) matrix[p]={};
+    if(!matrix[p][a]) matrix[p][a]={cnt:0};
+    matrix[p][a].cnt++;
+    if(!totPerAnno[a]) totPerAnno[a]=0;
+    totPerAnno[a]++;
+  });
+
+  // Thead
+  var th='<tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'
+    +'<th style="padding:5px 8px;text-align:left;font-size:10px;color:#64748b;text-transform:uppercase;white-space:nowrap">Promotore</th>';
+  anni.forEach(function(a){
+    th+='<th colspan="2" style="padding:5px 8px;text-align:center;font-size:10px;color:#64748b;text-transform:uppercase;border-left:1px solid #e2e8f0">'+a+'</th>';
+  });
+  th+='<th style="padding:5px 8px;text-align:right;font-size:10px;color:#64748b;text-transform:uppercase;border-left:2px solid #e2e8f0">Δ '+(anno)+'→'+(anno-1)+'</th></tr>';
+  th+='<tr style="border-bottom:1px solid #e2e8f0"><th></th>';
+  anni.forEach(function(){th+='<th style="padding:3px 6px;font-size:9px;color:#94a3b8;text-align:right;border-left:1px solid #f1f5f9">Nr.</th><th style="padding:3px 6px;font-size:9px;color:#94a3b8;text-align:right">% Tot.</th>';});
+  th+='<th></th></tr>';
+
+  var rows = promos.map(function(p){
+    var cells='<td style="padding:5px 8px;font-size:11px;font-weight:600;white-space:nowrap;color:#0f172a">'+p+'</td>';
+    var lastCnt=0,prevCnt=0;
+    anni.forEach(function(a,ai){
+      var d=matrix[p]&&matrix[p][a]?matrix[p][a]:{cnt:0};
+      var pct=totPerAnno[a]>0?(d.cnt/totPerAnno[a]*100).toFixed(1)+'%':'–';
+      if(ai===anni.length-1) lastCnt=d.cnt;
+      if(ai===anni.length-2) prevCnt=d.cnt;
+      cells+='<td style="padding:5px 6px;font-size:11px;text-align:right;border-left:1px solid #f1f5f9;color:#475569">'+d.cnt+'</td>';
+      cells+='<td style="padding:5px 6px;font-size:11px;text-align:right;color:#6366f1">'+pct+'</td>';
+    });
+    var delta=prevCnt>0?(lastCnt-prevCnt)/prevCnt*100:(lastCnt>0?100:0);
+    var dc=delta>0?'#10B981':delta<0?'#EF4444':'#64748b';
+    var ds=delta>0?'▲':'▼';
+    cells+='<td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:700;color:'+dc+';border-left:2px solid #e2e8f0">'+(Math.abs(delta)>0?ds+' ':'')+Math.abs(delta).toFixed(1)+'%</td>';
+    return '<tr style="border-bottom:1px solid #f1f5f9">'+cells+'</tr>';
+  }).join('');
+
+  // Totale
+  var anniTot={};
+  anni.forEach(function(a){anniTot[a]=promos.reduce(function(s,p){return s+(matrix[p]&&matrix[p][a]?matrix[p][a].cnt:0);},0);});
+  var totRow='<tr style="background:#f8fafc;font-weight:700;border-top:2px solid #e2e8f0"><td style="padding:5px 8px;font-size:11px">TOTALE</td>';
+  anni.forEach(function(a){
+    totRow+='<td style="padding:5px 6px;font-size:11px;text-align:right;border-left:1px solid #e2e8f0">'+anniTot[a]+'</td><td style="padding:5px 6px;font-size:11px;text-align:right">100%</td>';
+  });
+  var la=anni[anni.length-1],pa=anni[anni.length-2];
+  var dt=pa&&anniTot[pa]>0?(anniTot[la]-anniTot[pa])/anniTot[pa]*100:0;
+  totRow+='<td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:700;color:'+(dt>0?'#10B981':'#EF4444')+';border-left:2px solid #e2e8f0">'+(dt>0?'▲':'▼')+' '+Math.abs(dt).toFixed(1)+'%</td></tr>';
+
+  var tabella='<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white;margin-bottom:14px">'
+    +'<div style="background:#DC2626;padding:9px 14px;display:flex;align-items:center;justify-content:space-between">'
+    +'<span style="color:white;font-size:12px;font-weight:700">👤 Dettaglio per promotore — confronto anni</span>'
+    +'<span style="background:rgba(255,255,255,0.2);color:white;font-size:10px;padding:2px 10px;border-radius:20px">'+promos.length+' promotori</span></div>'
+    +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse"><thead>'+th+'</thead><tbody>'+rows+totRow+'</tbody></table></div></div>';
+
+  var trend='<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
+    +'<div style="background:#8B5CF6;padding:9px 14px;display:flex;align-items:center;justify-content:space-between">'
+    +'<span style="color:white;font-size:12px;font-weight:700">📈 Trend numerico per anno</span>'
+    +'<span style="background:rgba(255,255,255,0.2);color:white;font-size:10px;padding:2px 10px;border-radius:20px">'+(soloMese?MESI[mese]+' → '+MESI[mese]:'Gennaio → '+MESI[mese])+'</span></div>'
+    +'<div style="padding:10px"><canvas id="'+trendId+'" height="110"></canvas></div></div>';
+
+  return tabella + trend;
+}
+
+// ── PAGINA 3: RAFFRONTO MESE ──────────────────────────────────────────────────
+function repPag3_RaffrontoMese(data, anno, mese) {
+  return repPage(
+    repHeader('Raffronto mesi con anni precedenti: '+MESI[mese], anno, mese),
+    repBuildConfronto(data, anno, mese, true, 'rep-c3-trend'),
+    repFooter('3')
+  );
+}
+
+// ── PAGINA 4: RAFFRONTO YTD ───────────────────────────────────────────────────
+function repPag4_RaffrontoYTD(data, anno, mese) {
+  return repPage(
+    repHeader('Raffronto con anni precedenti, periodo di riferimento: gennaio/'+MESI[mese], anno, mese),
+    repBuildConfronto(data, anno, mese, false, 'rep-c4-trend'),
+    repFooter('4')
+  );
+}
+
+// ── SCHEDE PROMOTORI ──────────────────────────────────────────────────────────
+function repGetPromoCards(data, anno) {
+  var anniSet={};
+  data.forEach(function(r){if(r.anno)anniSet[r.anno]=1;});
+  var anni=Object.keys(anniSet).map(Number).sort();
+  var promoSet={};
+  data.forEach(function(r){var p=r.promotore||r.a_cura_di||'N/D'; promoSet[p]=1;});
+  var promos=Object.keys(promoSet).sort();
+
+  return promos.map(function(p,pi){
+    var color=COLORS_PROMO[pi%COLORS_PROMO.length];
+    var annData={}, spark=new Array(12).fill(0);
+    data.forEach(function(r){
+      var rp=r.promotore||r.a_cura_di||'N/D';
+      if(rp!==p) return;
+      var a=parseInt(r.anno), m=parseInt(r.mese);
+      if(!annData[a]) annData[a]={cnt:0,tot:0};
+      annData[a].cnt++; annData[a].tot+=parseFloat(r.importo)||0;
+      if(a===anno&&m>=1&&m<=12) spark[m-1]++;
+    });
+    var totTot=Object.values(annData).reduce(function(s,d){return s+d.tot;},0);
+    var totCnt=Object.values(annData).reduce(function(s,d){return s+d.cnt;},0);
+    var pctGlob=data.length>0?(totCnt/data.length*100).toFixed(1)+'% globale':'';
+    return {p:p,color:color,anni:anni,annData:annData,spark:spark,totTot:totTot,totCnt:totCnt,pctGlob:pctGlob};
+  });
+}
+
+function repSchedaHTML(c, suffix) {
+  var media = c.totCnt>0?c.totTot/c.totCnt:0;
+  var anniAttivi=Object.values(c.annData).filter(function(d){return d.tot>0;}).length;
+
+  var header='<div style="background:'+c.color+';padding:9px 14px;border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:space-between">'
+    +'<span style="color:white;font-size:12px;font-weight:700">'+c.p+'</span>'
+    +'<span style="color:rgba(255,255,255,0.9);font-size:11px">€ '+repFmt(c.totTot,0)+' totale</span></div>';
+
+  var kpis='<div style="display:flex;border-bottom:1px solid #f1f5f9">'
+    +'<div style="flex:1;padding:7px 10px;text-align:center;border-right:1px solid #f1f5f9"><div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:700">Contratti</div><div style="font-size:14px;font-weight:800;color:#0f172a">'+c.totCnt+'</div></div>'
+    +'<div style="flex:1;padding:7px 10px;text-align:center;border-right:1px solid #f1f5f9"><div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:700">Media</div><div style="font-size:14px;font-weight:800;color:#0f172a">€ '+repFmt(media,0)+'</div></div>'
+    +'<div style="flex:1;padding:7px 10px;text-align:center"><div style="font-size:9px;color:#64748b;text-transform:uppercase;font-weight:700">Anni attivi</div><div style="font-size:14px;font-weight:800;color:#0f172a">'+anniAttivi+'</div></div>'
+    +'</div>';
+
+  var spark='<div style="padding:4px 8px"><canvas id="rep-spark-'+suffix+'" height="65"></canvas></div>';
+
+  var annRows=c.anni.map(function(a,ai){
+    var d=c.annData[a]||{cnt:0,tot:0};
+    var delta='';
+    if(ai>0){
+      var prev=c.annData[c.anni[ai-1]]||{cnt:0};
+      if(prev.cnt>0){
+        var dv=(d.cnt-prev.cnt)/prev.cnt*100;
+        var dc=dv>0?'#10B981':'#EF4444';
+        delta='<span style="color:'+dc+';font-size:10px;font-weight:700">'+(dv>0?'▲':'▼')+' '+Math.abs(dv).toFixed(1)+'%</span>';
+      }
+    }
+    var hl=a===new Date().getFullYear()?'font-weight:700;color:#0f172a':'color:#475569';
+    return '<tr style="border-bottom:1px solid #f8fafc"><td style="padding:3px 7px;font-size:11px;'+hl+'">'+a+'</td>'
+      +'<td style="padding:3px 7px;font-size:11px;text-align:right;color:#475569">€ '+repFmt(d.tot,0)+'</td>'
+      +'<td style="padding:3px 7px;font-size:11px;text-align:right;color:#475569">'+d.cnt+'</td>'
+      +'<td style="padding:3px 7px;font-size:10px;text-align:right">'+delta+'</td></tr>';
+  }).join('');
+
+  var table='<table style="width:100%;border-collapse:collapse">'
+    +'<thead><tr style="border-bottom:1px solid #e2e8f0;background:#f8fafc">'
+    +'<th style="padding:3px 7px;text-align:left;font-size:9px;color:#64748b;text-transform:uppercase">Anno</th>'
+    +'<th style="padding:3px 7px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">Importo</th>'
+    +'<th style="padding:3px 7px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">Nr.</th>'
+    +'<th style="padding:3px 7px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">% anno</th>'
+    +'<th style="padding:3px 7px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">Δ vs prec.</th>'
+    +'</tr></thead><tbody>'+annRows+'</tbody>'
+    +'<tfoot><tr style="border-top:1px solid #e2e8f0;background:#f8fafc;font-weight:700">'
+    +'<td style="padding:4px 7px;font-size:11px">Totale</td>'
+    +'<td style="padding:4px 7px;font-size:11px;text-align:right">€ '+repFmt(c.totTot,0)+'</td>'
+    +'<td style="padding:4px 7px;font-size:11px;text-align:right">'+c.totCnt+'</td>'
+    +'<td style="padding:4px 7px;font-size:10px;text-align:right"></td>'
+    +'<td style="padding:4px 7px;font-size:10px;text-align:right;color:#64748b">'+c.pctGlob+'</td>'
+    +'</tr></tfoot></table>';
+
+  return '<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:white">'
+    +header+kpis+spark+'<div style="padding:0 0 4px">'+table+'</div></div>';
+}
+
+function repPag5_SchedeA(data, anno, mese) {
+  var cards=repGetPromoCards(data,anno);
+  var first=cards.slice(0,3);
+  while(first.length<3) first.push(first[0]||{p:'–',color:'#ccc',anni:[],annData:{},spark:[],totTot:0,totCnt:0,pctGlob:''});
+  var body='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">'
+    +first.map(function(c,i){return repSchedaHTML(c,'5-'+i);}).join('')+'</div>';
+  return repPage(repHeader('Schede individuali per promotore',anno,mese),body,repFooter('5'));
+}
+
+function repPag6_SchedeB(data, anno, mese) {
+  var cards=repGetPromoCards(data,anno);
+  var second=cards.slice(3,6);
+  if(!second.length) return repPage(repHeader('Schede individuali per promotore',anno,mese),'<p style="color:#94a3b8;text-align:center;padding:40px">Meno di 4 promotori presenti.</p>',repFooter('6'));
+  while(second.length<3) second.push(second[0]);
+  var body='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">'
+    +second.map(function(c,i){return repSchedaHTML(c,'6-'+i);}).join('')+'</div>';
+  return repPage(repHeader('Schede individuali per promotore',anno,mese),body,repFooter('6'));
+}
+
+// ── PAGINA 7: SERIE STORICA ───────────────────────────────────────────────────
+function repPag7_SerieStorica(data, anno, mese) {
+  var anniSet={};
+  data.forEach(function(r){if(r.anno)anniSet[r.anno]=1;});
+  var anni=Object.keys(anniSet).map(Number).sort();
+
+  var mat={};
+  data.forEach(function(r){
+    var a=parseInt(r.anno), m=parseInt(r.mese);
+    if(!m||m<1||m>12) return;
+    if(!mat[m]) mat[m]={};
+    mat[m][a]=(mat[m][a]||0)+1;
+  });
+
+  var la=anni[anni.length-1], pa=anni[anni.length-2], ppa=anni[anni.length-3];
+
+  var th='<tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0"><th style="padding:6px 10px;text-align:left;font-size:10px;color:#64748b;text-transform:uppercase;font-weight:700">Mese</th>';
+  anni.forEach(function(a){
+    var bold=a===la?'font-weight:800;color:#005CA9':'';
+    th+='<th style="padding:6px 8px;text-align:right;font-size:10px;color:#64748b;'+bold+';text-transform:uppercase">'+a+'</th>';
+  });
+  th+='<th style="padding:6px 8px;text-align:right;font-size:10px;color:#EF4444;text-transform:uppercase">su '+(pa||'')+'</th>';
+  th+='<th style="padding:6px 8px;text-align:right;font-size:10px;color:#64748b;text-transform:uppercase">su '+(ppa||ppa||'')+'</th></tr>';
+
+  var rows='';
+  for(var m=1;m<=12;m++){
+    var row=mat[m]||{};
+    var lv=row[la]||0, pv=pa?(row[pa]||0):0, ppv=ppa?(row[ppa]||0):0;
+    var d1=lv-pv, d2=lv-ppv;
+    var c1=d1>0?'#10B981':d1<0?'#EF4444':'#64748b';
+    var c2=d2>0?'#10B981':d2<0?'#EF4444':'#64748b';
+    var bg=m%2===0?'background:#f8fafc':'';
+    rows+='<tr style="border-bottom:1px solid #f1f5f9;'+bg+'">'
+      +'<td style="padding:5px 10px;font-size:11px;font-weight:700;color:#0f172a">'+MESI[m]+'</td>';
+    anni.forEach(function(a){
+      var v=row[a]||0;
+      var s=a===la?'font-weight:700;color:#005CA9':'color:#475569';
+      rows+='<td style="padding:5px 8px;font-size:11px;text-align:right;'+s+'">'+(v||'–')+'</td>';
+    });
+    rows+='<td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:700;color:'+c1+'">'+(d1!==0?(d1>0?'+':'')+d1:'–')+'</td>';
+    rows+='<td style="padding:5px 8px;font-size:11px;text-align:right;color:'+c2+'">'+(d2!==0?(d2>0?'+':'')+d2:'–')+'</td></tr>';
+  }
+
+  var anniTot={};
+  anni.forEach(function(a){anniTot[a]=Object.values(mat).reduce(function(s,r){return s+(r[a]||0);},0);});
+  var td1=anniTot[la]-(anniTot[pa]||0), td2=anniTot[la]-(anniTot[ppa]||0);
+  var totRow='<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700"><td style="padding:6px 10px;font-size:11px">Totale</td>';
+  anni.forEach(function(a){
+    var s=a===la?'color:#005CA9':'color:#475569';
+    totRow+='<td style="padding:6px 8px;font-size:11px;text-align:right;font-weight:700;'+s+'">'+anniTot[a]+'</td>';
+  });
+  totRow+='<td style="padding:6px 8px;font-size:11px;text-align:right;font-weight:700;color:'+(td1>0?'#10B981':'#EF4444')+'">'+(td1>0?'+':'')+td1+'</td>';
+  totRow+='<td style="padding:6px 8px;font-size:11px;text-align:right;color:'+(td2>0?'#10B981':'#EF4444')+'">'+(td2>0?'+':'')+td2+'</td></tr>';
+
+  var body='<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
+    +'<table style="width:100%;border-collapse:collapse"><thead>'+th+'</thead><tbody>'+rows+totRow+'</tbody></table></div>';
+
+  return repPage(repHeader('Serie storica',anno,mese),body,repFooter('7'));
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// RENDER CHART.JS
+// ══════════════════════════════════════════════════════════════════════════════
+function repRenderAllCharts(data, anno, mese) {
+  function mkBar(id, labels, values, colors) {
+    var el=G(id); if(!el) return;
+    var ck='repCh_'+id;
+    if(charts[ck]){charts[ck].destroy();delete charts[ck];}
+    charts[ck]=new Chart(el.getContext('2d'),{
+      type:'bar',
+      data:{labels:labels.map(function(l){return l&&l.length>16?l.substring(0,14)+'…':l;}),
+        datasets:[{data:values,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{font:{size:9}}},
+          y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:9},callback:function(v){return v>=1000?(v/1000).toFixed(0)+'k':v;}}}}}
+    });
+  }
+  function mkLine(id, labels, values, color) {
+    var el=G(id); if(!el) return;
+    var ck='repCh_'+id;
+    if(charts[ck]){charts[ck].destroy();delete charts[ck];}
+    charts[ck]=new Chart(el.getContext('2d'),{
+      type:'line',
+      data:{labels:labels,datasets:[{data:values,borderColor:color,backgroundColor:color+'20',tension:0.4,fill:true,pointBackgroundColor:color,pointRadius:4,pointBorderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{font:{size:9}}},
+          y:{grid:{color:'rgba(0,0,0,0.04)'},ticks:{font:{size:9}}}}}
+    });
+  }
+  function mkSparkline(id, labels, values, color) {
+    var el=G(id); if(!el) return;
+    var ck='repCh_'+id;
+    if(charts[ck]){charts[ck].destroy();delete charts[ck];}
+    charts[ck]=new Chart(el.getContext('2d'),{
+      type:'line',
+      data:{labels:labels,datasets:[{data:values,borderColor:color,backgroundColor:color+'18',tension:0.4,fill:true,pointRadius:3,pointBackgroundColor:color,pointBorderWidth:0}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{font:{size:8}}},y:{display:false}}}
+    });
+  }
+
+  // P1: mensile
+  var recM=repFiltro(data,anno,mese,true);
+  var rM=repGetRete(recM); var pM=repGetPromo(recM);
+  var rkM=Object.keys(rM).sort(function(a,b){return rM[b].tot-rM[a].tot;});
+  mkBar('rep-c1-rete',rkM,rkM.map(function(k){return rM[k].tot;}),['#3B82F6','#F59E0B','#10B981','#8B5CF6','#EC4899']);
+  var pkM=Object.keys(pM).sort(function(a,b){return pM[b].tot-pM[a].tot;});
+  mkBar('rep-c1-promo',pkM,pkM.map(function(k){return pM[k].tot;}),COLORS_PROMO);
+
+  // P2: annuale
+  var recY=repFiltro(data,anno,mese,false);
+  var rY=repGetRete(recY); var pY=repGetPromo(recY);
+  var rkY=Object.keys(rY).sort(function(a,b){return rY[b].tot-rY[a].tot;});
+  mkBar('rep-c2-rete',rkY,rkY.map(function(k){return rY[k].tot;}),['#3B82F6','#F59E0B','#10B981','#8B5CF6','#EC4899']);
+  var pkY=Object.keys(pY).sort(function(a,b){return pY[b].tot-pY[a].tot;});
+  mkBar('rep-c2-promo',pkY,pkY.map(function(k){return pY[k].tot;}),COLORS_PROMO);
+
+  // P3/P4: trend
+  var anniSet={};
+  data.forEach(function(r){if(r.anno)anniSet[r.anno]=1;});
+  var anni=Object.keys(anniSet).map(Number).sort();
+  mkLine('rep-c3-trend',anni.map(String),anni.map(function(a){return data.filter(function(r){return parseInt(r.anno)===a&&parseInt(r.mese)===mese;}).length;}),'#8B5CF6');
+  mkLine('rep-c4-trend',anni.map(String),anni.map(function(a){return data.filter(function(r){return parseInt(r.anno)===a&&parseInt(r.mese)<=mese;}).length;}),'#8B5CF6');
+
+  // P5/P6: sparklines
+  var cards=repGetPromoCards(data,anno);
+  cards.forEach(function(c,i){
+    var suffix=(i<3?'5':'6')+'-'+(i<3?i:i-3);
+    mkSparkline('rep-spark-'+suffix,MESI.slice(1),c.spark,c.color);
+  });
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GENERA PDF
+// ══════════════════════════════════════════════════════════════════════════════
+async function repGeneraPDF() {
+  if(!isAdmin()){toast('Accesso non autorizzato','error');return;}
+  var btn=G('rep-btn-pdf');
+  btn.disabled=true; btn.textContent='⏳ Generazione…';
+  showLoad('Preparazione PDF…');
+  try {
+    var anno=parseInt(G('rep-anno').value);
+    var mese=parseInt(G('rep-mese').value);
+    var {jsPDF}=window.jspdf;
+    var pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+    var PW=297, PH=210;
+    var container=G('rep-pages-container');
+    if(!container) throw new Error('Anteprima non trovata. Clicca prima Carica Dati.');
+    var pageDivs=container.querySelectorAll('[data-page]');
+    if(!pageDivs.length) throw new Error('Nessuna pagina. Clicca prima Carica Dati.');
+    for(var i=0;i<pageDivs.length;i++){
+      showLoad('Rendering pagina '+(i+1)+' di '+pageDivs.length+'…');
+      await new Promise(function(r){setTimeout(r,400);});
+      var pd=pageDivs[i].firstElementChild||pageDivs[i];
+      var cv=await html2canvas(pd,{scale:1.8,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#ffffff',width:1060,windowWidth:1060});
+      var id=cv.toDataURL('image/jpeg',0.93);
+      var ratio=cv.width/cv.height;
+      var iw=PW, ih=iw/ratio;
+      if(ih>PH){ih=PH;iw=ih*ratio;}
+      var x=(PW-iw)/2, y=(PH-ih)/2;
+      if(i>0) pdf.addPage();
+      pdf.addImage(id,'JPEG',x,y,iw,ih);
+    }
+    var fname='Report_CNA_Roma_'+MESI[mese]+'_'+anno+'.pdf';
+    pdf.save(fname);
+    toast('✓ PDF generato: '+fname,'success');
+  } catch(e){
+    console.error(e);
+    toast('Errore PDF: '+e.message,'error');
+  } finally {
+    hideLoad();
+    btn.disabled=false; btn.textContent='📄 Genera PDF';
+  }
 }
