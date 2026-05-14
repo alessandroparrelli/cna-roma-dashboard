@@ -240,7 +240,7 @@ body.dark-mode header{
   border-bottom:1px solid rgba(255,255,255,.06);
 }
 .header-left{display:flex;align-items:center;gap:18px;flex-shrink:0;}
-.logo-img{height:90px;width:auto;object-fit:contain;flex-shrink:0;}
+.logo-img{height:110px;width:auto;object-fit:contain;flex-shrink:0;}
 .logo-fallback{display:none;background:var(--primary);color:#fff;font-weight:800;font-size:13px;padding:6px 12px;border-radius:var(--radius-sm);flex-shrink:0;letter-spacing:.02em;}
 .header-title{
   font-size:17px;font-weight:600;letter-spacing:-0.015em;
