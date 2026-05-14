@@ -436,7 +436,7 @@ function contrattiRenderKPI() {
   var strip = G('contratti-kpi-strip');
   if (!strip) return;
 
-  // Conta totale imprese e per ogni tipocontratto
+  // Conta solo contratti attivi (datadisdetta=null già filtrato in contrattiAll)
   var totale = contrattiAll.length;
   var serviziCount = {};
   contrattiAll.forEach(function(r) {
@@ -444,91 +444,109 @@ function contrattiRenderKPI() {
       serviziCount[srv] = (serviziCount[srv] || 0) + 1;
     });
   });
+  var serviziOrdinati = Object.keys(serviziCount).sort();
 
-  // Colori ciclici coerenti con design system
-  var colors = [
-    {cls:'c1', glow:'rgba(0,92,169,.28)', border:'rgba(0,92,169,.15)'},
-    {cls:'c2', glow:'rgba(249,115,22,.28)', border:'rgba(249,115,22,.15)'},
-    {cls:'c3', glow:'rgba(16,185,129,.28)', border:'rgba(16,185,129,.15)'},
-    {cls:'c4', glow:'rgba(236,72,153,.28)', border:'rgba(236,72,153,.15)'},
-    {cls:'',   glow:'rgba(139,92,246,.28)', border:'rgba(139,92,246,.15)', custom:'#8B5CF6'},
-    {cls:'',   glow:'rgba(6,182,212,.28)',  border:'rgba(6,182,212,.15)',  custom:'#06B6D4'},
-    {cls:'',   glow:'rgba(245,158,11,.28)', border:'rgba(245,158,11,.15)', custom:'#F59E0B'},
+  // Palette colori per le colonne
+  var palette = [
+    { color: 'var(--primary)',  bg: 'rgba(0,92,169,.08)',   glow: 'rgba(0,92,169,.22)' },
+    { color: 'var(--orange)',   bg: 'rgba(249,115,22,.08)', glow: 'rgba(249,115,22,.22)' },
+    { color: 'var(--success)',  bg: 'rgba(16,185,129,.08)', glow: 'rgba(16,185,129,.22)' },
+    { color: 'var(--accent)',   bg: 'rgba(236,72,153,.08)', glow: 'rgba(236,72,153,.22)' },
+    { color: 'var(--purple)',   bg: 'rgba(139,92,246,.08)', glow: 'rgba(139,92,246,.22)' },
+    { color: 'var(--info)',     bg: 'rgba(6,182,212,.08)',  glow: 'rgba(6,182,212,.22)' },
+    { color: 'var(--warning)',  bg: 'rgba(245,158,11,.08)', glow: 'rgba(245,158,11,.22)' },
   ];
 
-  var serviziOrdinati = Object.keys(serviziCount).sort();
-  var html = '';
+  // Costruisce la tabella compatta
+  var totalePalette = palette[0];
+  var html = '<div class="ck-table-wrap">' +
+    '<table class="ck-table">' +
+    '<thead><tr>' +
+    '<th class="ck-th" style="color:' + totalePalette.color + '">' +
+      '<span class="ck-th-dot" style="background:' + totalePalette.color + '"></span>' +
+      'Totale attivi' +
+    '</th>';
 
-  // Card totale sempre prima
-  html += '<div class="kpi-card c1 contratti-kpi-card" style="cursor:default">' +
-    '<div class="kpi-label">Totale Imprese</div>' +
-    '<div class="kpi-value" id="ck-totale">–</div>' +
-    '<div class="kpi-sub">Con almeno un contratto</div>' +
-    '</div>';
-
-  // Card per ogni tipocontratto
   serviziOrdinati.forEach(function(srv, i) {
-    var col = colors[(i + 1) % colors.length];
-    var beforeStyle = col.custom
-      ? ' style="--ck-color:' + col.custom + '"'
-      : '';
-    var cls = 'kpi-card ' + (col.cls || 'ck-custom') + ' contratti-kpi-card';
-    var idSafe = 'ck-' + i;
-    html += '<div class="' + cls + '" data-glow="' + col.glow + '" data-border="' + col.border + '"' +
-      (col.custom ? ' data-custom="' + col.custom + '"' : '') +
-      ' style="cursor:default">' +
-      '<div class="kpi-label">' + srv + '</div>' +
-      '<div class="kpi-value" id="' + idSafe + '">–</div>' +
-      '<div class="kpi-sub">Imprese attive</div>' +
-      '</div>';
+    var p = palette[(i + 1) % palette.length];
+    html += '<th class="ck-th" style="color:' + p.color + '">' +
+      '<span class="ck-th-dot" style="background:' + p.color + '"></span>' +
+      srv +
+    '</th>';
   });
 
+  html += '</tr></thead><tbody><tr>' +
+    '<td class="ck-td" data-glow="' + totalePalette.glow + '" style="--ck-bg:' + totalePalette.bg + ';--ck-color:' + totalePalette.color + '">' +
+      '<span class="ck-num" id="ck-totale">–</span>' +
+    '</td>';
+
+  serviziOrdinati.forEach(function(srv, i) {
+    var p = palette[(i + 1) % palette.length];
+    html += '<td class="ck-td" data-glow="' + p.glow + '" style="--ck-bg:' + p.bg + ';--ck-color:' + p.color + '">' +
+      '<span class="ck-num" id="ck-' + i + '">–</span>' +
+    '</td>';
+  });
+
+  html += '</tr></tbody></table></div>';
   strip.innerHTML = html;
+  strip.style.gridTemplateColumns = '';
+  strip.style.display = 'block';
 
-  // Aggiusta colonne: auto-fit basato su numero card
-  var nCards = 1 + serviziOrdinati.length;
-  var cols = Math.min(nCards, 6);
-  strip.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
-
-  // Aggiunge ::before colorato per le ck-custom e glow hover
-  serviziOrdinati.forEach(function(srv, i) {
-    var col = colors[(i + 1) % colors.length];
-    if (!col.cls && col.custom) {
-      var card = strip.querySelectorAll('.ck-custom')[i];
-      if (card) {
-        // Inietta stile ::before inline tramite shadow trick
-        card.style.setProperty('--ck-before', col.custom);
-      }
-    }
-  });
-
-  // Inietta CSS per ck-custom ::before se non esiste
-  if (!document.getElementById('ck-custom-style')) {
+  // Inietta CSS se non esiste
+  if (!document.getElementById('ck-table-style')) {
     var s = document.createElement('style');
-    s.id = 'ck-custom-style';
-    s.textContent = '.ck-custom::before{background:var(--ck-before,var(--purple))!important;}' +
-      '.ck-custom::after{background:radial-gradient(circle,var(--ck-before,var(--purple)),transparent 70%)!important;}' +
-      '.contratti-kpi-card{transition:var(--transition)!important;}';
+    s.id = 'ck-table-style';
+    s.textContent = [
+      '.ck-table-wrap{',
+        'background:#fff;border-radius:var(--radius-xl);',
+        'border:1px solid var(--border);box-shadow:var(--shadow-glass);',
+        'overflow:hidden;margin-bottom:0;',
+      '}',
+      'body.dark-mode .ck-table-wrap{background:var(--surface);}',
+      '.ck-table{width:100%;border-collapse:collapse;table-layout:auto;}',
+      '.ck-th{',
+        'padding:12px 20px;text-align:center;font-size:11px;font-weight:700;',
+        'text-transform:uppercase;letter-spacing:.07em;',
+        'border-bottom:2px solid var(--border);white-space:nowrap;',
+        'background:var(--surface2);',
+      '}',
+      'body.dark-mode .ck-th{background:var(--surface3);}',
+      '.ck-th:not(:last-child){border-right:1px solid var(--border);}',
+      '.ck-th-dot{',
+        'display:inline-block;width:6px;height:6px;border-radius:50%;',
+        'margin-right:6px;vertical-align:middle;margin-top:-2px;',
+      '}',
+      '.ck-td{',
+        'padding:18px 20px;text-align:center;',
+        'background:var(--ck-bg,transparent);',
+        'transition:all .22s cubic-bezier(0.4,0,0.2,1);cursor:default;',
+      '}',
+      '.ck-td:not(:last-child){border-right:1px solid var(--border);}',
+      '.ck-td:hover{',
+        'background:var(--ck-bg,transparent)!important;',
+        'box-shadow:inset 0 0 0 2px var(--ck-color,var(--primary)),0 4px 20px var(--ck-glow,rgba(0,0,0,.1));',
+        'transform:translateY(-2px) scale(1.02);border-radius:4px;',
+      '}',
+      '.ck-num{',
+        'font-family:var(--font-display);font-size:34px;font-weight:800;',
+        'color:var(--text);letter-spacing:-0.04em;line-height:1;',
+        'font-variant-numeric:tabular-nums;',
+      '}',
+      '@keyframes ckPop{0%{transform:scale(.9);opacity:.5}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}',
+      '.ck-num.popped{animation:ckPop .4s cubic-bezier(0.34,1.56,0.64,1) forwards;}',
+    ].join('');
     document.head.appendChild(s);
   }
 
-  // Glow hover personalizzato
-  strip.querySelectorAll('.contratti-kpi-card').forEach(function(card) {
-    var glow = card.getAttribute('data-glow');
-    var border = card.getAttribute('data-border');
-    if (glow) {
-      card.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-5px)';
-        this.style.boxShadow = '0 8px 30px ' + glow + ', 0 0 0 1px ' + border;
-      });
-      card.addEventListener('mouseleave', function() {
-        this.style.transform = '';
-        this.style.boxShadow = '';
-      });
-    }
+  // Applica glow via JS su hover (CSS var non supporta box-shadow dinamico)
+  strip.querySelectorAll('.ck-td').forEach(function(td) {
+    var glow = td.getAttribute('data-glow') || 'rgba(0,0,0,.1)';
+    td.addEventListener('mouseenter', function() {
+      this.style.setProperty('--ck-glow', glow);
+    });
   });
 
-  // CountUp animazioni
+  // CountUp
   homeCountUp('ck-totale', totale, false);
   serviziOrdinati.forEach(function(srv, i) {
     homeCountUp('ck-' + i, serviziCount[srv], false);
