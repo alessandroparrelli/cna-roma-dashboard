@@ -3,6 +3,8 @@ var contrattiFiltered = [];
 var contrattiSelected = new Set();
 var contrattiLoaded = false;
 var contrattiLoading = false;
+var contrattiPage = 0;         // pagina corrente (0-based)
+var contrattiPageSize = 50;    // record per pagina
 
 function contrattiSetProgress(pct, msg) {
   var prog = G('contratti-progress');
@@ -212,15 +214,21 @@ function contrattiRender() {
   }
   
   contrattiFiltered = rows;
-  
+
+  // Reset alla prima pagina quando cambia il filtro
+  var totalPages = Math.max(1, Math.ceil(contrattiFiltered.length / contrattiPageSize));
+  if (contrattiPage >= totalPages) contrattiPage = 0;
+
   var tb = G('contratti-tbody');
   if (!rows.length) {
     tb.innerHTML = '<tr><td colspan="24" class="ana-empty">Nessun record trovato</td></tr>';
     contrattiUpdateSelCount();
+    var pag = G('contratti-pagination');
+    if (pag) pag.style.display = 'none';
     return;
   }
   
-  // Lista di servizi per le colonne
+  // Lista servizi per le colonne
   var servizi = [];
   Object.keys(contrattiAll.reduce(function(acc, r) {
     Object.keys(r.servizi || {}).forEach(function(s) { acc[s] = true; });
@@ -232,19 +240,25 @@ function contrattiRender() {
   if (thead) {
     var th_cells = thead.querySelectorAll('th');
     for (var i = 0; i < servizi.length; i++) {
-      var th = th_cells[9 + i]; // 9 = checkbox + 8 colonne base
+      var th = th_cells[9 + i];
       if (th) th.textContent = servizi[i];
     }
   }
+
+  // Slice della pagina corrente
+  var start = contrattiPage * contrattiPageSize;
+  var end   = Math.min(start + contrattiPageSize, contrattiFiltered.length);
+  var pageRows = contrattiFiltered.slice(start, end);
   
   var html = [];
-  for (var i = 0; i < rows.length; i++) {
-    var r = rows[i];
-    var sel = contrattiSelected.has(i) ? ' class="selected"' : '';
-    var chk = contrattiSelected.has(i) ? ' checked' : '';
+  for (var i = 0; i < pageRows.length; i++) {
+    var globalIdx = start + i;
+    var r = pageRows[i];
+    var sel = contrattiSelected.has(globalIdx) ? ' class="selected"' : '';
+    var chk = contrattiSelected.has(globalIdx) ? ' checked' : '';
     
-    html.push('<tr' + sel + ' data-idx="' + i + '">');
-    html.push('<td class="col-check"><input type="checkbox" data-idx="' + i + '"' + chk + '></td>');
+    html.push('<tr' + sel + ' data-idx="' + globalIdx + '">');
+    html.push('<td class="col-check"><input type="checkbox" data-idx="' + globalIdx + '"' + chk + '></td>');
     html.push('<td>' + (r.partitaiva || '-') + '</td>');
     html.push('<td>' + (r.ragionesociale || '-') + '</td>');
     html.push('<td>' + (r.codicecliente || '-') + '</td>');
@@ -254,7 +268,6 @@ function contrattiRender() {
     html.push('<td>' + (r.email || '-') + '</td>');
     html.push('<td>' + (r.telefono || '-') + '</td>');
     
-    // Servizi con X + conteggio
     var conteggio = 0;
     servizi.forEach(function(srv) {
       var haServizio = r.servizi && r.servizi[srv];
@@ -262,7 +275,6 @@ function contrattiRender() {
       if (haServizio) conteggio++;
     });
     
-    // ISCRITTO e TESSERAMENTO INPS + conteggio
     var iscritto_mark = r.iscritto ? 'X' : '';
     var inps_mark = r.inps ? 'X' : '';
     html.push('<td style="text-align:center;font-weight:bold;color:#005CA9">' + iscritto_mark + '</td>');
@@ -270,14 +282,83 @@ function contrattiRender() {
     if (r.iscritto) conteggio++;
     if (r.inps) conteggio++;
     
-    // TOTALE SERVIZI
     html.push('<td style="text-align:center;font-weight:bold;color:#005CA9;background:#F0F4FF;border-left:2px solid #005CA9">' + conteggio + '</td>');
     html.push('</tr>');
   }
   
   tb.innerHTML = html.join('');
   contrattiUpdateSelCount();
-  G('contratti-count').textContent = rows.length + ' imprese';
+  G('contratti-count').textContent = contrattiFiltered.length + ' imprese';
+
+  // ── Paginazione ──
+  contrattiRenderPagination(totalPages, start, end);
+}
+
+function contrattiRenderPagination(totalPages, start, end) {
+  var pag = G('contratti-pagination');
+  var info = G('contratti-pag-info');
+  var btns = G('contratti-pag-buttons');
+  if (!pag || !info || !btns) return;
+
+  pag.style.display = totalPages > 1 ? 'flex' : 'none';
+
+  // Info testo
+  info.textContent = 'Mostrati ' + (start + 1) + '–' + end + ' di ' + contrattiFiltered.length + ' imprese';
+
+  // CSS bottoni (iniettato una sola volta)
+  if (!document.getElementById('pag-style')) {
+    var s = document.createElement('style');
+    s.id = 'pag-style';
+    s.textContent = [
+      '.pag-btn{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}',
+      '.pag-btn:hover:not(:disabled){background:#EFF6FF;border-color:#005CA9;color:#005CA9;}',
+      '.pag-btn.active{background:#005CA9;border-color:#005CA9;color:#fff;}',
+      '.pag-btn:disabled{opacity:.35;cursor:default;}',
+      'body.dark-mode .pag-btn{background:var(--surface);color:var(--text);}',
+      'body.dark-mode .pag-btn:hover:not(:disabled){background:var(--surface2);}',
+    ].join('');
+    document.head.appendChild(s);
+  }
+
+  var html = '';
+  var cur = contrattiPage;
+
+  // Prima
+  html += '<button class="pag-btn" onclick="contrattiGoPage(0)" ' + (cur === 0 ? 'disabled' : '') + ' title="Prima pagina">«</button>';
+  // Precedente
+  html += '<button class="pag-btn" onclick="contrattiGoPage(' + (cur - 1) + ')" ' + (cur === 0 ? 'disabled' : '') + ' title="Precedente">‹</button>';
+
+  // Numeri pagina — finestra scorrevole di max 7 pagine
+  var winStart = Math.max(0, Math.min(cur - 3, totalPages - 7));
+  var winEnd   = Math.min(totalPages, winStart + 7);
+
+  if (winStart > 0) {
+    html += '<button class="pag-btn" onclick="contrattiGoPage(0)">1</button>';
+    if (winStart > 1) html += '<span style="padding:0 4px;color:var(--text-secondary);font-size:12px">…</span>';
+  }
+  for (var p = winStart; p < winEnd; p++) {
+    html += '<button class="pag-btn' + (p === cur ? ' active' : '') + '" onclick="contrattiGoPage(' + p + ')">' + (p + 1) + '</button>';
+  }
+  if (winEnd < totalPages) {
+    if (winEnd < totalPages - 1) html += '<span style="padding:0 4px;color:var(--text-secondary);font-size:12px">…</span>';
+    html += '<button class="pag-btn" onclick="contrattiGoPage(' + (totalPages - 1) + ')">' + totalPages + '</button>';
+  }
+
+  // Successiva
+  html += '<button class="pag-btn" onclick="contrattiGoPage(' + (cur + 1) + ')" ' + (cur >= totalPages - 1 ? 'disabled' : '') + ' title="Successiva">›</button>';
+  // Ultima
+  html += '<button class="pag-btn" onclick="contrattiGoPage(' + (totalPages - 1) + ')" ' + (cur >= totalPages - 1 ? 'disabled' : '') + ' title="Ultima pagina">»</button>';
+
+  btns.innerHTML = html;
+}
+
+function contrattiGoPage(p) {
+  var totalPages = Math.ceil(contrattiFiltered.length / contrattiPageSize);
+  contrattiPage = Math.max(0, Math.min(p, totalPages - 1));
+  contrattiRender();
+  // Scroll alla tabella
+  var tw = G('contratti-table');
+  if (tw) tw.closest('.table-wrap').scrollTop = 0;
 }
 
 function contrattiUpdateSelCount() {
