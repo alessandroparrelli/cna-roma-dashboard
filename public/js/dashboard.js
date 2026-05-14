@@ -995,28 +995,18 @@ var homeSelectedYear = ''; // anno selezionato nella Home
 function renderHome(){
   if(!allData || allData.length === 0) return;
 
-  // Costruisce le pill degli anni (solo al primo caricamento)
-  var pillsEl = G('home-year-pills');
-  if(pillsEl && pillsEl.children.length <= 1){
+  // Popola il select degli anni (solo al primo caricamento)
+  var selEl = G('home-year-select');
+  if(selEl && selEl.options.length <= 1){
     var anni = unique(allData,'anno').filter(Boolean).map(Number).sort().reverse();
     anni.forEach(function(a){
-      var btn = document.createElement('button');
-      btn.className = 'home-year-pill';
-      btn.setAttribute('data-year', a);
-      btn.textContent = a;
-      btn.addEventListener('click', function(){
-        homeSelectedYear = this.getAttribute('data-year');
-        pillsEl.querySelectorAll('.home-year-pill').forEach(function(p){p.classList.remove('active');});
-        this.classList.add('active');
-        homeRefreshKPI();
-      });
-      pillsEl.appendChild(btn);
+      var o = document.createElement('option');
+      o.value = a;
+      o.textContent = a;
+      selEl.appendChild(o);
     });
-    // Listener "Tutti"
-    pillsEl.querySelector('[data-year=""]').addEventListener('click', function(){
-      homeSelectedYear = '';
-      pillsEl.querySelectorAll('.home-year-pill').forEach(function(p){p.classList.remove('active');});
-      this.classList.add('active');
+    selEl.addEventListener('change', function(){
+      homeSelectedYear = this.value;
       homeRefreshKPI();
     });
   }
