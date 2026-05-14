@@ -779,6 +779,8 @@ document.querySelectorAll('.tab-btn').forEach(function(btn){
     if(tabId==='tab-anagrafiche' && !anaLoaded && !anaLoading){ anaLoad(); }
     // Lazy-load ateco on first visit
     if(tabId==='tab-ateco' && !atecoLoaded && !atecoLoading){ atecoLoad(); }
+    // Lazy-load consulenti on first visit
+    if(tabId==='tab-consulenti' && !consulentiLoaded && !consulentiLoading){ consulentiLoad(); }
     // Rilancia animazione countUp al click su Andamento
     if(tabId==='tab-overview' && typeof renderOverview === 'function'){ renderOverview(); }
   });
