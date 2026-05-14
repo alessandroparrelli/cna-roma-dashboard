@@ -862,12 +862,13 @@
       <table>
         <thead>
           <tr>
-            <th>Consulente</th>
-            <th style="text-align:center">Imprese<br><small style="font-weight:400">attive</small></th>
+            <th id="cth-nomeconsulente" class="sortable" onclick="consulentiSort('nomeconsulente')">Consulente <span id="csort-icon-nomeconsulente" class="csort-icon">↕</span></th>
+            <th id="cth-numImprese" class="sortable" onclick="consulentiSort('numImprese')" style="text-align:center">Imprese<br><small>attive</small> <span id="csort-icon-numImprese" class="csort-icon">↕</span></th>
             <th>Tipo Contratto</th>
-            <th style="text-align:center">% Totale</th>
-            <th style="text-align:center;color:#16a34a">✓ Associati</th>
-            <th style="text-align:center;color:#94a3b8">✗ Non Assoc.</th>
+            <th id="cth-pctTotale" class="sortable" onclick="consulentiSort('pctTotale')" style="text-align:center">% Totale <span id="csort-icon-pctTotale" class="csort-icon">↕</span></th>
+            <th id="cth-nAssociati" class="sortable" onclick="consulentiSort('nAssociati')" style="text-align:center">✓ Associati <span id="csort-icon-nAssociati" class="csort-icon">↕</span></th>
+            <th id="cth-nNonAssociati" class="sortable" onclick="consulentiSort('nNonAssociati')" style="text-align:center">✗ Non Assoc. <span id="csort-icon-nNonAssociati" class="csort-icon">↕</span></th>
+            <th style="text-align:center">Excel</th>
           </tr>
         </thead>
         <tbody id="consulenti-tbody"></tbody>
