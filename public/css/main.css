@@ -1327,8 +1327,8 @@ body.dark-mode .btn-toggle-filters{background:rgba(0,92,169,.15);border-color:rg
 }
 .hero-sub::before{content:'';display:inline-block;width:20px;height:2px;background:var(--primary);border-radius:2px;}
 .hero-title{
-  font-family:var(--font-display);font-size:clamp(28px,4vw,46px);font-weight:800;
-  line-height:1.1;letter-spacing:-0.03em;color:var(--text);margin-bottom:18px;
+  font-family:var(--font-display);font-size:clamp(32px,4.5vw,52px);font-weight:800;
+  line-height:1.1;letter-spacing:-0.045em;color:var(--text);margin-bottom:18px;
 }
 .hero-accent{
   background:var(--grad-primary);
