@@ -607,16 +607,11 @@ function cleanTablesSQL() {
   G('clean-status').style.background = 'rgba(37,99,235,0.1)';
   G('clean-status').style.color = 'var(--blue)';
   
-  // Mostra il comando SQL necessario
-  var sqlCommands = 'Esegui questi comandi in Supabase SQL Editor:\n\n' +
-    'DELETE FROM diretti;\n' +
-    'DELETE FROM "Anagrafiche";\n\n' +
-    'Poi clicca "Invia a Supabase" per caricare i nuovi dati.';
-  
   G('clean-status').innerHTML = '<strong>SQL da eseguire in Supabase SQL Editor:</strong><br><br>' +
     '<code style="background:var(--surface2);padding:10px;border-radius:4px;display:block;overflow-x:auto;font-family:monospace;font-size:11px">' +
     'DELETE FROM diretti;<br>' +
-    'DELETE FROM "Anagrafiche";' +
+    'DELETE FROM "Anagrafiche";<br>' +
+    'DELETE FROM contrattiservizio;' +
     '</code><br>' +
     '<span style="color:var(--text-sub);font-size:11px">Copia i comandi sopra, incollali in Supabase SQL Editor e esegui.<br>Poi carica i nuovi file qui sopra.</span>';
 }
