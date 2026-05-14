@@ -452,6 +452,7 @@ function contrattiRenderKPI() {
     s.textContent = [
       '.ck-grid{',
         'display:grid;',
+        'grid-template-columns:repeat(auto-fit,minmax(120px,1fr));',
         'gap:1px;background:var(--border);',
         'border:1px solid var(--border);border-radius:var(--radius-xl);',
         'overflow:hidden;box-shadow:var(--shadow-glass);margin-bottom:0;width:100%;',
@@ -473,7 +474,8 @@ function contrattiRenderKPI() {
       '.ck-cell-label{',
         'font-family:var(--font-display);font-size:13px;font-weight:700;',
         'color:var(--primary);text-transform:none;letter-spacing:0;',
-        'text-align:center;line-height:1.3;word-break:break-word;',
+        'text-align:center;line-height:1.35;',
+        'word-break:normal;overflow-wrap:break-word;hyphens:auto;',
         'width:100%;',
       '}',
       '.ck-cell-num{',
@@ -509,11 +511,6 @@ function contrattiRenderKPI() {
   html += '</div>';
   strip.innerHTML = html;
   strip.style.display = 'block';
-
-  // Imposta colonne: una per ogni cella, tutte uguali → riempiono l'intera larghezza
-  var nCols = 1 + serviziOrdinati.length;
-  var grid = strip.querySelector('.ck-grid');
-  if (grid) grid.style.gridTemplateColumns = 'repeat(' + nCols + ',1fr)';
 
   // CountUp
   homeCountUp('ck-totale', totale, false);
