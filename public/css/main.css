@@ -1551,3 +1551,14 @@ header .btn svg,
   flex-shrink:0;
   background:rgba(0,92,169,.1);color:var(--blue);
 }
+
+/* ── Tab icon badge ── */
+.tab-btn{gap:8px;}
+.tab-icon{
+  width:22px;height:22px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:var(--transition);
+}
+.tab-btn.active .tab-icon{
+  filter:brightness(1.1);
+}
