@@ -495,7 +495,7 @@ function contrattiRenderKPI() {
 
   // Cella Totale
   html += '<div class="ck-cell">' +
-    '<div class="ck-cell-label">Totale attivi</div>' +
+    '<div class="ck-cell-label">Imprese con contratti attivi</div>' +
     '<div class="ck-cell-num" id="ck-totale">–</div>' +
     '</div>';
 
