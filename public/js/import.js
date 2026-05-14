@@ -399,16 +399,10 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnLogout) btnLogout.addEventListener('click', doLogout);
     
     var btnInfo = G('btn-info');
-    if (btnInfo) btnInfo.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
+    if (btnInfo) btnInfo.addEventListener('click', function(){closeDrawer();document.getElementById('modal-info').style.display='flex';});
     
     var btnDarkmode = G('btn-darkmode');
-    if (btnDarkmode) btnDarkmode.addEventListener('click', toggleDarkMode);
-    
-    var btnDarkmodeMob = G('btn-darkmode');
-    if (btnDarkmodeMob) btnDarkmodeMob.addEventListener('click', function(){toggleDarkMode();closeDrawer();});
-    
-    var btnInfoMob = G('btn-info');
-    if (btnInfoMob) btnInfoMob.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
+    if (btnDarkmode) btnDarkmode.addEventListener('click', function(){toggleDarkMode();closeDrawer();});
   }, 100);
 });
   }
@@ -676,26 +670,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     var btnInfo = document.getElementById('btn-info');
     if (btnInfo) {
-      btnInfo.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
+      btnInfo.addEventListener('click', function(){closeDrawer();document.getElementById('modal-info').style.display='flex';});
       console.log('✅ btn-info listener attaccato');
     }
     
     var btnDarkmode = document.getElementById('btn-darkmode');
     if (btnDarkmode) {
-      btnDarkmode.addEventListener('click', toggleDarkMode);
+      btnDarkmode.addEventListener('click', function(){toggleDarkMode();closeDrawer();});
       console.log('✅ btn-darkmode listener attaccato');
-    }
-    
-    var btnDarkmodeMob = document.getElementById('btn-darkmode');
-    if (btnDarkmodeMob) {
-      btnDarkmodeMob.addEventListener('click', function(){toggleDarkMode();closeDrawer();});
-      console.log('✅ btn-darkmode listener attaccato');
-    }
-    
-    var btnInfoMob = document.getElementById('btn-info');
-    if (btnInfoMob) {
-      btnInfoMob.addEventListener('click', function(){document.getElementById('modal-info').style.display='flex';});
-      console.log('✅ btn-info listener attaccato');
     }
     
     console.log('🎉 TUTTI i listener attaccati!');
