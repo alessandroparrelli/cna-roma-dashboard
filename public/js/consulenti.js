@@ -1,5 +1,5 @@
 // ============================================================
-// CONSULENTI.JS — Tab Analisi Consulenti
+// CONSULENTI.JS — Tab Gestione Consulenti
 // Statistiche per nomeconsulente dalla tabella contrattiservizio
 // con espansione riga per dettagli da anagrafiche + diretti
 // ============================================================
@@ -8,7 +8,29 @@ var consulentiAll = [];
 var consulentiFiltered = [];
 var consulentiLoaded = false;
 var consulentiLoading = false;
-var consulentiExpandedRow = null; // nome consulente attualmente espanso
+var consulentiExpandedRow = null;
+
+// ---------- Stili hover iniettati una volta sola ----------
+
+(function() {
+  if (document.getElementById('consulenti-styles')) return;
+  var s = document.createElement('style');
+  s.id = 'consulenti-styles';
+  s.textContent = [
+    '.consulenti-row { transition: background 0.15s, box-shadow 0.15s; }',
+    '.consulenti-row:hover { background: rgba(0,92,169,0.05) !important; box-shadow: inset 3px 0 0 #005CA9; }',
+    '.consulenti-row:hover .consulenti-nome { color: #003D7A !important; }',
+    '.consulenti-row:hover .consulenti-toggle-icon { transform: scale(1.3); }',
+    '.consulenti-toggle-icon { display:inline-block; transition: transform 0.2s; }',
+    '.consulenti-row.is-expanded { background: rgba(0,92,169,0.07) !important; box-shadow: inset 3px 0 0 #005CA9; }',
+    '.consulenti-badge { display:inline-block; border-radius:4px; padding:2px 7px; font-size:11px; font-weight:600; margin:2px; white-space:nowrap; }',
+    '.consulenti-expand-row td { padding: 0 !important; }',
+    '.consulenti-assoc-chip { display:inline-flex; align-items:center; gap:5px; border-radius:20px; padding:4px 10px; font-size:12px; font-weight:700; white-space:nowrap; }',
+    '.consulenti-pct-bar { height:4px; background:#E5E7EB; border-radius:2px; margin-top:5px; min-width:60px; max-width:100px; }',
+    '.consulenti-pct-fill { height:4px; background:#005CA9; border-radius:2px; transition: width 0.4s; }',
+  ].join('\n');
+  document.head.appendChild(s);
+})();
 
 // ---------- Utility progress/status ----------
 
@@ -61,35 +83,27 @@ async function consulentiLoad(force) {
   consulentiSetStatus('join', 'In attesa…');
 
   try {
-    // 1) Contratti attivi (datadisdetta IS NULL)
     consulentiSetProgress(5, 'Caricamento contratti attivi…');
     consulentiSetStatus('contratti', 'Caricamento…');
     var contratti = await consulentiFetchAll('contrattiservizio?datadisdetta=is.null');
     consulentiSetStatus('contratti', contratti.length + ' caricati');
 
-    // 2) Anagrafiche
     consulentiSetProgress(35, 'Caricamento anagrafiche…');
     consulentiSetStatus('anagrafiche', 'Caricamento…');
     var anagrafiche = await consulentiFetchAll('Anagrafiche');
     consulentiSetStatus('anagrafiche', anagrafiche.length + ' caricate');
 
-    // 3) Diretti
     consulentiSetProgress(60, 'Caricamento diretti…');
     consulentiSetStatus('diretti', 'Caricamento…');
     var diretti = await consulentiFetchAll('diretti');
     consulentiSetStatus('diretti', diretti.length + ' caricati');
 
-    // 4) Join e aggregazione
     consulentiSetProgress(80, 'Elaborazione dati…');
     consulentiSetStatus('join', 'Aggregazione…');
 
-    // Mappe ausiliarie
-    var anaMap = {};   // codiceanagrafica → record anagrafica
-    anagrafiche.forEach(function(a) {
-      anaMap[a.codiceanagrafica] = a;
-    });
+    var anaMap = {};
+    anagrafiche.forEach(function(a) { anaMap[a.codiceanagrafica] = a; });
 
-    // diretti per codiceanagrafica → array di record
     var direttiMap = {};
     diretti.forEach(function(d) {
       var k = d.codiceanagrafica;
@@ -97,11 +111,7 @@ async function consulentiLoad(force) {
       direttiMap[k].push(d);
     });
 
-    // Totale contratti attivi (per percentuale globale)
     var totaleContratti = contratti.length;
-
-    // Aggregazione per consulente
-    // struttura: { nomeconsulente → { imprese: Set<codicecliente>, tipiContratto: {tipo: count}, sediErogazione: {sede: {tipo: count}}, contratti: [raw] } }
     var consulentiMap = {};
 
     contratti.forEach(function(c) {
@@ -121,30 +131,24 @@ async function consulentiLoad(force) {
       agg.contratti.push(c);
       agg.imprese.add(c.codicecliente);
 
-      // per tipo contratto
       var tipo = c.tipocontratto || '—';
       agg.tipiContratto[tipo] = (agg.tipiContratto[tipo] || 0) + 1;
 
-      // per sede erogazione + tipo
       var sede = c.sedeerogazione || '—';
       if (!agg.sediErogazione[sede]) agg.sediErogazione[sede] = {};
       agg.sediErogazione[sede][tipo] = (agg.sediErogazione[sede][tipo] || 0) + 1;
 
-      // raggruppamenti
       var rg = c.raggruppamento || '—';
       agg.raggruppamenti[rg] = (agg.raggruppamenti[rg] || 0) + 1;
 
-      // zone
       var zona = c.zonacliente || '—';
       agg.zone[zona] = (agg.zone[zona] || 0) + 1;
     });
 
-    // Converti in array e arricchisci con dati aggregati da anagrafiche + diretti
     consulentiAll = Object.values(consulentiMap).map(function(agg) {
       var numContratti = agg.contratti.length;
       var pctTotale = totaleContratti > 0 ? ((numContratti / totaleContratti) * 100).toFixed(1) : '0.0';
 
-      // Mestieri: conta per le imprese seguite (da anagrafica)
       var mestieriCount = {};
       agg.imprese.forEach(function(codicecliente) {
         var ana = anaMap[codicecliente];
@@ -153,34 +157,15 @@ async function consulentiLoad(force) {
         mestieriCount[mestiere] = (mestieriCount[mestiere] || 0) + 1;
       });
 
-      // Stato associativo: da diretti
       var nAssociati = 0, nNonAssociati = 0;
       agg.imprese.forEach(function(codicecliente) {
         var ana = anaMap[codicecliente];
         if (!ana) return;
         var dArr = direttiMap[ana.codiceanagrafica] || [];
-        // Associato = ha in diretti: servizio contiene "iscritto" (case-insensitive) e datadisdetta nulla
         var isAssociato = dArr.some(function(d) {
           return d.servizio && d.servizio.toLowerCase().indexOf('iscritto') !== -1 && !d.datadisdetta;
         });
         if (isAssociato) nAssociati++; else nNonAssociati++;
-      });
-
-      // Sedi con distribuzione per tipo (per %)
-      var sediDettaglio = [];
-      Object.keys(agg.sediErogazione).sort().forEach(function(sede) {
-        var tipiInSede = agg.sediErogazione[sede];
-        var totaleSede = Object.values(tipiInSede).reduce(function(s, v) { return s + v; }, 0);
-        Object.keys(tipiInSede).sort().forEach(function(tipo) {
-          var cnt = tipiInSede[tipo];
-          sediDettaglio.push({
-            sede: sede,
-            tipo: tipo,
-            count: cnt,
-            pctSede: totaleSede > 0 ? ((cnt / totaleSede) * 100).toFixed(1) : '0.0',
-            pctTotale: totaleContratti > 0 ? ((cnt / totaleContratti) * 100).toFixed(1) : '0.0'
-          });
-        });
       });
 
       return {
@@ -190,20 +175,17 @@ async function consulentiLoad(force) {
         pctTotale: pctTotale,
         tipiContratto: agg.tipiContratto,
         sediErogazione: agg.sediErogazione,
-        sediDettaglio: sediDettaglio,
         raggruppamenti: agg.raggruppamenti,
         zone: agg.zone,
         mestieriCount: mestieriCount,
         nAssociati: nAssociati,
         nNonAssociati: nNonAssociati,
-        // raw per espansione
         _imprese: Array.from(agg.imprese),
         _anaMap: anaMap,
         _direttiMap: direttiMap
       };
     });
 
-    // Ordina per numero contratti decrescente
     consulentiAll.sort(function(a, b) { return b.numContratti - a.numContratti; });
     consulentiFiltered = consulentiAll.slice();
 
@@ -231,7 +213,6 @@ async function consulentiLoad(force) {
 // ---------- Filtri ----------
 
 function consulentiPopulateFilters() {
-  // Popola filtro tipo contratto
   var tipiSet = {};
   consulentiAll.forEach(function(c) {
     Object.keys(c.tipiContratto).forEach(function(t) { tipiSet[t] = true; });
@@ -246,7 +227,6 @@ function consulentiPopulateFilters() {
     });
   }
 
-  // Popola filtro sede erogazione
   var sediSet = {};
   consulentiAll.forEach(function(c) {
     Object.keys(c.sediErogazione).forEach(function(s) { sediSet[s] = true; });
@@ -273,7 +253,6 @@ function consulentiApply() {
     if (sede && !c.sediErogazione[sede]) return false;
     return true;
   });
-
   consulentiRender();
 }
 
@@ -285,14 +264,13 @@ function consulentiReset() {
   consulentiRender();
 }
 
-// ---------- Render tabella principale ----------
+// ---------- Render tabella ----------
 
 function consulentiRender() {
   var tbody = G('consulenti-tbody');
   if (!tbody) return;
   tbody.innerHTML = '';
 
-  // KPI summary in cima
   var totImprese = new Set();
   var totContratti = 0;
   consulentiAll.forEach(function(c) {
@@ -306,59 +284,77 @@ function consulentiRender() {
   G('consulenti-count').textContent = consulentiFiltered.length + ' consulenti';
 
   if (consulentiFiltered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="ana-empty">Nessun consulente trovato</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6" class="ana-empty">Nessun consulente trovato</td></tr>';
     return;
   }
 
   consulentiFiltered.forEach(function(c) {
-    // Prima riga: riepilogo consulente
+    // Badge tipi contratto — compatti
     var tipiHtml = Object.keys(c.tipiContratto).sort().map(function(t) {
-      return '<span style="display:inline-block;background:var(--blue-light,#EFF6FF);color:var(--blue,#005CA9);border-radius:4px;padding:2px 7px;font-size:11px;font-weight:600;margin:1px">' + escHtml(t) + ' <b>' + c.tipiContratto[t] + '</b></span>';
-    }).join(' ');
+      return '<span class="consulenti-badge" style="background:#EFF6FF;color:#005CA9">' +
+        escHtml(t) + ' <b style="font-size:12px">' + c.tipiContratto[t] + '</b></span>';
+    }).join('');
 
-    var assocPct = (c.numImprese > 0) ? Math.round((c.nAssociati / c.numImprese) * 100) : 0;
+    // Chip associati separati
+    var assocPct = c.numImprese > 0 ? Math.round((c.nAssociati / c.numImprese) * 100) : 0;
+    var nonAssocPct = 100 - assocPct;
 
     var tr = document.createElement('tr');
     tr.className = 'consulenti-row';
     tr.setAttribute('data-consulente', c.nomeconsulente);
-    tr.style.cursor = 'pointer';
+    tr.style.cssText = 'cursor:pointer;transition:background 0.15s;';
+
     tr.innerHTML =
-      '<td style="font-weight:700;color:var(--blue,#005CA9);white-space:nowrap">' +
-        '<span style="margin-right:6px;font-size:12px" class="consulenti-toggle-icon">▶</span>' +
-        escHtml(c.nomeconsulente) +
-      '</td>' +
-      '<td style="text-align:center;font-weight:700;font-size:15px">' + c.numImprese + '</td>' +
-      '<td>' + tipiHtml + '</td>' +
-      '<td style="text-align:center">' +
-        '<span style="font-weight:700;color:var(--blue,#005CA9)">' + c.pctTotale + '%</span>' +
-        '<div style="height:4px;background:#E5E7EB;border-radius:2px;margin-top:4px;width:80px">' +
-          '<div style="height:4px;background:var(--blue,#005CA9);border-radius:2px;width:' + Math.min(parseFloat(c.pctTotale), 100) + '%"></div>' +
+      // COL 1 — Nome
+      '<td style="min-width:160px;max-width:220px">' +
+        '<div style="display:flex;align-items:center;gap:8px">' +
+          '<span class="consulenti-toggle-icon" style="font-size:11px;color:#005CA9;flex-shrink:0">▶</span>' +
+          '<span class="consulenti-nome" style="font-weight:700;color:#005CA9;font-size:13px;transition:color 0.15s">' + escHtml(c.nomeconsulente) + '</span>' +
         '</div>' +
       '</td>' +
-      '<td style="text-align:center">' +
-        '<span style="color:#16a34a;font-weight:600">' + c.nAssociati + '</span> / ' +
-        '<span style="color:#9ca3af">' + c.nNonAssociati + '</span>' +
-        '<div style="font-size:10px;color:var(--text-secondary)">' + assocPct + '% assoc.</div>' +
+      // COL 2 — Imprese
+      '<td style="text-align:center;width:80px">' +
+        '<div style="font-size:20px;font-weight:800;color:#1e293b;line-height:1">' + c.numImprese + '</div>' +
+        '<div style="font-size:10px;color:#94a3b8;margin-top:1px">imprese</div>' +
       '</td>' +
-      '<td style="text-align:center">' + c.numContratti + '</td>' +
-      '<td style="text-align:center">' +
-        Object.keys(c.raggruppamenti).sort().map(function(rg) {
-          return '<span style="font-size:11px;color:var(--text-secondary)">' + escHtml(rg) + '</span>';
-        }).join('<br>') +
+      // COL 3 — Tipi contratto
+      '<td style="min-width:180px">' +
+        '<div style="display:flex;flex-wrap:wrap;gap:2px">' + tipiHtml + '</div>' +
+      '</td>' +
+      // COL 4 — % totale con barra
+      '<td style="text-align:center;width:100px">' +
+        '<div style="font-size:16px;font-weight:800;color:#005CA9">' + c.pctTotale + '<span style="font-size:11px;font-weight:500">%</span></div>' +
+        '<div class="consulenti-pct-bar" style="margin:4px auto 0">' +
+          '<div class="consulenti-pct-fill" style="width:' + Math.min(parseFloat(c.pctTotale), 100) + '%"></div>' +
+        '</div>' +
+      '</td>' +
+      // COL 5 — Associati (chip verde)
+      '<td style="text-align:center;width:90px">' +
+        '<div class="consulenti-assoc-chip" style="background:#F0FDF4;color:#16a34a;margin:0 auto 4px">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>' +
+          c.nAssociati +
+        '</div>' +
+        '<div style="font-size:10px;color:#16a34a;font-weight:600">' + assocPct + '%</div>' +
+      '</td>' +
+      // COL 6 — Non Associati (chip grigio)
+      '<td style="text-align:center;width:90px">' +
+        '<div class="consulenti-assoc-chip" style="background:#F3F4F6;color:#6b7280;margin:0 auto 4px">' +
+          '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+          c.nNonAssociati +
+        '</div>' +
+        '<div style="font-size:10px;color:#9ca3af;font-weight:600">' + nonAssocPct + '%</div>' +
       '</td>';
 
-    tr.addEventListener('click', function() {
-      consulentiToggleExpand(c, tr);
-    });
+    tr.addEventListener('click', function() { consulentiToggleExpand(c, tr); });
     tbody.appendChild(tr);
 
-    // Riga espansione (inizialmente nascosta)
+    // Riga espansione
     var trExp = document.createElement('tr');
     trExp.className = 'consulenti-expand-row';
     trExp.setAttribute('data-expand-for', c.nomeconsulente);
     trExp.style.display = 'none';
     var tdExp = document.createElement('td');
-    tdExp.colSpan = 7;
+    tdExp.colSpan = 6;
     tdExp.style.padding = '0';
     trExp.appendChild(tdExp);
     tbody.appendChild(trExp);
@@ -369,34 +365,33 @@ function consulentiRender() {
 
 function consulentiToggleExpand(consulente, trHeader) {
   var nome = consulente.nomeconsulente;
-  var trExp = G('consulenti-tbody').querySelector('[data-expand-for="' + CSS.escape(nome) + '"]');
+  var tbody = G('consulenti-tbody');
+  var trExp = tbody.querySelector('[data-expand-for="' + CSS.escape(nome) + '"]');
   if (!trExp) return;
 
   var icon = trHeader.querySelector('.consulenti-toggle-icon');
 
   if (trExp.style.display === 'none') {
-    // Chiudi eventuale altra espansione aperta
+    // Chiudi precedente
     if (consulentiExpandedRow && consulentiExpandedRow !== nome) {
-      var prevTrExp = G('consulenti-tbody').querySelector('[data-expand-for="' + CSS.escape(consulentiExpandedRow) + '"]');
-      var prevTrHdr = G('consulenti-tbody').querySelector('[data-consulente="' + CSS.escape(consulentiExpandedRow) + '"]');
-      if (prevTrExp) prevTrExp.style.display = 'none';
-      if (prevTrHdr) {
-        var prevIcon = prevTrHdr.querySelector('.consulenti-toggle-icon');
+      var prevExp = tbody.querySelector('[data-expand-for="' + CSS.escape(consulentiExpandedRow) + '"]');
+      var prevHdr = tbody.querySelector('[data-consulente="' + CSS.escape(consulentiExpandedRow) + '"]');
+      if (prevExp) prevExp.style.display = 'none';
+      if (prevHdr) {
+        prevHdr.classList.remove('is-expanded');
+        var prevIcon = prevHdr.querySelector('.consulenti-toggle-icon');
         if (prevIcon) prevIcon.textContent = '▶';
-        prevTrHdr.style.background = '';
       }
     }
-
-    // Popola e apri
     trExp.firstChild.innerHTML = consulentiExpandContent(consulente);
     trExp.style.display = '';
     if (icon) icon.textContent = '▼';
-    trHeader.style.background = 'rgba(0,92,169,0.06)';
+    trHeader.classList.add('is-expanded');
     consulentiExpandedRow = nome;
   } else {
     trExp.style.display = 'none';
     if (icon) icon.textContent = '▶';
-    trHeader.style.background = '';
+    trHeader.classList.remove('is-expanded');
     consulentiExpandedRow = null;
   }
 }
@@ -404,42 +399,49 @@ function consulentiToggleExpand(consulente, trHeader) {
 // ---------- Contenuto espanso ----------
 
 function consulentiExpandContent(consulente) {
-  var html = '<div style="padding:16px 20px;background:linear-gradient(135deg,#f8faff,#EFF6FF);border-left:4px solid var(--blue,#005CA9);border-top:1px solid #DBEAFE;border-bottom:1px solid #DBEAFE">';
-
-  // Titolo
-  html += '<div style="font-size:13px;font-weight:700;color:var(--blue,#005CA9);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.5px">📊 Dettaglio: ' + escHtml(consulente.nomeconsulente) + '</div>';
-
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">';
-
-  // ── BOX 1: Tipi di contratto ──
-  html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07)">';
-  html += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">📋 Contratti per Tipo</div>';
   var totaleCons = consulente.numContratti;
-  Object.keys(consulente.tipiContratto).sort(function(a,b){ return consulente.tipiContratto[b]-consulente.tipiContratto[a]; }).forEach(function(tipo) {
-    var cnt = consulente.tipiContratto[tipo];
-    var pct = totaleCons > 0 ? ((cnt/totaleCons)*100).toFixed(1) : '0.0';
-    html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
-    html += '<div style="flex:1;font-size:12px;color:var(--text);font-weight:500">' + escHtml(tipo) + '</div>';
-    html += '<div style="font-size:12px;font-weight:700;color:var(--blue,#005CA9);white-space:nowrap">' + cnt + ' <span style="color:var(--text-secondary);font-weight:400">(' + pct + '%)</span></div>';
-    html += '</div>';
-    html += '<div style="height:3px;background:#E5E7EB;border-radius:2px;margin-bottom:8px"><div style="height:3px;background:var(--blue,#005CA9);border-radius:2px;width:' + Math.min(parseFloat(pct), 100) + '%"></div></div>';
-  });
+  var totImp = consulente.numImprese;
+  var pctAssoc = totImp > 0 ? ((consulente.nAssociati / totImp) * 100).toFixed(1) : '0.0';
+  var pctNonAssoc = totImp > 0 ? ((consulente.nNonAssociati / totImp) * 100).toFixed(1) : '0.0';
+
+  var html = '<div style="padding:18px 20px 20px;background:linear-gradient(135deg,#f8faff,#EFF6FF);border-left:4px solid #005CA9;border-top:1px solid #DBEAFE;border-bottom:2px solid #DBEAFE">';
+  html += '<div style="font-size:12px;font-weight:700;color:#005CA9;margin-bottom:14px;text-transform:uppercase;letter-spacing:0.6px">📊 Dettaglio — ' + escHtml(consulente.nomeconsulente) + '</div>';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px">';
+
+  // ── BOX 1: Tipi contratto ──
+  html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)">';
+  html += '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">📋 Contratti per Tipo</div>';
+  Object.keys(consulente.tipiContratto)
+    .sort(function(a,b){ return consulente.tipiContratto[b] - consulente.tipiContratto[a]; })
+    .forEach(function(tipo) {
+      var cnt = consulente.tipiContratto[tipo];
+      var pct = totaleCons > 0 ? ((cnt/totaleCons)*100).toFixed(1) : '0.0';
+      html += '<div style="margin-bottom:9px">';
+      html += '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">';
+      html += '<span style="color:#1e293b;font-weight:500">' + escHtml(tipo) + '</span>';
+      html += '<span style="font-weight:700;color:#005CA9">' + cnt + ' <span style="color:#94a3b8;font-weight:400;font-size:11px">(' + pct + '%)</span></span>';
+      html += '</div>';
+      html += '<div style="height:3px;background:#E2E8F0;border-radius:2px"><div style="height:3px;background:#005CA9;border-radius:2px;width:' + Math.min(parseFloat(pct),100) + '%"></div></div>';
+      html += '</div>';
+    });
   html += '</div>';
 
-  // ── BOX 2: Sedi + tipo ──
-  html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07)">';
-  html += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">🏢 Sede Erogazione × Tipo</div>';
+  // ── BOX 2: Sedi × Tipo ──
+  html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)">';
+  html += '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">🏢 Sede Erogazione × Tipo</div>';
   Object.keys(consulente.sediErogazione).sort().forEach(function(sede) {
     var tipiInSede = consulente.sediErogazione[sede];
     var totaleSede = Object.values(tipiInSede).reduce(function(s,v){return s+v;},0);
     html += '<div style="margin-bottom:10px">';
-    html += '<div style="font-size:11px;font-weight:700;color:var(--text);margin-bottom:4px;padding:3px 6px;background:#F3F4F6;border-radius:4px">' + escHtml(sede) + ' <span style="font-weight:400;color:var(--text-secondary)">(' + totaleSede + ' contratti)</span></div>';
+    html += '<div style="font-size:11px;font-weight:700;color:#1e293b;padding:3px 7px;background:#F1F5F9;border-radius:4px;margin-bottom:4px">';
+    html += escHtml(sede) + ' <span style="font-weight:400;color:#64748b;font-size:10px">(' + totaleSede + ' contr.)</span>';
+    html += '</div>';
     Object.keys(tipiInSede).sort().forEach(function(tipo) {
       var cnt = tipiInSede[tipo];
       var pctSede = totaleSede > 0 ? ((cnt/totaleSede)*100).toFixed(1) : '0.0';
-      html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 6px;color:var(--text-secondary)">';
+      html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 7px;color:#64748b">';
       html += '<span>' + escHtml(tipo) + '</span>';
-      html += '<span style="font-weight:600;color:var(--text)">' + cnt + ' <span style="color:#9ca3af">(' + pctSede + '% sede)</span></span>';
+      html += '<span style="font-weight:600;color:#334155">' + cnt + ' <span style="color:#94a3b8;font-weight:400">(' + pctSede + '%)</span></span>';
       html += '</div>';
     });
     html += '</div>';
@@ -447,90 +449,90 @@ function consulentiExpandContent(consulente) {
   html += '</div>';
 
   // ── BOX 3: Mestieri ──
-  html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07)">';
-  html += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">🔨 Mestieri (da Anagrafica)</div>';
-  var mestieri = Object.keys(consulente.mestieriCount).sort(function(a,b){ return consulente.mestieriCount[b]-consulente.mestieriCount[a]; });
+  html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)">';
+  html += '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">🔨 Mestieri (Anagrafica)</div>';
+  var mestieri = Object.keys(consulente.mestieriCount)
+    .sort(function(a,b){ return consulente.mestieriCount[b] - consulente.mestieriCount[a]; });
   if (mestieri.length === 0) {
-    html += '<div style="font-size:12px;color:var(--text-secondary)">Nessun mestiere trovato</div>';
+    html += '<div style="font-size:12px;color:#94a3b8">Nessun mestiere trovato</div>';
   } else {
-    var totMest = consulente.numImprese;
     mestieri.slice(0, 15).forEach(function(m) {
       var cnt = consulente.mestieriCount[m];
-      var pct = totMest > 0 ? ((cnt/totMest)*100).toFixed(1) : '0.0';
-      html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-      html += '<div style="flex:1;font-size:11px;color:var(--text)">' + escHtml(m) + '</div>';
-      html += '<div style="font-size:11px;font-weight:700;color:#7c3aed;white-space:nowrap">' + cnt + ' <span style="color:#9ca3af;font-weight:400">(' + pct + '%)</span></div>';
+      var pct = totImp > 0 ? ((cnt/totImp)*100).toFixed(1) : '0.0';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #F1F5F9">';
+      html += '<span style="color:#334155">' + escHtml(m) + '</span>';
+      html += '<span style="font-weight:700;color:#7c3aed">' + cnt + ' <span style="color:#94a3b8;font-weight:400">(' + pct + '%)</span></span>';
       html += '</div>';
     });
     if (mestieri.length > 15) {
-      html += '<div style="font-size:11px;color:var(--text-secondary);margin-top:4px">… e altri ' + (mestieri.length - 15) + ' mestieri</div>';
+      html += '<div style="font-size:11px;color:#94a3b8;margin-top:5px">… e altri ' + (mestieri.length - 15) + ' mestieri</div>';
     }
   }
   html += '</div>';
 
-  // ── BOX 4: Stato associativo + Zone ──
-  html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07)">';
-  html += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">👥 Stato Associativo</div>';
-  var totImp = consulente.numImprese;
-  var pctAssoc = totImp > 0 ? ((consulente.nAssociati/totImp)*100).toFixed(1) : '0.0';
-  var pctNonAssoc = totImp > 0 ? ((consulente.nNonAssociati/totImp)*100).toFixed(1) : '0.0';
-  html += '<div style="display:flex;gap:12px;margin-bottom:12px">';
-  html += '<div style="flex:1;text-align:center;padding:10px;background:#F0FDF4;border-radius:6px">';
-  html += '<div style="font-size:20px;font-weight:800;color:#16a34a">' + consulente.nAssociati + '</div>';
-  html += '<div style="font-size:11px;color:#16a34a;font-weight:600">Associati</div>';
-  html += '<div style="font-size:10px;color:#6b7280">' + pctAssoc + '%</div>';
+  // ── BOX 4: Stato associativo ──
+  html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)">';
+  html += '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:12px">👥 Stato Associativo</div>';
+
+  html += '<div style="display:flex;gap:10px;margin-bottom:14px">';
+  // Associati
+  html += '<div style="flex:1;text-align:center;padding:12px 8px;background:#F0FDF4;border-radius:8px;border:1px solid #BBF7D0">';
+  html += '<div style="font-size:24px;font-weight:800;color:#16a34a;line-height:1">' + consulente.nAssociati + '</div>';
+  html += '<div style="font-size:11px;font-weight:700;color:#16a34a;margin-top:3px">Associati</div>';
+  html += '<div style="font-size:13px;font-weight:800;color:#15803d;margin-top:2px">' + pctAssoc + '%</div>';
   html += '</div>';
-  html += '<div style="flex:1;text-align:center;padding:10px;background:#F9FAFB;border-radius:6px">';
-  html += '<div style="font-size:20px;font-weight:800;color:#9ca3af">' + consulente.nNonAssociati + '</div>';
-  html += '<div style="font-size:11px;color:#9ca3af;font-weight:600">Non Associati</div>';
-  html += '<div style="font-size:10px;color:#6b7280">' + pctNonAssoc + '%</div>';
+  // Non Associati
+  html += '<div style="flex:1;text-align:center;padding:12px 8px;background:#F8FAFC;border-radius:8px;border:1px solid #E2E8F0">';
+  html += '<div style="font-size:24px;font-weight:800;color:#94a3b8;line-height:1">' + consulente.nNonAssociati + '</div>';
+  html += '<div style="font-size:11px;font-weight:700;color:#94a3b8;margin-top:3px">Non Assoc.</div>';
+  html += '<div style="font-size:13px;font-weight:800;color:#64748b;margin-top:2px">' + pctNonAssoc + '%</div>';
   html += '</div>';
   html += '</div>';
 
-  // Barra associativi
+  // Barra
   if (totImp > 0) {
-    html += '<div style="height:6px;background:#E5E7EB;border-radius:3px;overflow:hidden">';
-    html += '<div style="height:6px;background:#16a34a;width:' + Math.min(parseFloat(pctAssoc), 100) + '%"></div>';
+    html += '<div style="height:8px;background:#E2E8F0;border-radius:4px;overflow:hidden">';
+    html += '<div style="height:8px;background:linear-gradient(90deg,#16a34a,#4ade80);border-radius:4px;width:' + Math.min(parseFloat(pctAssoc), 100) + '%"></div>';
     html += '</div>';
-    html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:#9ca3af;margin-top:3px"><span>0%</span><span>Associati</span><span>100%</span></div>';
+    html += '<div style="display:flex;justify-content:space-between;font-size:10px;color:#94a3b8;margin-top:3px"><span>0%</span><span style="font-weight:600;color:#64748b">Associati</span><span>100%</span></div>';
   }
 
   // Zone
   if (Object.keys(consulente.zone).length > 0) {
-    html += '<div style="margin-top:12px">';
-    html += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📍 Zone Cliente</div>';
+    html += '<div style="margin-top:14px;padding-top:12px;border-top:1px solid #F1F5F9">';
+    html += '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">📍 Zone Cliente</div>';
     Object.keys(consulente.zone).sort().slice(0, 8).forEach(function(zona) {
-      html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid #F3F4F6">';
-      html += '<span style="color:var(--text)">' + escHtml(zona) + '</span>';
-      html += '<span style="font-weight:600;color:var(--text)">' + consulente.zone[zona] + '</span>';
+      html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:2px 0;border-bottom:1px solid #F8FAFC">';
+      html += '<span style="color:#334155">' + escHtml(zona) + '</span>';
+      html += '<span style="font-weight:600;color:#334155">' + consulente.zone[zona] + '</span>';
       html += '</div>';
     });
     html += '</div>';
   }
+  html += '</div>';
 
-  html += '</div>'; // fine box 4
-
-  // ── BOX 5: Raggruppamenti ──
+  // ── BOX 5: Raggruppamenti (solo nel dettaglio espanso) ──
   if (Object.keys(consulente.raggruppamenti).length > 0) {
-    html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.07)">';
-    html += '<div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">🗂️ Raggruppamenti</div>';
-    Object.keys(consulente.raggruppamenti).sort(function(a,b){ return consulente.raggruppamenti[b]-consulente.raggruppamenti[a]; }).forEach(function(rg) {
-      var cnt = consulente.raggruppamenti[rg];
-      var pct = totaleCons > 0 ? ((cnt/totaleCons)*100).toFixed(1) : '0.0';
-      html += '<div style="display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #F3F4F6">';
-      html += '<span style="color:var(--text)">' + escHtml(rg) + '</span>';
-      html += '<span style="font-weight:600;color:#EA580C">' + cnt + ' <span style="color:#9ca3af;font-weight:400">(' + pct + '%)</span></span>';
-      html += '</div>';
-    });
+    html += '<div style="background:white;border-radius:8px;padding:14px;box-shadow:0 1px 4px rgba(0,0,0,.07)">';
+    html += '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px">🗂️ Raggruppamenti</div>';
+    Object.keys(consulente.raggruppamenti)
+      .sort(function(a,b){ return consulente.raggruppamenti[b] - consulente.raggruppamenti[a]; })
+      .forEach(function(rg) {
+        var cnt = consulente.raggruppamenti[rg];
+        var pct = totaleCons > 0 ? ((cnt/totaleCons)*100).toFixed(1) : '0.0';
+        html += '<div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:3px 0;border-bottom:1px solid #F1F5F9">';
+        html += '<span style="color:#334155">' + escHtml(rg) + '</span>';
+        html += '<span style="font-weight:700;color:#EA580C">' + cnt + ' <span style="color:#94a3b8;font-weight:400">(' + pct + '%)</span></span>';
+        html += '</div>';
+      });
     html += '</div>';
   }
 
-  html += '</div>'; // fine grid
-  html += '</div>'; // fine container
+  html += '</div></div>';
   return html;
 }
 
-// ---------- Helper escape HTML ----------
+// ---------- Helper ----------
 function escHtml(s) {
   if (!s) return '—';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
