@@ -167,7 +167,10 @@ async function renderOverview(){
   G('kpi-avg').textContent='€ '+fmt(avg,0);
   G('filtered-count').textContent=cnt+' record';
   G('data-info-text').textContent='DB: '+allData.length+' totali'+(cnt<allData.length?' · Filtrati: '+cnt:'');
-  dbCount().then(function(n){G('kpi-db').textContent=n;}).catch(function(){G('kpi-db').textContent=allData.length;});
+  dbCount().then(function(n){G('kpi-db').textContent=n; homeCountUp('kpi-db',n,false);}).catch(function(){G('kpi-db').textContent=allData.length;});
+  homeCountUp('kpi-tot', tot, true);
+  homeCountUp('kpi-cnt', cnt, false);
+  homeCountUp('kpi-avg', avg, true);
 
   // ── Confronto con anno precedente ──
   var annoSel=G('f-anno').value;
@@ -826,7 +829,7 @@ function initFiltersToggle() {
     // Titolo
     var title = document.createElement('span');
     title.className = 'filters-bar-title';
-    title.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filtri';
+    title.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filtri';
 
     // Header
     var header = document.createElement('div');

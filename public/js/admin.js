@@ -24,13 +24,13 @@ async function loadUsers(){
       var ll=u.last_login?fmtDate(u.last_login):'<span style="color:var(--gray-400)">Mai</span>';
       var actions='<div class="user-actions">';
       // Cambio password (tutti)
-      actions+='<button class="btn btn-sm btn-secondary" onclick="openChangePwd(\''+u.id+'\',\''+escQ(u.nome+' '+u.cognome)+'\')" title="Cambia password"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pwd</button>';
+      actions+='<button class="btn btn-sm btn-secondary" onclick="openChangePwd(\''+u.id+'\',\''+escQ(u.nome+' '+u.cognome)+'\')" title="Cambia password"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pwd</button>';
       if(u.ruolo!=='admin'){
         // Attiva/Disattiva
         if(u.attivo) actions+='<button class="btn btn-sm btn-danger" onclick="toggleU(\''+u.id+'\',false)">Disattiva</button>';
         else actions+='<button class="btn btn-sm btn-primary" onclick="toggleU(\''+u.id+'\',true)">Attiva</button>';
         // Elimina
-        actions+='<button class="btn btn-sm btn-danger" onclick="deleteU(\''+u.id+'\',\''+escQ(u.nome+' '+u.cognome)+'\')" title="Elimina utente"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>';
+        actions+='<button class="btn btn-sm btn-danger" onclick="deleteU(\''+u.id+'\',\''+escQ(u.nome+' '+u.cognome)+'\')" title="Elimina utente"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>';
       }
       actions+='</div>';
       return '<tr><td><b>'+escapeHtml(u.nome+' '+u.cognome)+'</b></td><td style="font-size:12px">'+escapeHtml(u.email)+'</td><td>'+rb+'</td><td>'+sb+'</td><td style="font-size:11px;white-space:nowrap">'+ll+'</td><td>'+actions+'</td></tr>';

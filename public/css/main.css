@@ -1479,3 +1479,10 @@ body.dark-mode .home-year-select{background:var(--surface);color:var(--text);}
 .ateco-kpi.ak2::after{background:radial-gradient(circle,#DC2626,transparent 70%);}
 .ateco-kpi.ak3::before{background:#F59E0B;}
 .ateco-kpi.ak3::after{background:radial-gradient(circle,#F59E0B,transparent 70%);}
+.ateco-kpi.ak6::before{background:#8B5CF6;}
+.ateco-kpi.ak6::after{background:radial-gradient(circle,#8B5CF6,transparent 70%);}
+.ateco-kpi.ak6:hover{box-shadow:0 8px 30px rgba(139,92,246,.28),0 0 0 1px rgba(139,92,246,.15)!important;}
+/* kpi-strip-6: 6 colonne su desktop */
+.kpi-strip-6{grid-template-columns:repeat(6,1fr)!important;}
+@media(max-width:1200px){.kpi-strip-6{grid-template-columns:repeat(3,1fr)!important;}}
+@media(max-width:700px){.kpi-strip-6{grid-template-columns:repeat(2,1fr)!important;}}

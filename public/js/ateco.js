@@ -88,7 +88,7 @@ function atecoBuildUI(){
   // FILTRI
   h+='<div id="ateco-filters-box" class="ateco-card" style="background:white;padding:16px 20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0">';
-  h+='<span style="font-size:12px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filtri</span>';
+  h+='<span style="font-size:12px;font-weight:700;color:#64748B;text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg> Filtri</span>';
   h+='<button id="at-toggle-btn" onclick="atecoToggleFiltri()" style="display:inline-flex;align-items:center;gap:6px;padding:6px 14px;font-size:12px;font-weight:700;color:#005CA9;background:rgba(0,92,169,.07);border:1px solid rgba(0,92,169,.15);border-radius:999px;cursor:pointer;font-family:inherit;transition:all .25s"><span id="at-toggle-icon" style="display:inline-block;transition:transform .25s;font-size:10px">▼</span> Filtri</button>';
   h+='</div>';
   h+='<div id="ateco-filters-body" style="overflow:hidden;max-height:0;opacity:0;transition:max-height .35s cubic-bezier(0.4,0,0.2,1),opacity .25s ease,margin-top .25s ease;margin-top:0">';
@@ -103,10 +103,11 @@ function atecoBuildUI(){
   h+='</div></div></div>';
 
   // KPI
-  h+='<div class="kpi-strip">';
+  h+='<div class="kpi-strip kpi-strip-6">';
   h+='<div class="kpi-card c1 ateco-kpi ak1"><div class="kpi-label">Contratti</div><div class="kpi-value" id="at-k1">–</div><div class="kpi-sub">Totale registrazioni</div></div>';
   h+='<div class="kpi-card ateco-kpi ak2" style="--before-bg:#DC2626;"><div class="kpi-label">Unioni</div><div class="kpi-value" id="at-k2">–</div><div class="kpi-sub">Unioni attive</div></div>';
   h+='<div class="kpi-card ateco-kpi ak3" style="--before-bg:#F59E0B;"><div class="kpi-label">Mestieri</div><div class="kpi-value" id="at-k3">–</div><div class="kpi-sub">Mestieri distinti</div></div>';
+  h+='<div class="kpi-card ateco-kpi ak6" style="--before-bg:#8B5CF6;"><div class="kpi-label">Settori</div><div class="kpi-value" id="at-k6">–</div><div class="kpi-sub">Settori distinti</div></div>';
   h+='<div class="kpi-card c4 ateco-kpi ak4"><div class="kpi-label">% Donne</div><div class="kpi-value" id="at-k4">–</div><div class="kpi-sub">Imprenditrici</div></div>';
   h+='<div class="kpi-card c3 ateco-kpi ak5"><div class="kpi-label">% Stranieri</div><div class="kpi-value" id="at-k5">–</div><div class="kpi-sub">Titolari stranieri</div></div>';
   h+='</div>';
@@ -230,6 +231,15 @@ function atecoRender(){
   G('at-k3').textContent=Object.keys(byMestiere).length;
   G('at-k4').textContent=tot>0?(donne/tot*100).toFixed(1)+'%':'0%';
   G('at-k5').textContent=tot>0?(stranieri/tot*100).toFixed(1)+'%':'0%';
+  if(G('at-k6')) G('at-k6').textContent=Object.keys(bySettore).length;
+
+  // CountUp animations
+  atecoCountUp('at-k1', tot, false);
+  atecoCountUp('at-k2', Object.keys(byUnione).length, false);
+  atecoCountUp('at-k3', Object.keys(byMestiere).length, false);
+  atecoCountUpPct('at-k4', tot>0?(donne/tot*100):0);
+  atecoCountUpPct('at-k5', tot>0?(stranieri/tot*100):0);
+  if(G('at-k6')) atecoCountUp('at-k6', Object.keys(bySettore).length, false);
   
   var container=G('at-cards-container');
   container.innerHTML='';
@@ -490,4 +500,28 @@ function atecoToggleFiltri() {
     body.style.marginTop = '0';
     if (btn)  btn.innerHTML = '<span id="at-toggle-icon" style="display:inline-block;transition:transform .25s;font-size:10px;transform:rotate(-90deg)">▼</span> Filtri';
   }
+}
+
+function atecoCountUp(elId, finalVal, isCurrency){
+  var el = G(elId);
+  if(!el || finalVal === 0) { if(el) el.textContent = '0'; return; }
+  var steps = 40, duration = 900, current = 0, increment = finalVal / steps;
+  var timer = setInterval(function(){
+    current += increment;
+    if(current >= finalVal){ current = finalVal; clearInterval(timer);
+      el.classList.add('popped'); setTimeout(function(){ el.classList.remove('popped'); }, 500); }
+    el.textContent = isCurrency ? ('€ ' + Math.round(current).toLocaleString('it-IT')) : Math.round(current).toLocaleString('it-IT');
+  }, duration / steps);
+}
+
+function atecoCountUpPct(elId, finalVal){
+  var el = G(elId);
+  if(!el || finalVal === 0) { if(el) el.textContent = '0%'; return; }
+  var steps = 40, duration = 900, current = 0, increment = finalVal / steps;
+  var timer = setInterval(function(){
+    current += increment;
+    if(current >= finalVal){ current = finalVal; clearInterval(timer);
+      el.classList.add('popped'); setTimeout(function(){ el.classList.remove('popped'); }, 500); }
+    el.textContent = current.toFixed(1) + '%';
+  }, duration / steps);
 }
