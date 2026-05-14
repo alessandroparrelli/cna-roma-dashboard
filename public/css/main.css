@@ -1291,6 +1291,7 @@ canvas:hover {
   transition:max-height .35s cubic-bezier(0.4,0,0.2,1), opacity .25s ease, margin-top .25s ease;
   opacity:1;
   margin-top:14px;
+  display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end;
 }
 .filters-bar.collapsed .filters-body{
   max-height:0;
