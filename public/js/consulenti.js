@@ -85,7 +85,7 @@ async function consulentiLoad(force) {
 
   try {
     consulentiSetProgress(5, 'Caricamento contratti attivi…'); consulentiSetStatus('contratti','Caricamento…');
-    var contratti = await consulentiFetchAll('contrattiservizio?datadisdetta=is.null');
+    var contratti = await consulentiFetchAll('contrattiservizio?datadisdetta=is.null&tipocontratto=not.eq.SERVIZIO 730&tipocontratto=not.eq.PEC');
     consulentiSetStatus('contratti', contratti.length + ' caricati');
 
     consulentiSetProgress(35, 'Caricamento anagrafiche…'); consulentiSetStatus('anagrafiche','Caricamento…');
