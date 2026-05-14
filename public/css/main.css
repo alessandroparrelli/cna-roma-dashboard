@@ -816,7 +816,7 @@ body.dark-mode .ana-data-card{background:var(--surface);}
   font-size:11px;font-weight:700;padding:5px 14px;border-radius:var(--radius-pill);
   background:var(--accent);color:#fff;border:none;box-shadow:0 4px 12px rgba(236,72,153,.25);
 }
-.ana-table-wrap{max-height:600px;overflow:auto;-webkit-overflow-scrolling:touch;}
+.ana-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .ana-table{width:100%;border-collapse:collapse;font-size:12px;min-width:1800px;}
 .ana-table thead{
   position:sticky;top:0;z-index:5;
