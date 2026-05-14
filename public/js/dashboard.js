@@ -1087,17 +1087,20 @@ function homeCountUpPct(elId, finalVal){
 function homeCountUp(elId, finalVal, isCurrency){
   var el = G(elId);
   if(!el) return;
+  // Cancella eventuale timer precedente
+  if(el._countTimer) { clearInterval(el._countTimer); el._countTimer = null; }
   var duration = 900;
   var steps = 40;
   var interval = duration / steps;
   var current = 0;
   var increment = finalVal / steps;
   el.classList.add('counting');
-  var timer = setInterval(function(){
+  el._countTimer = setInterval(function(){
     current += increment;
     if(current >= finalVal){
       current = finalVal;
-      clearInterval(timer);
+      clearInterval(el._countTimer);
+      el._countTimer = null;
       el.classList.remove('counting');
       el.classList.add('popped');
       setTimeout(function(){ el.classList.remove('popped'); }, 500);
