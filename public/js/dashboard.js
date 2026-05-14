@@ -990,19 +990,108 @@ function rReport(id, data, key, colors) {
 }
 
 // ── HOME TAB ──
+var homeSelectedYear = ''; // anno selezionato nella Home
+
 function renderHome(){
   if(!allData || allData.length === 0) return;
-  var tot = allData.reduce(function(s,r){return s+r.importo;},0);
-  var cnt = allData.length;
+
+  // Costruisce le pill degli anni (solo al primo caricamento)
+  var pillsEl = G('home-year-pills');
+  if(pillsEl && pillsEl.children.length <= 1){
+    var anni = unique(allData,'anno').filter(Boolean).map(Number).sort().reverse();
+    anni.forEach(function(a){
+      var btn = document.createElement('button');
+      btn.className = 'home-year-pill';
+      btn.setAttribute('data-year', a);
+      btn.textContent = a;
+      btn.addEventListener('click', function(){
+        homeSelectedYear = this.getAttribute('data-year');
+        pillsEl.querySelectorAll('.home-year-pill').forEach(function(p){p.classList.remove('active');});
+        this.classList.add('active');
+        homeRefreshKPI();
+      });
+      pillsEl.appendChild(btn);
+    });
+    // Listener "Tutti"
+    pillsEl.querySelector('[data-year=""]').addEventListener('click', function(){
+      homeSelectedYear = '';
+      pillsEl.querySelectorAll('.home-year-pill').forEach(function(p){p.classList.remove('active');});
+      this.classList.add('active');
+      homeRefreshKPI();
+    });
+  }
+
+  homeRefreshKPI();
+}
+
+function homeRefreshKPI(){
+  if(!allData || allData.length === 0) return;
+
+  // Filtra per anno selezionato
+  var data = homeSelectedYear
+    ? allData.filter(function(r){ return String(r.anno) === homeSelectedYear; })
+    : allData;
+
+  var tot = data.reduce(function(s,r){return s+r.importo;},0);
+  var cnt = data.length;
   var avg = cnt ? tot/cnt : 0;
+
   homeCountUp('home-kpi-tot', tot, true);
   homeCountUp('home-kpi-cnt', cnt, false);
   homeCountUp('home-kpi-avg', avg, true);
+
+  // DB count: sempre totale (non filtrabile per anno)
   dbCount().then(function(n){
     homeCountUp('home-kpi-db', n, false);
   }).catch(function(){
     homeCountUp('home-kpi-db', allData.length, false);
   });
+
+  // KPI Ateco da atecoData (già caricato da ateco.js) oppure da allDataRaw
+  var src = (window.atecoData && window.atecoData.length > 0) ? window.atecoData : (allDataRaw || []);
+  var srcF = homeSelectedYear
+    ? src.filter(function(r){ return String(r.anno) === homeSelectedYear; })
+    : src;
+
+  var totAt = srcF.length;
+  var byUnione = {}, byMestiere = {};
+  var donne = 0, stranieri = 0;
+  srcF.forEach(function(r){
+    var u = r.unione || r.tiporete || 'N/D';
+    var m = r.mestiere || r.promotore || 'N/D';
+    byUnione[u] = 1;
+    byMestiere[m] = 1;
+    var sx = String(r.sesso||'').trim();
+    var naz = String(r.nazionalita||'').trim();
+    if(sx === 'Femmina') donne++;
+    if(naz === 'Straniero') stranieri++;
+  });
+
+  homeCountUp('home-at-k1', totAt, false);
+  homeCountUp('home-at-k2', Object.keys(byUnione).length, false);
+  homeCountUp('home-at-k3', Object.keys(byMestiere).length, false);
+  homeCountUpPct('home-at-k4', totAt > 0 ? (donne/totAt*100) : 0);
+  homeCountUpPct('home-at-k5', totAt > 0 ? (stranieri/totAt*100) : 0);
+}
+
+function homeCountUpPct(elId, finalVal){
+  var el = G(elId);
+  if(!el) return;
+  var duration = 900;
+  var steps = 40;
+  var interval = duration / steps;
+  var current = 0;
+  var increment = finalVal / steps;
+  var timer = setInterval(function(){
+    current += increment;
+    if(current >= finalVal){
+      current = finalVal;
+      clearInterval(timer);
+      el.classList.add('popped');
+      setTimeout(function(){ el.classList.remove('popped'); }, 500);
+    }
+    el.textContent = current.toFixed(1) + '%';
+  }, interval);
 }
 
 function homeCountUp(elId, finalVal, isCurrency){

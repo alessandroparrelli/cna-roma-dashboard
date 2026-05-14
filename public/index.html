@@ -166,6 +166,20 @@
     <h2 class="hero-title">Dashboard <span class="hero-accent">Tesseramento</span> CNA Roma</h2>
     <p class="hero-desc">Il luogo dove analizzare l'andamento associativo della CNA di Roma. Monitora i dati di tesseramento, le performance dei promotori e l'archivio imprese in tempo reale.</p>
   </div>
+
+  <!-- FILTRO ANNO -->
+  <div class="home-year-bar">
+    <div class="home-year-label">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+      Anno di riferimento
+    </div>
+    <div class="home-year-pills" id="home-year-pills">
+      <button class="home-year-pill active" data-year="">Tutti</button>
+    </div>
+  </div>
+
+  <!-- KPI TESSERAMENTO -->
+  <div class="section-title" style="margin-bottom:16px"><span class="section-dot" style="background:var(--blue)"></span>Tesseramento</div>
   <div class="home-kpi-strip" id="home-kpi-strip">
     <div class="home-kpi-card home-c1">
       <div class="home-kpi-label">Totale Importo</div>
@@ -188,6 +202,37 @@
       <div class="home-kpi-sub">Record su Supabase</div>
     </div>
   </div>
+
+  <!-- KPI ATECO -->
+  <div class="section-title" style="margin-bottom:16px"><span class="section-dot" style="background:var(--purple)"></span>Ateco · Imprese</div>
+  <div class="home-kpi-strip home-kpi-strip-5" id="home-ateco-strip">
+    <div class="home-kpi-card home-ac1">
+      <div class="home-kpi-label">Contratti Ateco</div>
+      <div class="home-kpi-value" id="home-at-k1">–</div>
+      <div class="home-kpi-sub">Totale registrazioni</div>
+    </div>
+    <div class="home-kpi-card home-ac2">
+      <div class="home-kpi-label">Unioni</div>
+      <div class="home-kpi-value" id="home-at-k2">–</div>
+      <div class="home-kpi-sub">Unioni attive</div>
+    </div>
+    <div class="home-kpi-card home-ac3">
+      <div class="home-kpi-label">Mestieri</div>
+      <div class="home-kpi-value" id="home-at-k3">–</div>
+      <div class="home-kpi-sub">Mestieri distinti</div>
+    </div>
+    <div class="home-kpi-card home-ac4">
+      <div class="home-kpi-label">% Donne</div>
+      <div class="home-kpi-value" id="home-at-k4">–</div>
+      <div class="home-kpi-sub">Imprenditrici</div>
+    </div>
+    <div class="home-kpi-card home-ac5">
+      <div class="home-kpi-label">% Stranieri</div>
+      <div class="home-kpi-value" id="home-at-k5">–</div>
+      <div class="home-kpi-sub">Titolari stranieri</div>
+    </div>
+  </div>
+
   <div class="home-nav-section">
     <div class="section-title"><span class="section-dot" style="background:var(--blue)"></span>Accesso rapido alle sezioni</div>
     <div class="home-nav-grid">
