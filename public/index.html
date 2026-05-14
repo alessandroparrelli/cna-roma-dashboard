@@ -817,18 +817,21 @@
   <div id="consulenti-content" style="display:none">
 
     <!-- KPI row -->
-    <div style="display:flex;gap:12px;padding:14px 16px 0">
-      <div style="flex:1;background:white;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-left:4px solid #005CA9">
-        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Consulenti</div>
-        <div id="consulenti-kpi-consulenti" style="font-size:22px;font-weight:800;color:#005CA9">—</div>
+    <div class="home-kpi-strip" style="margin:16px 16px 0;grid-template-columns:repeat(3,1fr)">
+      <div class="home-kpi-card home-c1">
+        <div class="home-kpi-label">Consulenti</div>
+        <div class="home-kpi-value" id="consulenti-kpi-consulenti">—</div>
+        <div class="home-kpi-sub">Totale consulenti attivi</div>
       </div>
-      <div style="flex:1;background:white;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-left:4px solid #7c3aed">
-        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Imprese Seguite</div>
-        <div id="consulenti-kpi-imprese" style="font-size:22px;font-weight:800;color:#7c3aed">—</div>
+      <div class="home-kpi-card home-ac2">
+        <div class="home-kpi-label">Imprese Seguite</div>
+        <div class="home-kpi-value" id="consulenti-kpi-imprese">—</div>
+        <div class="home-kpi-sub">Imprese con almeno un contratto</div>
       </div>
-      <div style="flex:1;background:white;border-radius:10px;padding:14px 16px;box-shadow:0 1px 4px rgba(0,0,0,.07);border-left:4px solid #EA580C">
-        <div style="font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Contratti Attivi</div>
-        <div id="consulenti-kpi-contratti" style="font-size:22px;font-weight:800;color:#EA580C">—</div>
+      <div class="home-kpi-card home-c2">
+        <div class="home-kpi-label">Contratti Attivi</div>
+        <div class="home-kpi-value" id="consulenti-kpi-contratti">—</div>
+        <div class="home-kpi-sub">Contratti senza data disdetta</div>
       </div>
     </div>
 
