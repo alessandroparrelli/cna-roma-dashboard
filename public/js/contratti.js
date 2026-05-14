@@ -143,6 +143,7 @@ async function contrattiLoad(force) {
     
     contrattiSetProgress(100, 'Rendering…');
     contrattiRender();
+    contrattiRenderKPI();
     
     contrattiLoaded = true;
     
@@ -428,4 +429,108 @@ function contrattiExportExcel() {
   XLSX.writeFile(wb, nome);
   
   toast('✅ Excel esportato', 'success');
+}
+
+// ── KPI STRIP CONTRATTI ──
+function contrattiRenderKPI() {
+  var strip = G('contratti-kpi-strip');
+  if (!strip) return;
+
+  // Conta totale imprese e per ogni tipocontratto
+  var totale = contrattiAll.length;
+  var serviziCount = {};
+  contrattiAll.forEach(function(r) {
+    Object.keys(r.servizi || {}).forEach(function(srv) {
+      serviziCount[srv] = (serviziCount[srv] || 0) + 1;
+    });
+  });
+
+  // Colori ciclici coerenti con design system
+  var colors = [
+    {cls:'c1', glow:'rgba(0,92,169,.28)', border:'rgba(0,92,169,.15)'},
+    {cls:'c2', glow:'rgba(249,115,22,.28)', border:'rgba(249,115,22,.15)'},
+    {cls:'c3', glow:'rgba(16,185,129,.28)', border:'rgba(16,185,129,.15)'},
+    {cls:'c4', glow:'rgba(236,72,153,.28)', border:'rgba(236,72,153,.15)'},
+    {cls:'',   glow:'rgba(139,92,246,.28)', border:'rgba(139,92,246,.15)', custom:'#8B5CF6'},
+    {cls:'',   glow:'rgba(6,182,212,.28)',  border:'rgba(6,182,212,.15)',  custom:'#06B6D4'},
+    {cls:'',   glow:'rgba(245,158,11,.28)', border:'rgba(245,158,11,.15)', custom:'#F59E0B'},
+  ];
+
+  var serviziOrdinati = Object.keys(serviziCount).sort();
+  var html = '';
+
+  // Card totale sempre prima
+  html += '<div class="kpi-card c1 contratti-kpi-card" style="cursor:default">' +
+    '<div class="kpi-label">Totale Imprese</div>' +
+    '<div class="kpi-value" id="ck-totale">–</div>' +
+    '<div class="kpi-sub">Con almeno un contratto</div>' +
+    '</div>';
+
+  // Card per ogni tipocontratto
+  serviziOrdinati.forEach(function(srv, i) {
+    var col = colors[(i + 1) % colors.length];
+    var beforeStyle = col.custom
+      ? ' style="--ck-color:' + col.custom + '"'
+      : '';
+    var cls = 'kpi-card ' + (col.cls || 'ck-custom') + ' contratti-kpi-card';
+    var idSafe = 'ck-' + i;
+    html += '<div class="' + cls + '" data-glow="' + col.glow + '" data-border="' + col.border + '"' +
+      (col.custom ? ' data-custom="' + col.custom + '"' : '') +
+      ' style="cursor:default">' +
+      '<div class="kpi-label">' + srv + '</div>' +
+      '<div class="kpi-value" id="' + idSafe + '">–</div>' +
+      '<div class="kpi-sub">Imprese attive</div>' +
+      '</div>';
+  });
+
+  strip.innerHTML = html;
+
+  // Aggiusta colonne: auto-fit basato su numero card
+  var nCards = 1 + serviziOrdinati.length;
+  var cols = Math.min(nCards, 6);
+  strip.style.gridTemplateColumns = 'repeat(' + cols + ', 1fr)';
+
+  // Aggiunge ::before colorato per le ck-custom e glow hover
+  serviziOrdinati.forEach(function(srv, i) {
+    var col = colors[(i + 1) % colors.length];
+    if (!col.cls && col.custom) {
+      var card = strip.querySelectorAll('.ck-custom')[i];
+      if (card) {
+        // Inietta stile ::before inline tramite shadow trick
+        card.style.setProperty('--ck-before', col.custom);
+      }
+    }
+  });
+
+  // Inietta CSS per ck-custom ::before se non esiste
+  if (!document.getElementById('ck-custom-style')) {
+    var s = document.createElement('style');
+    s.id = 'ck-custom-style';
+    s.textContent = '.ck-custom::before{background:var(--ck-before,var(--purple))!important;}' +
+      '.ck-custom::after{background:radial-gradient(circle,var(--ck-before,var(--purple)),transparent 70%)!important;}' +
+      '.contratti-kpi-card{transition:var(--transition)!important;}';
+    document.head.appendChild(s);
+  }
+
+  // Glow hover personalizzato
+  strip.querySelectorAll('.contratti-kpi-card').forEach(function(card) {
+    var glow = card.getAttribute('data-glow');
+    var border = card.getAttribute('data-border');
+    if (glow) {
+      card.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateY(-5px)';
+        this.style.boxShadow = '0 8px 30px ' + glow + ', 0 0 0 1px ' + border;
+      });
+      card.addEventListener('mouseleave', function() {
+        this.style.transform = '';
+        this.style.boxShadow = '';
+      });
+    }
+  });
+
+  // CountUp animazioni
+  homeCountUp('ck-totale', totale, false);
+  serviziOrdinati.forEach(function(srv, i) {
+    homeCountUp('ck-' + i, serviziCount[srv], false);
+  });
 }
