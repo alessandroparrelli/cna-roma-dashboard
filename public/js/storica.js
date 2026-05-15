@@ -200,11 +200,7 @@ function storicaRenderAnni(anni, totAnno, annoCorrente) {
   var ck = 'storicaAnni';
   if (charts[ck]) { charts[ck].destroy(); delete charts[ck]; }
   var ctx = el.getContext('2d');
-
-  // Colori: anno corrente rosso, gli altri blu CNA fisso
-  var bgColors = anni.map(function(a) {
-    return a === annoCorrente ? 'rgba(239,68,68,0.85)' : 'rgba(0,92,169,0.75)';
-  });
+  var gradientApplied = false;
 
   charts[ck] = new Chart(ctx, {
     type: 'bar',
@@ -213,7 +209,9 @@ function storicaRenderAnni(anni, totAnno, annoCorrente) {
       datasets: [{
         label: 'Contratti totali',
         data: anni.map(function(a){ return totAnno[a]||0; }),
-        backgroundColor: bgColors,
+        backgroundColor: anni.map(function(a){
+          return a === annoCorrente ? 'rgba(239,68,68,0.85)' : 'rgba(0,92,169,0.75)';
+        }),
         borderRadius: 4,
         borderSkipped: false
       }]
@@ -231,19 +229,19 @@ function storicaRenderAnni(anni, totAnno, annoCorrente) {
       },
       animation: {
         onComplete: function() {
-          // Applica gradient reale dopo che il canvas ha le dimensioni definitive
+          if (gradientApplied) return;
+          gradientApplied = true;
           var c = charts[ck];
-          if (!c) return;
-          var chartCtx = c.ctx;
-          var chartArea = c.chartArea;
-          if (!chartArea) return;
-          var grad = chartCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          if (!c || !c.chartArea) return;
+          var gCtx = c.ctx;
+          var ca = c.chartArea;
+          var grad = gCtx.createLinearGradient(0, ca.top, 0, ca.bottom);
           grad.addColorStop(0, 'rgba(0,92,169,0.9)');
           grad.addColorStop(1, 'rgba(0,92,169,0.15)');
           c.data.datasets[0].backgroundColor = anni.map(function(a) {
             return a === annoCorrente ? 'rgba(239,68,68,0.85)' : grad;
           });
-          c.update('none'); // aggiorna senza rianimate
+          c.update('none');
         }
       }
     }
@@ -252,13 +250,23 @@ function storicaRenderAnni(anni, totAnno, annoCorrente) {
 
 function storicaRenderMese(anni, matrix) {
   var m = storicaMeseSelezionato;
-  var el = G('storica-chart-mese');
-  if (!el) return;
+
+  // Sostituisce il canvas per evitare residui dal chart precedente
+  var wrap = G('storica-chart-mese');
+  if (!wrap) return;
+  var parent = wrap.parentNode;
+  parent.removeChild(wrap);
+  var newCanvas = document.createElement('canvas');
+  newCanvas.id = 'storica-chart-mese';
+  parent.appendChild(newCanvas);
+
   var ck = 'storicaMese';
   if (charts[ck]) { charts[ck].destroy(); delete charts[ck]; }
-  var ctx = el.getContext('2d');
+
+  var ctx = newCanvas.getContext('2d');
   var vals = anni.map(function(a){ return matrix[m]&&matrix[m][a]?matrix[m][a].v:null; });
   var annoCorr = new Date().getFullYear();
+  var gradientApplied = false;
 
   charts[ck] = new Chart(ctx, {
     type: 'line',
@@ -268,7 +276,7 @@ function storicaRenderMese(anni, matrix) {
         label: STORICA_MESI_NOMI[m],
         data: vals,
         borderColor: '#7C3AED',
-        backgroundColor: 'rgba(139,92,246,0.15)', // placeholder, sostituito in onComplete
+        backgroundColor: 'rgba(139,92,246,0.15)',
         tension: 0.4,
         fill: true,
         pointBackgroundColor: anni.map(function(a){ return a===annoCorr?'#EF4444':'#7C3AED'; }),
@@ -290,12 +298,13 @@ function storicaRenderMese(anni, matrix) {
       },
       animation: {
         onComplete: function() {
+          if (gradientApplied) return; // evita loop infinito
+          gradientApplied = true;
           var c = charts[ck];
-          if (!c) return;
-          var chartCtx = c.ctx;
-          var chartArea = c.chartArea;
-          if (!chartArea) return;
-          var grad = chartCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          if (!c || !c.chartArea) return;
+          var gCtx = c.ctx;
+          var ca = c.chartArea;
+          var grad = gCtx.createLinearGradient(0, ca.top, 0, ca.bottom);
           grad.addColorStop(0, 'rgba(139,92,246,0.6)');
           grad.addColorStop(1, 'rgba(139,92,246,0.02)');
           c.data.datasets[0].backgroundColor = grad;
