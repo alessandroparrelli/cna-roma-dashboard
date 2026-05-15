@@ -121,11 +121,11 @@ function repPag0_Copertina(anno, mese) {
 // HEADER: bianco, logo proporzionato (non deformato), titolo Inter Bold nero
 function repHeader(titoloPagina, anno, mese) {
   var meseStr = MESI[mese] + ' ' + anno;
-  return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:8px 28px 6px;border-bottom:1.5px solid #e2e8f0;background:white">'
-    + '<img src="' + LOGO_URL + '" style="height:38px;width:auto;max-width:150px;object-fit:contain;object-position:left top;margin-top:2px" crossorigin="anonymous" />'
-    + '<div style="text-align:right;padding-top:2px"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:17px;font-weight:800;color:#0f172a;line-height:1.2">Dati tesseramento ' + meseStr + '</div></div>'
+  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 28px 9px;border-bottom:1.5px solid #e2e8f0;background:white">'
+    + '<img src="' + LOGO_URL + '" style="height:42px;width:auto;max-width:160px;object-fit:contain;object-position:left center" crossorigin="anonymous" />'
+    + '<div style="text-align:right"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:19px;font-weight:800;color:#0f172a;line-height:1.2">Dati tesseramento ' + meseStr + '</div></div>'
     + '</div>'
-    + '<div style="padding:5px 28px 4px;background:white"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a">● ' + titoloPagina + '</div></div>';
+    + '<div style="padding:6px 28px 5px;background:white"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;color:#0f172a">● ' + titoloPagina + '</div></div>';
 }
 
 function repFooter(n) {
