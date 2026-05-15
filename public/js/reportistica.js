@@ -816,6 +816,25 @@ function repPagAteco(data, anno, mese, soloMese) {
         +'</tr>';
     }).join('');
 
+    // Riga totale (su tutti i record del gruppo, non solo top 15)
+    var allKeys = Object.keys(byKey);
+    var totGruppo = allKeys.reduce(function(s,k){return s+byKey[k].tot;},0);
+    var totF      = allKeys.reduce(function(s,k){return s+byKey[k].f;},0);
+    var totStr    = allKeys.reduce(function(s,k){return s+byKey[k].str;},0);
+    var totPct    = tot>0 ? (totGruppo/tot*100).toFixed(1) : '0.0';
+    var totPctF   = totGruppo>0 ? (totF/totGruppo*100).toFixed(0) : '0';
+    var totPctStr = totGruppo>0 ? (totStr/totGruppo*100).toFixed(0) : '0';
+    var totRow = '<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700">'
+      +'<td style="padding:5px 10px;font-size:10px;font-weight:800;color:#0f172a">Totale</td>'
+      +'<td style="padding:5px 8px;font-size:11px;font-weight:800;text-align:right;color:#0f172a">'+totGruppo+'</td>'
+      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#6366f1;font-weight:700">'+totPct+'%</td>'
+      +'<td style="padding:5px 8px"></td>'
+      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#EC4899;font-weight:800">'+totF+'</td>'
+      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#EC4899;font-weight:700">'+totPctF+'%</td>'
+      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#8B5CF6;font-weight:800">'+totStr+'</td>'
+      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#8B5CF6;font-weight:700">'+totPctStr+'%</td>'
+      +'</tr>';
+
     var badgeText = sorted.length < totVoci
       ? 'Top '+sorted.length+' di '+totVoci
       : totVoci+' voci';
@@ -827,13 +846,11 @@ function repPagAteco(data, anno, mese, soloMese) {
       +'</div>'
       +'<table style="width:100%;border-collapse:collapse">'
       +'<thead>'
-      // Prima riga header: raggruppamento Donne e Stranieri
       +'<tr style="background:#f0f0f0;border-bottom:1px solid #e2e8f0">'
       +'<th style="padding:4px 10px;font-size:9px;color:#64748b;text-transform:uppercase;text-align:left" colspan="4">'+label+'</th>'
       +'<th colspan="2" style="padding:4px 8px;font-size:9px;font-weight:700;color:#EC4899;text-transform:uppercase;text-align:center;border-left:1px solid #e2e8f0">♀ Donne</th>'
       +'<th colspan="2" style="padding:4px 8px;font-size:9px;font-weight:700;color:#8B5CF6;text-transform:uppercase;text-align:center;border-left:1px solid #e2e8f0">Stranieri</th>'
       +'</tr>'
-      // Seconda riga header: nomi colonne
       +'<tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'
       +'<th style="padding:4px 10px;text-align:left;font-size:9px;color:#64748b;text-transform:uppercase">Nome</th>'
       +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">Nr.</th>'
@@ -845,7 +862,7 @@ function repPagAteco(data, anno, mese, soloMese) {
       +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#8B5CF6;text-transform:uppercase">%</th>'
       +'</tr>'
       +'</thead>'
-      +'<tbody>'+rows+'</tbody>'
+      +'<tbody>'+rows+totRow+'</tbody>'
       +'</table></div>';
   }
 
