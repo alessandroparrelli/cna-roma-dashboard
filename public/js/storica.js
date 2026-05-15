@@ -5,6 +5,7 @@ var storicaLoaded = false;
 var storicaLoading = false;
 var storicaData = [];
 var storicaMeseSelezionato = 4; // default Aprile
+var storicaObiettivi = { 2026: 1000 }; // obiettivi per anno — modificabili dall'utente
 
 var STORICA_MESI_NOMI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
   'Luglio/Ago','','Settembre','Ottobre','Novembre','Dicembre'];
@@ -352,257 +353,283 @@ function storicaCambiaMese(val) {
 }
 
 // ── SEZIONE PREVISIONALE ─────────────────────────────────────────────────────
+
+// Obiettivi per anno (persistenti in sessione — aggiornabili dall'utente)
+if (!window.storicaObiettivi) window.storicaObiettivi = { 2026: 1000 };
+
+function storicaGetObiettivo(anno) {
+  return window.storicaObiettivi[anno] || 1000;
+}
+
+function storicaRicalcolaObiettivo() {
+  var inputVal = parseInt((G('storica-ob-input')||{}).value);
+  var annoVal  = parseInt((G('storica-ob-anno')||{}).value);
+  if (!inputVal || inputVal < 1 || !annoVal) return;
+  window.storicaObiettivi[annoVal] = inputVal;
+  // Rirenderizza la sezione con i dati in cache
+  if (!storicaData.length) return;
+  var matrix = {};
+  storicaData.forEach(function(r){
+    if(!matrix[r.mese]) matrix[r.mese]={};
+    matrix[r.mese][r.anno]={v:r.valore,auto:r.auto_calcolato};
+  });
+  var anniSet={};
+  storicaData.forEach(function(r){anniSet[r.anno]=1;});
+  var anni=Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
+  storicaRenderPrevisione(storicaData, matrix, anni);
+}
+
 function storicaRenderPrevisione(data, matrix, anni) {
   var el = G('storica-previsione');
   if (!el) return;
 
-  var OBIETTIVO = 1000;
-  var ANNO_CUR = 2026;
-  var ANNI_RIFE = [2021,2022,2023,2024,2025];
+  var ANNO_CUR = new Date().getFullYear();
+  var OBIETTIVO = storicaGetObiettivo(ANNO_CUR);
   var MESI_ORD_P = [1,2,3,4,5,6,7,9,10,11,12];
   var NOMI_P = {1:'Gennaio',2:'Febbraio',3:'Marzo',4:'Aprile',5:'Maggio',6:'Giugno',
     7:'Lug/Ago',9:'Settembre',10:'Ottobre',11:'Novembre',12:'Dicembre'};
 
-  // Valori reali 2026 già disponibili
-  var reali2026 = {};
-  data.forEach(function(r){ if(r.anno===ANNO_CUR) reali2026[r.mese]=r.valore; });
-  var totReale = Object.values(reali2026).reduce(function(s,v){return s+v;},0);
-  var mesiReali = Object.keys(reali2026).map(Number);
-  var mesiFuturi = MESI_ORD_P.filter(function(m){ return !reali2026.hasOwnProperty(m); });
+  // Ultimi 5 anni rispetto all'anno corrente
+  var ANNI_RIFE = [ANNO_CUR-5,ANNO_CUR-4,ANNO_CUR-3,ANNO_CUR-2,ANNO_CUR-1];
+
+  // Valori reali anno corrente già disponibili
+  var realiCur = {};
+  data.forEach(function(r){ if(r.anno===ANNO_CUR) realiCur[r.mese]=r.valore; });
+  var totReale = Object.values(realiCur).reduce(function(s,v){return s+v;},0);
+  var mesiReali = Object.keys(realiCur).map(Number).sort(function(a,b){return a-b;});
+  var mesiFuturi = MESI_ORD_P.filter(function(m){ return !realiCur.hasOwnProperty(m); });
 
   // Regressione lineare per ogni mese sugli ultimi 5 anni
   function stimaMese(m) {
     var vals = ANNI_RIFE.map(function(a){ return matrix[m]&&matrix[m][a]?matrix[m][a].v||0:0; });
-    var n=vals.length, xs=vals.map(function(_,i){return i;}),
-        mx=(n-1)/2, my=vals.reduce(function(s,v){return s+v;},0)/n;
-    var num=xs.reduce(function(s,x,i){return s+(x-mx)*(vals[i]-my);},0);
-    var den=xs.reduce(function(s,x){return s+(x-mx)*(x-mx);},0);
+    var n=vals.length, mx=(n-1)/2;
+    var my=vals.reduce(function(s,v){return s+v;},0)/n;
+    var num=vals.reduce(function(s,v,i){return s+(i-mx)*(v-my);},0);
+    var den=vals.reduce(function(s,v,i){return s+(i-mx)*(i-mx);},0);
     var slope=den?num/den:0;
     var trend=Math.max(0,Math.round(my+slope*(5-mx)));
-    var media=Math.round(my);
-    var stima=Math.round(0.6*trend+0.4*media);
-    return {stima:stima,trend:trend,media:media,slope:Math.round(slope*10)/10,vals:vals};
+    var stima=Math.round(0.6*trend+0.4*my);
+    return {stima:stima,trend:trend,media:Math.round(my),slope:Math.round(slope*10)/10};
   }
 
-  // Calcola stime per tutti i mesi
   var stime = {};
   MESI_ORD_P.forEach(function(m){ stime[m]=stimaMese(m); });
 
-  // Stima totale naturale 2026
   var totStimaNaturale = totReale + mesiFuturi.reduce(function(s,m){return s+stime[m].stima;},0);
-
-  // Piano per arrivare a 1000
   var fabbisogno = OBIETTIVO - totReale;
-  var stimaNaturaleFutura = mesiFuturi.reduce(function(s,m){return s+stime[m].stima;},0);
-  var boost = stimaNaturaleFutura>0 ? fabbisogno/stimaNaturaleFutura : 1;
+  var stimaNatFut = mesiFuturi.reduce(function(s,m){return s+stime[m].stima;},0);
+  var boost = stimaNatFut>0 ? fabbisogno/stimaNatFut : 1;
 
-  var piano = {};
-  var cumPiano = totReale;
+  var piano = {}, cumPiano = totReale;
   mesiFuturi.forEach(function(m){
     var t = Math.round(stime[m].stima * boost);
     cumPiano += t;
     piano[m] = {target:t, naturale:stime[m].stima, extra:t-stime[m].stima, cum:cumPiano};
   });
 
-  // Percentuale raggiunta
   var pctRaggiunta = Math.min(100, Math.round(totReale/OBIETTIVO*100));
   var pctStima = Math.min(100, Math.round(totStimaNaturale/OBIETTIVO*100));
-  var gapStima = OBIETTIVO - totStimaNaturale;
-
-  // ── HTML ──
-  var html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)">';
-
-  // Header
-  html += '<div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:18px 24px">'
-    +'<div style="font-size:16px;font-weight:800;color:white;margin-bottom:2px">🎯 Previsione 2026 & Piano per 1.000 contratti</div>'
-    +'<div style="font-size:12px;color:rgba(255,255,255,0.6)">Stima basata su regressione lineare degli ultimi 5 anni (2021-2025)</div>'
-    +'</div>';
-
-  html += '<div style="padding:20px 24px">';
-
-  // ── KPI principali ──
   var mancanti = OBIETTIVO - totReale;
   var mancherannoCon = OBIETTIVO - totStimaNaturale;
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px">';
-
-  // Già fatti
-  html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid #3B82F6;background:white">'
-    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Già realizzati</div>'
-    +'<div style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:4px">'+totReale+'</div>'
-    +'<div style="font-size:11px;color:#94a3b8;margin-top:2px">gen–apr 2026</div></div>';
-
-  // Stima a fine anno
   var colStima = totStimaNaturale>=OBIETTIVO?'#10B981':'#F59E0B';
-  html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid '+colStima+';background:white">'
-    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Stima a fine anno</div>'
-    +'<div style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:4px">'+totStimaNaturale+'</div>'
-    +'<div style="font-size:11px;color:'+colStima+';margin-top:2px;font-weight:600">'+(totStimaNaturale>=OBIETTIVO?'✓ Sopra obiettivo':'▼ '+Math.abs(mancherannoCon)+' sotto obiettivo')+'</div></div>';
+  var boostPct = Math.round((boost-1)*100);
 
-  // Mancanti per 1000
-  html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid #EF4444;background:white">'
-    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Ancora da fare</div>'
-    +'<div style="font-size:28px;font-weight:800;color:#EF4444;line-height:1.1;margin-top:4px">'+mancanti+'</div>'
-    +'<div style="font-size:11px;color:#94a3b8;margin-top:2px">per arrivare a 1.000</div></div>';
+  // ── ANNI DISPONIBILI per selettore obiettivo ──
+  var anniDisp = anni.filter(function(a){ return a >= 2026; });
+  if (!anniDisp.length) anniDisp = [ANNO_CUR];
+  var anniOpt = anniDisp.map(function(a){
+    return '<option value="'+a+'"'+(a===ANNO_CUR?' selected':'')+'>'+a+'</option>';
+  }).join('');
 
-  // Boost necessario
-  html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid #8B5CF6;background:white">'
-    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Boost necessario</div>'
-    +'<div style="font-size:28px;font-weight:800;color:#8B5CF6;line-height:1.1;margin-top:4px">+'+Math.round((boost-1)*100)+'%</div>'
-    +'<div style="font-size:11px;color:#94a3b8;margin-top:2px">rispetto al trend naturale</div></div>';
+  // ── SVG ICONA cerchio stilizzato (trend/grafico) ──
+  var iconSvg = '<div style="width:52px;height:52px;border-radius:50%;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+    +'<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">'
+    +'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>'
+    +'</svg></div>';
 
+  var html = '';
+
+  // CSS hover inline — iniettato una volta sola
+  html += '<style>'
+    +'.sp-kpi{transition:all .2s ease;cursor:default;}'
+    +'.sp-kpi:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.1);}'
+    +'.sp-mese-card{transition:all .2s ease;}'
+    +'.sp-mese-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.08);border-color:#93c5fd!important;}'
+    +'.sp-ob-btn{transition:all .18s ease;}'
+    +'.sp-ob-btn:hover{background:#0073C8!important;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,92,169,0.35);}'
+    +'</style>';
+
+  // ── HEADER ──
+  html += '<div style="background:linear-gradient(135deg,#0a1628 0%,#0d2d5e 60%,#1a3a6e 100%);border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.2)">';
+  html += '<div style="padding:22px 28px 18px;display:flex;align-items:center;gap:16px">'
+    + iconSvg
+    +'<div>'
+    +'<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:22px;font-weight:800;color:white;letter-spacing:-0.3px;line-height:1.15">Previsione '+ANNO_CUR+'</div>'
+    +'<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:rgba(255,255,255,0.55);margin-top:3px">Piano mensile per raggiungere l\'obiettivo · regressione lineare '+(ANNO_CUR-5)+'–'+(ANNO_CUR-1)+'</div>'
+    +'</div>'
+    +'</div>';
+
+  // ── OBIETTIVO CONFIGURABILE ──
+  html += '<div style="padding:0 28px 20px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+    +'<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:8px;padding:8px 14px">'
+    +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>'
+    +'<span style="font-size:12px;font-weight:700;color:rgba(255,255,255,0.7);white-space:nowrap">Obiettivo</span>'
+    +'<select id="storica-ob-anno" style="background:transparent;border:none;color:white;font-size:12px;font-weight:700;cursor:pointer;outline:none">'+anniOpt+'</select>'
+    +'<span style="color:rgba(255,255,255,0.4);font-size:12px">→</span>'
+    +'<input id="storica-ob-input" type="number" value="'+OBIETTIVO+'" min="1" step="50" '
+    +'style="width:80px;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);border-radius:6px;color:white;font-size:14px;font-weight:800;padding:4px 8px;outline:none;text-align:center" />'
+    +'<button class="sp-ob-btn" onclick="storicaRicalcolaObiettivo()" '
+    +'style="background:#005CA9;color:white;border:none;border-radius:6px;padding:5px 14px;font-size:12px;font-weight:700;cursor:pointer">Ricalcola</button>'
+    +'</div>'
+    +'<div style="font-size:11px;color:rgba(255,255,255,0.4)">Puoi impostare un obiettivo diverso per ogni anno</div>'
+    +'</div>';
+
+  html += '</div>'; // fine header
+
+  // ── BODY ──
+  html += '<div style="padding:20px 24px">';
+
+  // KPI
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:22px">';
+
+  function kpiCard(label, val, sub, color, subColor) {
+    subColor = subColor || '#94a3b8';
+    return '<div class="sp-kpi" style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid '+color+';background:white">'
+      +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">'+label+'</div>'
+      +'<div style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:4px">'+val+'</div>'
+      +'<div style="font-size:11px;color:'+subColor+';margin-top:3px;font-weight:600">'+sub+'</div>'
+      +'</div>';
+  }
+
+  var meseLabel = mesiReali.length>0 ? NOMI_P[mesiReali[0]].substring(0,3)+'–'+NOMI_P[mesiReali[mesiReali.length-1]].substring(0,3)+' '+ANNO_CUR : ANNO_CUR.toString();
+  html += kpiCard('Già realizzati', totReale, meseLabel, '#3B82F6');
+  html += kpiCard('Stima a fine anno', totStimaNaturale, totStimaNaturale>=OBIETTIVO?'✓ Sopra obiettivo':'▼ '+Math.abs(mancherannoCon)+' sotto obiettivo', colStima, colStima);
+  html += kpiCard('Ancora da fare', mancanti, 'per arrivare a '+OBIETTIVO.toLocaleString('it-IT'), '#EF4444', '#EF4444');
+  html += kpiCard('Boost necessario', (boostPct>0?'+':'')+boostPct+'%', 'rispetto al trend naturale', '#8B5CF6');
   html += '</div>';
 
-  // ── Barra progresso ──
-  html += '<div style="margin-bottom:24px">'
-    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
-    +'<span style="font-size:12px;font-weight:700;color:var(--text)">Avanzamento verso 1.000</span>'
+  // Barra progresso
+  html += '<div style="margin-bottom:22px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:7px">'
+    +'<span style="font-size:12px;font-weight:700;color:var(--text)">Avanzamento verso '+OBIETTIVO.toLocaleString('it-IT')+'</span>'
     +'<span style="font-size:12px;font-weight:700;color:#005CA9">'+totReale+' / '+OBIETTIVO+' ('+pctRaggiunta+'%)</span>'
     +'</div>'
     +'<div style="background:#f1f5f9;border-radius:99px;height:16px;overflow:hidden;position:relative">'
-    // Barra reale
-    +'<div style="position:absolute;left:0;top:0;height:100%;width:'+pctRaggiunta+'%;background:linear-gradient(90deg,#005CA9,#3B82F6);border-radius:99px;transition:width 0.6s ease"></div>'
-    // Barra stima (tratteggiata)
-    +'<div style="position:absolute;left:'+pctRaggiunta+'%;top:2px;height:calc(100% - 4px);width:'+(pctStima-pctRaggiunta)+'%;background:repeating-linear-gradient(90deg,#F59E0B 0px,#F59E0B 8px,transparent 8px,transparent 14px);border-radius:99px;opacity:0.7"></div>'
+    +'<div style="position:absolute;left:0;top:0;height:100%;width:'+pctRaggiunta+'%;background:linear-gradient(90deg,#005CA9,#3B82F6);border-radius:99px;transition:width .8s ease"></div>'
+    +'<div style="position:absolute;left:'+pctRaggiunta+'%;top:2px;height:calc(100% - 4px);width:'+(pctStima-pctRaggiunta)+'%;background:repeating-linear-gradient(90deg,#F59E0B 0,#F59E0B 8px,transparent 8px,transparent 14px);border-radius:99px;opacity:0.7"></div>'
     +'</div>'
     +'<div style="display:flex;gap:16px;margin-top:6px">'
     +'<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:6px;border-radius:3px;background:linear-gradient(90deg,#005CA9,#3B82F6)"></div><span style="font-size:10px;color:#64748b">Realizzati ('+pctRaggiunta+'%)</span></div>'
     +'<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,#F59E0B 0,#F59E0B 4px,transparent 4px,transparent 7px)"></div><span style="font-size:10px;color:#64748b">Stima trend (+'+(pctStima-pctRaggiunta)+'%)</span></div>'
     +'</div></div>';
 
-  // ── PIANO MENSILE ──
-  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">📅 Piano mensile per raggiungere 1.000</div>';
+  // Piano mensile
+  html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+    +'<div style="display:flex;align-items:center;gap:10px">'
+    +'<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#005CA9,#3B82F6);display:flex;align-items:center;justify-content:center">'
+    +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+    +'</div>'
+    +'<span style="font-size:14px;font-weight:700;color:var(--text)">Piano mensile per raggiungere '+OBIETTIVO.toLocaleString('it-IT')+'</span>'
+    +'</div></div>';
 
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-bottom:20px">';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px;margin-bottom:20px">';
 
   // Mesi già realizzati
-  mesiReali.sort(function(a,b){return a-b;}).forEach(function(m){
-    var v = reali2026[m];
+  mesiReali.forEach(function(m){
+    var v = realiCur[m];
     var nat = stime[m].stima;
     var vs = v-nat;
     var vsColor = vs>=0?'#10B981':'#EF4444';
     var vsSign = vs>=0?'+':'';
-    html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;background:#f8fafc;display:flex;align-items:center;gap:12px">'
-      +'<div style="width:8px;height:8px;border-radius:50%;background:#10B981;flex-shrink:0"></div>'
-      +'<div style="flex:1">'
-      +'<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">'+NOMI_P[m]+'</div>'
-      +'<div style="font-size:15px;font-weight:800;color:#0f172a">'+v+' <span style="font-size:11px;font-weight:600;color:'+vsColor+'">'+vsSign+vs+' vs trend</span></div>'
+    html += '<div class="sp-mese-card" style="border:1px solid #d1fae5;border-radius:9px;padding:11px 14px;background:#f0fdf4;display:flex;align-items:center;gap:12px">'
+      +'<div style="width:34px;height:34px;border-radius:50%;background:#10B981;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:10px;font-weight:700;color:#059669;text-transform:uppercase;letter-spacing:0.5px">'+NOMI_P[m]+'</div>'
+      +'<div style="font-size:16px;font-weight:800;color:#064e3b">'+v+' <span style="font-size:11px;font-weight:700;color:'+vsColor+'">'+vsSign+vs+' vs trend</span></div>'
       +'</div>'
-      +'<div style="text-align:right;font-size:11px;color:#94a3b8">trend: '+nat+'</div>'
+      +'<div style="font-size:10px;color:#6ee7b7;font-weight:600;text-align:right">trend<br>'+nat+'</div>'
       +'</div>';
   });
 
-  // Mesi futuri con target piano
+  // Mesi futuri
   mesiFuturi.forEach(function(m){
     var p = piano[m];
-    var extra = p.extra;
     var pctBar = Math.min(100, Math.round(p.cum/OBIETTIVO*100));
-    var barColor = p.cum>=OBIETTIVO?'#10B981':'#005CA9';
-    html += '<div style="border:1px solid #dbeafe;border-radius:8px;padding:10px 14px;background:white;display:flex;align-items:center;gap:12px">'
-      +'<div style="width:8px;height:8px;border-radius:50%;background:#005CA9;border:2px solid #bfdbfe;flex-shrink:0"></div>'
-      +'<div style="flex:1">'
-      +'<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">'+NOMI_P[m]+'</div>'
-      +'<div style="font-size:15px;font-weight:800;color:#005CA9">'+p.target+' '
-        +'<span style="font-size:11px;font-weight:600;color:#8B5CF6">+'+extra+' extra</span></div>'
-      +'<div style="background:#f1f5f9;border-radius:4px;height:4px;margin-top:4px">'
-        +'<div style="height:100%;width:'+pctBar+'%;background:'+barColor+';border-radius:4px"></div>'
-      +'</div></div>'
-      +'<div style="text-align:right">'
-        +'<div style="font-size:13px;font-weight:800;color:'+barColor+'">'+p.cum+'</div>'
-        +'<div style="font-size:9px;color:#94a3b8">cum.</div>'
+    var isRaggiunto = p.cum >= OBIETTIVO;
+    var barColor = isRaggiunto?'#10B981':'#005CA9';
+    html += '<div class="sp-mese-card" style="border:1px solid #dbeafe;border-radius:9px;padding:11px 14px;background:white;display:flex;align-items:center;gap:12px">'
+      +'<div style="width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#005CA9,#3B82F6);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">'+NOMI_P[m]+'</div>'
+      +'<div style="font-size:16px;font-weight:800;color:#005CA9">'+p.target+' <span style="font-size:11px;font-weight:700;color:#8B5CF6">+'+p.extra+' extra</span></div>'
+      +'<div style="background:#f1f5f9;border-radius:4px;height:4px;margin-top:5px"><div style="height:100%;width:'+pctBar+'%;background:'+barColor+';border-radius:4px;transition:width .5s ease"></div></div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0">'
+      +'<div style="font-size:14px;font-weight:800;color:'+barColor+'">'+p.cum+'</div>'
+      +'<div style="font-size:9px;color:#94a3b8;font-weight:600">cum.</div>'
       +'</div></div>';
   });
 
   html += '</div>';
 
-  // ── Grafico piano ──
-  html += '<div style="position:relative;height:200px;margin-top:4px"><canvas id="storica-chart-piano"></canvas></div>';
+  // Grafico
+  html += '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'
+    +'<div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#8B5CF6);display:flex;align-items:center;justify-content:center">'
+    +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'
+    +'</div>'
+    +'<span style="font-size:13px;font-weight:700;color:var(--text)">Distribuzione mensile — realizzati vs target vs trend</span>'
+    +'</div>';
+  html += '<div style="background:#f8fafc;border-radius:10px;padding:14px;"><div style="position:relative;height:200px"><canvas id="storica-chart-piano"></canvas></div></div>';
 
   html += '</div></div>';
 
   el.innerHTML = html;
 
-  // Grafico piano mensile
+  // ── GRAFICO ──
   setTimeout(function() {
     var cvs = G('storica-chart-piano');
     if (!cvs) return;
     var ck = 'storicaPiano';
     if (charts[ck]) { charts[ck].destroy(); delete charts[ck]; }
-
     var labelsAll = MESI_ORD_P.map(function(m){ return NOMI_P[m].substring(0,3); });
-    var datiReali = MESI_ORD_P.map(function(m){ return reali2026[m]!==undefined ? reali2026[m] : null; });
-    var datiTarget = MESI_ORD_P.map(function(m){ return piano[m] ? piano[m].target : null; });
-    var datiNaturale = MESI_ORD_P.map(function(m){ return stime[m].stima; });
-    var gradientApplied = false;
+    var datiReali   = MESI_ORD_P.map(function(m){ return realiCur[m]!==undefined?realiCur[m]:null; });
+    var datiTarget  = MESI_ORD_P.map(function(m){ return piano[m]?piano[m].target:null; });
+    var datiNat     = MESI_ORD_P.map(function(m){ return stime[m].stima; });
+    var gradDone = false;
     var ctx = cvs.getContext('2d');
-
     charts[ck] = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: labelsAll,
         datasets: [
-          {
-            label: 'Realizzati',
-            data: datiReali,
-            backgroundColor: 'rgba(0,92,169,0.85)',
-            borderRadius: 4,
-            borderSkipped: false,
-            order: 1
-          },
-          {
-            label: 'Target piano',
-            data: datiTarget,
-            backgroundColor: 'rgba(139,92,246,0.7)',
-            borderRadius: 4,
-            borderSkipped: false,
-            order: 2
-          },
-          {
-            label: 'Trend naturale',
-            data: datiNaturale,
-            type: 'line',
-            borderColor: '#F59E0B',
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderDash: [5,4],
-            pointBackgroundColor: '#F59E0B',
-            pointRadius: 4,
-            tension: 0.3,
-            order: 0
-          }
+          { label:'Realizzati', data:datiReali, backgroundColor:'rgba(0,92,169,0.85)', borderRadius:4, borderSkipped:false, order:1 },
+          { label:'Target piano', data:datiTarget, backgroundColor:'rgba(139,92,246,0.7)', borderRadius:4, borderSkipped:false, order:2 },
+          { label:'Trend naturale', data:datiNat, type:'line', borderColor:'#F59E0B', backgroundColor:'transparent',
+            borderWidth:2, borderDash:[5,4], pointBackgroundColor:'#F59E0B', pointRadius:4, tension:0.3, order:0 }
         ]
       },
       options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: true,
-            position: 'top',
-            labels: { font: { size: 11 }, boxWidth: 12, padding: 12 }
-          },
-          tooltip: { callbacks: { label: function(c){ return ' '+c.dataset.label+': '+c.raw; } } }
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ display:true, position:'top', labels:{ font:{size:11}, boxWidth:12, padding:12 } },
+          tooltip:{ callbacks:{ label:function(c){ return ' '+c.dataset.label+': '+c.raw; } } } },
+        scales:{
+          x:{ grid:{display:false}, ticks:{font:{size:10}} },
+          y:{ grid:{color:'rgba(0,0,0,0.04)'}, ticks:{font:{size:10}}, beginAtZero:true }
         },
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
-          y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } }, beginAtZero: true }
-        },
-        animation: {
-          onComplete: function() {
-            if (gradientApplied) return;
-            gradientApplied = true;
-            var c = charts[ck];
-            if (!c||!c.chartArea) return;
-            var ca = c.chartArea;
-            var grad = ctx.createLinearGradient(0, ca.top, 0, ca.bottom);
-            grad.addColorStop(0, 'rgba(0,92,169,0.9)');
-            grad.addColorStop(1, 'rgba(0,92,169,0.2)');
-            c.data.datasets[0].backgroundColor = grad;
-            var grad2 = ctx.createLinearGradient(0, ca.top, 0, ca.bottom);
-            grad2.addColorStop(0, 'rgba(139,92,246,0.85)');
-            grad2.addColorStop(1, 'rgba(139,92,246,0.2)');
-            c.data.datasets[1].backgroundColor = grad2;
-            c.update('none');
-          }
-        }
+        animation:{ onComplete:function(){
+          if(gradDone) return; gradDone=true;
+          var c=charts[ck]; if(!c||!c.chartArea) return;
+          var ca=c.chartArea, gc=c.ctx;
+          var g1=gc.createLinearGradient(0,ca.top,0,ca.bottom);
+          g1.addColorStop(0,'rgba(0,92,169,0.9)'); g1.addColorStop(1,'rgba(0,92,169,0.2)');
+          var g2=gc.createLinearGradient(0,ca.top,0,ca.bottom);
+          g2.addColorStop(0,'rgba(139,92,246,0.85)'); g2.addColorStop(1,'rgba(139,92,246,0.2)');
+          c.data.datasets[0].backgroundColor=g1;
+          c.data.datasets[1].backgroundColor=g2;
+          c.update('none');
+        }}
       }
     });
   }, 200);
