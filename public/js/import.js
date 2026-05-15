@@ -771,15 +771,8 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
     this.classList.add('active');
     G(tabId).classList.add('active');
 
-    // Chiudi il dropdown se aperto
-    var drop = G('tabs-dropdown');
-    if(drop) drop.style.display = 'none';
-    var chevron = G('tabs-more-chevron');
-    if(chevron) chevron.style.transform = '';
-    var moreBtn = G('tabs-more-btn');
-    if(moreBtn){ moreBtn.setAttribute('aria-expanded','false'); }
-    // Evidenzia "Altro" se la tab attiva è nel dropdown
-    if(typeof syncTabsMoreBtn === 'function') syncTabsMoreBtn();
+    // Aggiorna freccia scroll
+    if(typeof tabsUpdateArrow === 'function') setTimeout(tabsUpdateArrow, 50);
 
     // Gestione upload-zone: visibile solo su overview per admin senza dati tesseramento
     if(tabId==='tab-overview' && allData.length===0 && isAdmin()){

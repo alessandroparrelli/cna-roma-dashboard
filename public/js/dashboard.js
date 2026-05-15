@@ -7,7 +7,7 @@ async function loadDashboard(){
     allData=data.map(mapRow);
     // La tabs-bar è sempre visibile dopo login: il tab Anagrafiche
     // è un modulo indipendente che legge da altre tabelle.
-    G('tabs-bar').style.display='flex';
+    G('tabs-bar-wrap').style.display='flex'; if(typeof tabsUpdateArrow==='function') setTimeout(tabsUpdateArrow,300);
     var appFooter = G('app-footer'); if(appFooter) appFooter.style.display='block';
     
     // FILTRA TAB IN BASE AL RUOLO
@@ -64,7 +64,7 @@ function handleFile(file,isAdd){
       showLoad('Aggiornamento…');
       var data=await sbGetAll(TR);
       allData=data.map(mapRow);
-      G('tabs-bar').style.display='flex';
+      G('tabs-bar-wrap').style.display='flex'; if(typeof tabsUpdateArrow==='function') setTimeout(tabsUpdateArrow,300);
       G('upload-zone').style.display='none';
       rebuildFilters();renderOverview();renderPromoTrend();
       toast('✓ '+parsed.length+' record salvati','success');
@@ -711,7 +711,7 @@ function renderPromoCards(data, anni, matrix, totAnno, sortedPromo) {
 function showDashboard(){
   G('upload-zone').style.display='none';
   G('admin-panel').style.display='none';
-  G('tabs-bar').style.display='flex';
+  G('tabs-bar-wrap').style.display='flex'; if(typeof tabsUpdateArrow==='function') setTimeout(tabsUpdateArrow,300);
   // Show active tab
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   G('tab-overview').classList.add('active');
@@ -1114,63 +1114,29 @@ function homeCountUp(elId, finalVal, isCurrency){
   }, interval);
 }
 
-// ── DROPDOWN "ALTRO" — tabs proposita B ──────────────────────────────────────
-function toggleTabsDropdown(e) {
-  if(e) e.stopPropagation();
-  var drop = G('tabs-dropdown');
-  var chevron = G('tabs-more-chevron');
-  var btn = G('tabs-more-btn');
-  if (!drop) return;
-  var isOpen = drop.style.display !== 'none';
-  drop.style.display = isOpen ? 'none' : 'block';
-  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
-  if (btn) btn.setAttribute('aria-expanded', String(!isOpen));
+
+// ── FRECCIA SCROLL TAB ───────────────────────────────────────────────────────
+function tabsScrollRight() {
+  var bar = G('tabs-bar');
+  if (bar) bar.scrollBy({ left: 200, behavior: 'smooth' });
 }
 
-// Chiude dropdown al click esterno
-document.addEventListener('click', function(e) {
-  var wrap = G('tabs-dropdown-wrap');
-  var drop = G('tabs-dropdown');
-  if (!wrap || !drop) return;
-  if (!wrap.contains(e.target)) {
-    drop.style.display = 'none';
-    var chevron = G('tabs-more-chevron');
-    if (chevron) chevron.style.transform = '';
-    var btn = G('tabs-more-btn');
-    if (btn) btn.setAttribute('aria-expanded', 'false');
-  }
-});
-
-// Evidenzia il bottone "Altro" se la tab attiva è nel dropdown
-function syncTabsMoreBtn() {
-  var dropTabs = ['tab-contratti','tab-consulenti','tab-storica','tab-reportistica','tab-import'];
-  var active = document.querySelector('.tabs-bar .tab-btn.active');
-  var moreBtn = G('tabs-more-btn');
-  if (!moreBtn || !active) return;
-  var isInDrop = dropTabs.indexOf(active.getAttribute('data-tab')) !== -1;
-  if (isInDrop) {
-    moreBtn.classList.add('active');
-  } else {
-    moreBtn.classList.remove('active');
-  }
-  // Chiudi dropdown dopo selezione
-  var drop = G('tabs-dropdown');
-  if (drop) drop.style.display = 'none';
-  var chevron = G('tabs-more-chevron');
-  if (chevron) chevron.style.transform = '';
+function tabsUpdateArrow() {
+  var bar = G('tabs-bar');
+  var arrow = G('tabs-scroll-arrow');
+  if (!bar || !arrow) return;
+  var hasMore = bar.scrollWidth > bar.clientWidth + bar.scrollLeft + 4;
+  arrow.style.display = hasMore ? 'flex' : 'none';
 }
 
-// Aggancia il sync al listener dei tab esistente
+// Init freccia quando la tabs-bar diventa visibile
 (function() {
-  var origListener = null;
   var checkInterval = setInterval(function() {
     var bar = G('tabs-bar');
     if (!bar) return;
-    bar.addEventListener('click', function(e) {
-      var btn = e.target.closest('.tab-btn[data-tab]');
-      if (btn) setTimeout(syncTabsMoreBtn, 50);
-    });
+    bar.addEventListener('scroll', tabsUpdateArrow);
+    window.addEventListener('resize', tabsUpdateArrow);
+    setTimeout(tabsUpdateArrow, 300);
     clearInterval(checkInterval);
   }, 500);
 })();
-// cache-bust 1778842531

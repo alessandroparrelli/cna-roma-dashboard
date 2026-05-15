@@ -1585,74 +1585,45 @@ header .btn svg,
 }
 
 /* ── Separatore tra tab principali e dropdown ── */
-.tabs-separator{
-  width:1px;height:24px;background:var(--border);
-  align-self:center;margin:0 4px;flex-shrink:0;
+/* ── Tab scroll wrapper con freccia ── */
+.tabs-bar-wrap{
+  position:sticky;top:var(--header-h);z-index:100;
+  display:flex;align-items:stretch;
+  background:rgba(255,255,255,.6);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid var(--border);
 }
+body.dark-mode .tabs-bar-wrap{background:rgba(17,26,46,.6);}
+.tabs-bar{
+  flex:1;overflow-x:auto;scrollbar-width:none;
+  padding:8px 20px;display:flex;gap:4px;
+  background:transparent;border:none;
+}
+.tabs-bar::-webkit-scrollbar{display:none;}
 
-/* ── Dropdown "Altro" ── */
-.tabs-dropdown-wrap{
-  position:relative;
-  display:flex;align-items:center;
-}
-.tabs-more-btn{
-  display:flex;align-items:center;gap:6px;
-}
-.tabs-dropdown{
-  position:absolute;top:calc(100% + 8px);right:0;
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:6px;
-  min-width:210px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.10),0 2px 6px rgba(0,0,0,0.06);
-  z-index:200;
-}
-.tab-dropdown-item{
-  width:100%;
-  border-radius:8px;
-  justify-content:flex-start;
-  padding:9px 12px;
-  gap:10px;
-  font-size:13px;
-}
-.tab-dropdown-item:hover{
-  background:rgba(0,92,169,.06);
+/* Freccia scorri — sovrapposta a destra, appare solo quando serve */
+.tabs-scroll-arrow{
+  flex-shrink:0;width:36px;
+  display:flex;align-items:center;justify-content:center;
+  border:none;cursor:pointer;
+  background:linear-gradient(to right, transparent, rgba(255,255,255,0.95) 40%);
   color:var(--primary);
+  transition:opacity .2s;
+  padding:0 6px 0 0;
 }
-.tab-dropdown-item.active{
-  background:rgba(0,92,169,.08);
-  color:var(--primary);
-  font-weight:700;
-  box-shadow:none;
+body.dark-mode .tabs-scroll-arrow{
+  background:linear-gradient(to right, transparent, rgba(17,26,46,0.95) 40%);
 }
-.tabs-dropdown-sep{
-  height:1px;background:var(--border);
-  margin:4px 0;
-}
+.tabs-scroll-arrow:hover{color:var(--primary-dark);}
 
-/* Su schermi larghi: tutte le tab in linea, dropdown nascosto */
-@media(min-width:1200px){
-  .tabs-dropdown-wrap{ display:none !important; }
-  .tabs-separator{ display:none !important; }
-  .tab-btn[data-tab="tab-contratti"],
-  .tab-btn[data-tab="tab-consulenti"],
-  .tab-btn[data-tab="tab-storica"],
-  .tab-btn[data-tab="tab-reportistica"],
-  .tab-btn[data-tab="tab-import"]{
-    display:inline-flex !important;
-  }
-}
-/* Su schermi stretti: tab extra nascoste, dropdown visibile */
-@media(max-width:1199px){
-  .tab-btn[data-tab="tab-contratti"],
-  .tab-btn[data-tab="tab-consulenti"],
-  .tab-btn[data-tab="tab-storica"],
-  .tab-btn[data-tab="tab-import"]{
-    display:none !important;
-  }
-  /* Reportistica rimane display:none controllato da JS — non tocchiamo */
-}
+/* Separatore — non più usato ma lo manteniamo neutro */
+.tabs-separator{ display:none; }
+
+/* Dropdown — rimosso, non più usato */
+.tabs-dropdown-wrap{ display:none; }
+.tabs-dropdown{ display:none; }
+.tabs-dropdown-sep{ display:none; }
 
 /* ══════════════════════════════════════════
    APP FOOTER
