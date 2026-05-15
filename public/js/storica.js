@@ -33,7 +33,7 @@ function buildStoricaUI() {
     +'<div class="home-hero" style="padding:20px 0 22px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px">'
     +'<div>'
     +'<p class="hero-sub" style="margin-bottom:8px">TESSERAMENTO · CNA ROMA</p>'
-    +'<h2 class="hero-title" style="font-size:clamp(28px,3.5vw,44px);margin-bottom:8px">Serie storica<br>Lo storico degli associati diretti di <span class="hero-accent">CNA Roma</span><br>dal 2000 ad oggi</h2>'
+    +'<h2 class="hero-title" style="font-size:clamp(28px,3.5vw,44px);margin-bottom:8px">Serie storica degli associati diretti di <span class="hero-accent">CNA Roma</span> dal 2000 ad oggi</h2>'
     +'</div>'
     +(isAdmin()?'<button onclick="storicaAggiornaDal2026()" style="padding:9px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">🔄 Ricalcola 2026</button>':'')
     +'</div>'
