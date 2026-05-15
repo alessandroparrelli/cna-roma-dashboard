@@ -95,19 +95,21 @@ function repSetStatus(show, msg) {
 // ══════════════════════════════════════════════════════════════════════════════
 // COSTRUZIONE PAGINE
 // ══════════════════════════════════════════════════════════════════════════════
-var REP_TOTAL_PAGES = 8; // copertina + 7 pagine dati
+var REP_TOTAL_PAGES = 10; // copertina + 9 pagine dati
 
 function repBuildAllPages(data, anno, mese, storicaData) {
   storicaData = storicaData || [];
   return [
-    repPag0_Copertina(anno, mese),           // Copertina
-    repPag1_Mensile(data, anno, mese),       // 1
-    repPag2_Annuale(data, anno, mese),       // 2
-    repPag3_RaffrontoMese(data, anno, mese), // 3
-    repPag4_RaffrontoYTD(data, anno, mese),  // 4
-    repPag5_SchedeA(data, anno, mese),       // 5
-    repPag6_SchedeB(data, anno, mese),       // 6
-    repPag8_SerieStoricaTabella(storicaData, anno, mese), // 7 — da serie_storica
+    repPag0_Copertina(anno, mese),                          // Copertina
+    repPag1_Mensile(data, anno, mese),                      // 1
+    repPag2_Annuale(data, anno, mese),                      // 2
+    repPag3_RaffrontoMese(data, anno, mese),                // 3
+    repPag4_RaffrontoYTD(data, anno, mese),                 // 4
+    repPag5_SchedeA(data, anno, mese),                      // 5
+    repPag6_SchedeB(data, anno, mese),                      // 6
+    repPag8_SerieStoricaTabella(storicaData, anno, mese),   // 7 — da serie_storica
+    repPagAteco(data, anno, mese, true),                    // 8 — Ateco mese
+    repPagAteco(data, anno, mese, false),                   // 9 — Ateco anno
   ];
 }
 
@@ -740,4 +742,96 @@ async function repGeneraPDF() {
     hideLoad();
     btn.disabled=false; btn.textContent='📄 Genera PDF';
   }
+}
+
+// ── PAGINE 8-9: ANALISI ATECO (mese e anno) ───────────────────────────────────
+function repPagAteco(data, anno, mese, soloMese) {
+  var nPag = soloMese ? '8' : '9';
+  var titolo = soloMese
+    ? 'Analisi Ateco · ' + MESI[mese] + ' ' + anno
+    : 'Analisi Ateco · Anno ' + anno;
+
+  var rec = data.filter(function(r) {
+    var a = parseInt(r.anno), m = parseInt(r.mese);
+    if (a !== anno) return false;
+    return soloMese ? m === mese : true;
+  });
+
+  var tot = rec.length;
+  if (!tot) {
+    return repPage(repHeader(titolo, anno, mese),
+      '<div style="padding:40px;text-align:center;color:#94a3b8;font-size:13px">Nessun dato Ateco per questo periodo</div>',
+      repFooter(nPag));
+  }
+
+  var byUnione = {}, byMestiere = {}, bySettore = {};
+  var donne = 0, stranieri = 0;
+  rec.forEach(function(r) {
+    var u = r.unione||'N/D', m2 = r.mestiere||'N/D', s = r.settore||'N/D';
+    var sx = String(r.sesso||'').trim(), naz = String(r.nazionalita||'').trim();
+    if (!byUnione[u]) byUnione[u]={tot:0,f:0,str:0};
+    byUnione[u].tot++; if(sx==='Femmina'){byUnione[u].f++;donne++;} if(naz==='Straniero'){byUnione[u].str++;stranieri++;}
+    if (!byMestiere[m2]) byMestiere[m2]={tot:0,f:0,str:0};
+    byMestiere[m2].tot++; if(sx==='Femmina')byMestiere[m2].f++; if(naz==='Straniero')byMestiere[m2].str++;
+    if (!bySettore[s]) bySettore[s]={tot:0,f:0,str:0};
+    bySettore[s].tot++; if(sx==='Femmina')bySettore[s].f++; if(naz==='Straniero')bySettore[s].str++;
+  });
+
+  function kpi(label, val, color) {
+    return '<div style="flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;border-top:3px solid '+color+';background:white">'
+      +'<div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">'+label+'</div>'
+      +'<div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:3px">'+val+'</div></div>';
+  }
+  var kpiHtml = '<div style="display:flex;gap:10px;margin-bottom:14px">'
+    +kpi('Imprese totali',tot.toLocaleString('it-IT'),'#3B82F6')
+    +kpi('Unioni',Object.keys(byUnione).length,'#0047AB')
+    +kpi('Mestieri',Object.keys(byMestiere).length,'#DC2626')
+    +kpi('Settori',Object.keys(bySettore).length,'#F59E0B')
+    +kpi('% Donne',tot>0?(donne/tot*100).toFixed(1)+'%':'0%','#EC4899')
+    +kpi('% Stranieri',tot>0?(stranieri/tot*100).toFixed(1)+'%':'0%','#8B5CF6')
+    +'</div>';
+
+  function atecoTbl(byKey, label, color) {
+    var sorted = Object.keys(byKey).sort(function(a,b){return byKey[b].tot-byKey[a].tot;});
+    var maxTot = byKey[sorted[0]] ? byKey[sorted[0]].tot : 1;
+    var rows = sorted.map(function(k,i){
+      var d=byKey[k];
+      var pct=tot>0?(d.tot/tot*100).toFixed(1):'0.0';
+      var pF=d.tot>0?(d.f/d.tot*100).toFixed(0):'0';
+      var pS=d.tot>0?(d.str/d.tot*100).toFixed(0):'0';
+      var bw=Math.max(3,Math.round(d.tot/maxTot*80));
+      var bg=i%2===0?'':'background:#f8fafc';
+      return '<tr style="border-bottom:1px solid #f1f5f9;'+bg+'">'
+        +'<td style="padding:4px 8px;font-size:10px;font-weight:600;color:#0f172a;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+k+'</td>'
+        +'<td style="padding:4px 8px;font-size:10px;font-weight:800;text-align:right">'+d.tot+'</td>'
+        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#6366f1">'+pct+'%</td>'
+        +'<td style="padding:4px 8px"><div style="width:'+bw+'px;height:4px;background:'+color+';border-radius:2px"></div></td>'
+        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#EC4899">'+pF+'%</td>'
+        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#8B5CF6">'+pS+'%</td>'
+        +'</tr>';
+    }).join('');
+    return '<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:white">'
+      +'<div style="background:'+color+';padding:7px 12px;display:flex;align-items:center;justify-content:space-between">'
+      +'<span style="font-size:11px;font-weight:700;color:white">'+label+'</span>'
+      +'<span style="background:rgba(255,255,255,0.2);color:white;font-size:10px;padding:1px 8px;border-radius:20px">'+sorted.length+' voci</span></div>'
+      +'<table style="width:100%;border-collapse:collapse">'
+      +'<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'
+      +'<th style="padding:5px 8px;text-align:left;font-size:9px;color:#64748b;text-transform:uppercase">'+label+'</th>'
+      +'<th style="padding:5px 8px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">Nr.</th>'
+      +'<th style="padding:5px 8px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">%</th>'
+      +'<th style="padding:5px 8px;font-size:9px;color:#64748b;text-transform:uppercase">Peso</th>'
+      +'<th style="padding:5px 8px;text-align:right;font-size:9px;color:#EC4899;text-transform:uppercase">% ♀</th>'
+      +'<th style="padding:5px 8px;text-align:right;font-size:9px;color:#8B5CF6;text-transform:uppercase">% Str.</th>'
+      +'</tr></thead>'
+      +'<tbody>'+rows+'</tbody></table></div>';
+  }
+
+  var body = kpiHtml
+    + '<div style="margin-bottom:12px">'+atecoTbl(byUnione,'Unione','#0047AB')+'</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
+    + atecoTbl(byMestiere,'Mestiere','#DC2626')
+    + atecoTbl(bySettore,'Settore','#F59E0B')
+    + '</div>';
+
+  return repPage(repHeader(titolo, anno, mese), body, repFooter(nPag));
 }
