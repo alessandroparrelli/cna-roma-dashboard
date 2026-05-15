@@ -746,6 +746,25 @@ async function repGeneraPDF() {
     if(!container) throw new Error('Anteprima non trovata. Clicca prima Carica Dati.');
     var pageDivs=container.querySelectorAll('[data-page]');
     if(!pageDivs.length) throw new Error('Nessuna pagina. Clicca prima Carica Dati.');
+
+    // Carica logo HD come PNG separato — verrà sovrapposto ad alta qualità
+    showLoad('Caricamento logo HD…');
+    var logoHD = await new Promise(function(resolve) {
+      var img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = function() {
+        var c = document.createElement('canvas');
+        // Renderizza il logo a 4× la dimensione target per massima nitidezza
+        c.width = img.naturalWidth * 2;
+        c.height = img.naturalHeight * 2;
+        var ctx = c.getContext('2d');
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        resolve(c.toDataURL('image/png'));
+      };
+      img.onerror = function() { resolve(null); };
+      img.src = LOGO_URL;
+    });
+
     for(var i=0;i<pageDivs.length;i++){
       showLoad('Rendering pagina '+(i+1)+' di '+pageDivs.length+'…');
       await new Promise(function(r){setTimeout(r,400);});
@@ -758,6 +777,22 @@ async function repGeneraPDF() {
       if(ih>PH){ih=PH;iw=ih*ratio;}
       var x=(PW-iw)/2, y=(PH-ih)/2;
       pdf.addImage(id,'JPEG',x,y,iw,ih);
+
+      // Sovrappone logo HD direttamente in PDF (nitido, senza compressione JPEG)
+      if (logoHD) {
+        var scale = iw / 1060; // fattore di scala canvas→PDF
+        if (i === 0) {
+          // Copertina: logo centrato, 240px wide nel canvas → ~mm
+          var logoW = 240 * scale;
+          var logoH = logoW * 0.45; // aspect ratio approssimativo logo CNA
+          pdf.addImage(logoHD, 'PNG', x + (iw - logoW)/2, y + PH*0.22, logoW, logoH);
+        } else {
+          // Header: logo a sinistra, padding 11px, alto ~42px nel canvas
+          var logoWh = 160 * scale;
+          var logoHh = logoWh * 0.45;
+          pdf.addImage(logoHD, 'PNG', x + 11*scale, y + 8*scale, logoWh, logoHh);
+        }
+      }
     }
     var fname='Report_CNA_Roma_'+MESI[mese]+'_'+anno+'.pdf';
     pdf.save(fname);
