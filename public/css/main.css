@@ -1565,8 +1565,70 @@ header .btn svg,
   display:inline-flex;align-items:center;justify-content:center;
   flex-shrink:0;transition:var(--transition);
 }
-.tab-btn.active .tab-icon{
-  filter:brightness(1.1);
+.tab-icon-solid{
+  width:24px;height:24px;border-radius:50%;
+  display:inline-flex;align-items:center;justify-content:center;
+  flex-shrink:0;transition:var(--transition);
+  box-shadow:0 1px 3px rgba(0,0,0,0.15);
+}
+.tab-btn:not(.active) .tab-icon-solid{
+  opacity:0.72;
+  box-shadow:none;
+}
+.tab-btn.active .tab-icon-solid{
+  opacity:1;
+  box-shadow:0 2px 6px rgba(0,0,0,0.18);
+  transform:scale(1.05);
+}
+.tab-btn:hover:not(.active) .tab-icon-solid{
+  opacity:0.9;
+}
+
+/* ── Separatore tra tab principali e dropdown ── */
+.tabs-separator{
+  width:1px;height:24px;background:var(--border);
+  align-self:center;margin:0 4px;flex-shrink:0;
+}
+
+/* ── Dropdown "Altro" ── */
+.tabs-dropdown-wrap{
+  position:relative;
+  display:flex;align-items:center;
+}
+.tabs-more-btn{
+  display:flex;align-items:center;gap:6px;
+}
+.tabs-dropdown{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:6px;
+  min-width:210px;
+  box-shadow:0 8px 24px rgba(0,0,0,0.10),0 2px 6px rgba(0,0,0,0.06);
+  z-index:200;
+}
+.tab-dropdown-item{
+  width:100%;
+  border-radius:8px;
+  justify-content:flex-start;
+  padding:9px 12px;
+  gap:10px;
+  font-size:13px;
+}
+.tab-dropdown-item:hover{
+  background:rgba(0,92,169,.06);
+  color:var(--primary);
+}
+.tab-dropdown-item.active{
+  background:rgba(0,92,169,.08);
+  color:var(--primary);
+  font-weight:700;
+  box-shadow:none;
+}
+.tabs-dropdown-sep{
+  height:1px;background:var(--border);
+  margin:4px 0;
 }
 
 /* ══════════════════════════════════════════

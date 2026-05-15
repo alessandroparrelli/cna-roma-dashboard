@@ -1113,3 +1113,63 @@ function homeCountUp(elId, finalVal, isCurrency){
     }
   }, interval);
 }
+
+// ── DROPDOWN "ALTRO" — tabs proposita B ──────────────────────────────────────
+function toggleTabsDropdown(e) {
+  if(e) e.stopPropagation();
+  var drop = G('tabs-dropdown');
+  var chevron = G('tabs-more-chevron');
+  var btn = G('tabs-more-btn');
+  if (!drop) return;
+  var isOpen = drop.style.display !== 'none';
+  drop.style.display = isOpen ? 'none' : 'block';
+  if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+  if (btn) btn.setAttribute('aria-expanded', String(!isOpen));
+}
+
+// Chiude dropdown al click esterno
+document.addEventListener('click', function(e) {
+  var wrap = G('tabs-dropdown-wrap');
+  var drop = G('tabs-dropdown');
+  if (!wrap || !drop) return;
+  if (!wrap.contains(e.target)) {
+    drop.style.display = 'none';
+    var chevron = G('tabs-more-chevron');
+    if (chevron) chevron.style.transform = '';
+    var btn = G('tabs-more-btn');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+});
+
+// Evidenzia il bottone "Altro" se la tab attiva è nel dropdown
+function syncTabsMoreBtn() {
+  var dropTabs = ['tab-contratti','tab-consulenti','tab-storica','tab-reportistica','tab-import'];
+  var active = document.querySelector('.tabs-bar .tab-btn.active');
+  var moreBtn = G('tabs-more-btn');
+  if (!moreBtn || !active) return;
+  var isInDrop = dropTabs.indexOf(active.getAttribute('data-tab')) !== -1;
+  if (isInDrop) {
+    moreBtn.classList.add('active');
+  } else {
+    moreBtn.classList.remove('active');
+  }
+  // Chiudi dropdown dopo selezione
+  var drop = G('tabs-dropdown');
+  if (drop) drop.style.display = 'none';
+  var chevron = G('tabs-more-chevron');
+  if (chevron) chevron.style.transform = '';
+}
+
+// Aggancia il sync al listener dei tab esistente
+(function() {
+  var origListener = null;
+  var checkInterval = setInterval(function() {
+    var bar = G('tabs-bar');
+    if (!bar) return;
+    bar.addEventListener('click', function(e) {
+      var btn = e.target.closest('.tab-btn[data-tab]');
+      if (btn) setTimeout(syncTabsMoreBtn, 50);
+    });
+    clearInterval(checkInterval);
+  }, 500);
+})();
