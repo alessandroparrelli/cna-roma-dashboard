@@ -1,18 +1,14 @@
-// ══════════════════════════════════════════════════════════════════════════════
-// STORICA.JS — Tab Serie Storica
-// Legge serie_storica da Supabase. Dal 2026/mese>=4 i valori sono
-// auto-calcolati dal count dei contratti (tabella TR = cnacontratti).
-// ══════════════════════════════════════════════════════════════════════════════
-console.log('✅ storica.js CARICATO');
+// storica.js — Tab Serie Storica
+console.log('storica.js CARICATO');
 
 var storicaLoaded = false;
 var storicaLoading = false;
+var storicaData = [];
+var storicaMeseSelezionato = 4; // default Aprile
 
-// Nomi mesi (indice 1-12, indice 7 = Lug/Ago)
-var STORICA_MESI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
+var STORICA_MESI_NOMI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno',
   'Luglio/Ago','','Settembre','Ottobre','Novembre','Dicembre'];
-
-// Anno/mese da cui i valori diventano auto-calcolati
+var MESI_ORD = [1,2,3,4,5,6,7,9,10,11,12];
 var STORICA_AUTO_DA_ANNO = 2026;
 var STORICA_AUTO_DA_MESE = 4;
 
@@ -25,16 +21,48 @@ function buildStoricaUI() {
   var tab = G('tab-storica');
   if (!tab) return;
 
-  tab.innerHTML = '<div style="max-width:1200px;margin:0 auto;padding:24px 20px 60px">'
-    + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">'
-    + '<div><h2 style="margin:0;font-size:22px;font-weight:800;color:var(--text)">📅 Serie Storica</h2>'
-    + '<p style="margin:4px 0 0;font-size:13px;color:var(--text-secondary)">Contratti per anno e mese — dal 2026/apr aggiornati automaticamente dai dati Supabase</p></div>'
-    + (isAdmin() ? '<button onclick="storicaAggiornaDal2026()" style="padding:9px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">🔄 Ricalcola 2026</button>' : '')
-    + '</div>'
-    + '<div id="storica-status" style="display:none;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">'
-    + '<span id="storica-status-text" style="font-size:13px;color:var(--text-secondary)">Caricamento…</span></div>'
-    + '<div id="storica-content"></div>'
-    + '</div>';
+  // Opzioni mesi per il selettore grafico
+  var mesiOpt = MESI_ORD.map(function(m) {
+    return '<option value="'+m+'"'+(m===storicaMeseSelezionato?' selected':'')+'>'+STORICA_MESI_NOMI[m]+'</option>';
+  }).join('');
+
+  tab.innerHTML =
+    '<div style="max-width:1300px;margin:0 auto;padding:24px 20px 60px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">'
+    +'<div><h2 style="margin:0;font-size:22px;font-weight:800;color:var(--text)">📅 Serie Storica</h2>'
+    +'<p style="margin:4px 0 0;font-size:13px;color:var(--text-secondary)">Contratti per anno e mese · dal Apr 2026 aggiornati automaticamente da Supabase</p></div>'
+    +(isAdmin()?'<button onclick="storicaAggiornaDal2026()" style="padding:9px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">🔄 Ricalcola 2026</button>':'')
+    +'</div>'
+    +'<div id="storica-status" style="display:none;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">'
+    +'<span id="storica-status-text" style="font-size:13px;color:var(--text-secondary)">Caricamento…</span></div>'
+    // KPI
+    +'<div id="storica-kpi" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px"></div>'
+    // TABELLA
+    +'<div id="storica-table-wrap" style="border:1px solid #e2e8f0;border-radius:12px;background:white;box-shadow:var(--shadow-sm);margin-bottom:24px;overflow:hidden">'
+    +'<div style="overflow-x:auto;overflow-y:auto;max-height:480px;">'
+    +'<table id="storica-table" style="border-collapse:collapse;white-space:nowrap"></table>'
+    +'</div>'
+    +'<div style="padding:10px 16px;border-top:1px solid #f1f5f9;display:flex;align-items:center;gap:16px">'
+    +'<div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#10B981"></div><span style="font-size:11px;color:#64748b">Auto-calcolato da Supabase</span></div>'
+    +'<div style="display:flex;align-items:center;gap:5px"><div style="width:40px;height:8px;border-radius:2px;background:linear-gradient(to right,#f0f5ff,#005CA9)"></div><span style="font-size:11px;color:#64748b">Intensità</span></div>'
+    +'</div></div>'
+    // DUE GRAFICI
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'
+    // Grafico 1: totale annuale
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow-sm)">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">📊 Totale annuale</div>'
+    +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:14px">Contratti totali per ogni anno</div>'
+    +'<canvas id="storica-chart-anni" height="220"></canvas></div>'
+    // Grafico 2: mese selezionato
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow-sm)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--text)">📈 Andamento mensile</div>'
+    +'<select id="storica-sel-mese" onchange="storicaCambiaMese(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:12px;font-weight:600">'+mesiOpt+'</select>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:14px">Andamento dal 2000 per il mese selezionato</div>'
+    +'<canvas id="storica-chart-mese" height="220"></canvas></div>'
+    +'</div>'
+    +'</div>';
 
   storicaLoad();
 }
@@ -46,272 +74,267 @@ function storicaSetStatus(show, msg) {
   if (msg && G('storica-status-text')) G('storica-status-text').textContent = msg;
 }
 
-// ── CARICA DATI ───────────────────────────────────────────────────────────────
+// ── CARICA ────────────────────────────────────────────────────────────────────
 async function storicaLoad() {
   if (storicaLoading) return;
   storicaLoading = true;
   storicaSetStatus(true, 'Caricamento serie storica…');
-
   try {
-    // Carica tutti i record della serie storica tramite fetch diretto
     var data = await sbGetAll('serie_storica');
-
-    // Ordina per anno poi mese
     data.sort(function(a,b){ return a.anno!==b.anno ? a.anno-b.anno : a.mese-b.mese; });
-
-    storicaRender(data || []);
+    storicaData = data;
+    storicaRender(data);
     storicaSetStatus(false);
     storicaLoaded = true;
-
   } catch(e) {
     console.error('storicaLoad error:', e);
     storicaSetStatus(false);
-    var ct = G('storica-content');
-    if (ct) ct.innerHTML = '<div style="padding:40px;text-align:center;color:#EF4444">Errore caricamento: ' + e.message + '</div>';
+    var ct = G('storica-table-wrap');
+    if (ct) ct.innerHTML = '<div style="padding:40px;text-align:center;color:#EF4444">Errore: '+e.message+'</div>';
   } finally {
     storicaLoading = false;
   }
 }
 
-// ── RENDER TABELLA ────────────────────────────────────────────────────────────
+// ── RENDER ────────────────────────────────────────────────────────────────────
 function storicaRender(data) {
-  var ct = G('storica-content');
-  if (!ct) return;
-
-  // Costruisce matrice: matrix[mese][anno] = valore
-  var anni = [];
-  var matrix = {};
+  // Costruisce matrice
   var anniSet = {};
-
+  var matrix = {};
   data.forEach(function(r) {
     anniSet[r.anno] = 1;
     if (!matrix[r.mese]) matrix[r.mese] = {};
     matrix[r.mese][r.anno] = { v: r.valore, auto: r.auto_calcolato };
   });
+  var anni = Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
 
-  anni = Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
-
-  // Mostra solo gli ultimi anni (ultimi 10 + scorri orizzontalmente)
-  var anniVis = anni;
-
-  // Mesi ordinati (indice 7 = luglio/ago, manca 8)
-  var mesiOrd = [1,2,3,4,5,6,7,9,10,11,12];
-
-  // Calcola totali per anno
+  // Totale per anno (somma tutti i mesi)
   var totAnno = {};
   anni.forEach(function(a) {
-    totAnno[a] = mesiOrd.reduce(function(s,m) {
-      return s + (matrix[m] && matrix[m][a] ? (matrix[m][a].v || 0) : 0);
+    totAnno[a] = MESI_ORD.reduce(function(s,m){
+      return s + (matrix[m]&&matrix[m][a] ? matrix[m][a].v||0 : 0);
     }, 0);
   });
 
-  // Colore heat-map per cella
-  function cellBg(v, mese) {
-    if (v === null || v === undefined) return '';
-    // Per mese corrente o futuri senza dati
-    var allVals = anni.map(function(a){ return matrix[mese]&&matrix[mese][a]?matrix[mese][a].v:null; }).filter(function(x){return x!==null;});
-    if (!allVals.length) return '';
-    var maxV = Math.max.apply(null, allVals);
-    var minV = Math.min.apply(null, allVals);
-    if (maxV === minV) return '';
-    var pct = (v - minV) / (maxV - minV);
-    // Da bianco a blu CNA
-    var r = Math.round(255 - pct * (255 - 0));
-    var g = Math.round(255 - pct * (255 - 92));
-    var b = Math.round(255 - pct * (255 - 169));
-    var textColor = pct > 0.55 ? 'white' : '#0f172a';
-    return 'background:rgb('+r+','+g+','+b+');color:'+textColor+';';
+  var annoCorrente = new Date().getFullYear();
+
+  // ── KPI ──
+  var totCorr = totAnno[annoCorrente] || 0;
+  var totPrecAnno = totAnno[annoCorrente-1] || 0;
+  var delta = totPrecAnno>0 ? (totCorr-totPrecAnno)/totPrecAnno*100 : null;
+  var dHtml = delta!==null ? '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(delta>=0?'#10B981':'#EF4444')+';color:white">'+(delta>=0?'▲':'▼')+' '+Math.abs(delta).toFixed(1)+'%</span>' : '';
+  var maxAnno = anni.reduce(function(mx,a){return totAnno[a]>totAnno[mx]?a:mx;},anni[0]);
+  var minAnno = anni.reduce(function(mn,a){return totAnno[a]<totAnno[mn]?a:mn;},anni[0]);
+
+  var kpiEl = G('storica-kpi');
+  if (kpiEl) kpiEl.innerHTML =
+    storicaKPI('Totale '+annoCorrente, totCorr, 'Contratti YTD', '#3B82F6', dHtml)
+    +storicaKPI('Anno record', maxAnno+' · '+totAnno[maxAnno], 'Contratti totali', '#10B981', '')
+    +storicaKPI('Anno minore', minAnno+' · '+totAnno[minAnno], 'Contratti totali', '#F59E0B', '')
+    +storicaKPI('Anni tracciati', anni.length, anni[0]+' → '+anni[anni.length-1], '#8B5CF6', '');
+
+  // ── HEAT-MAP COLORE ──
+  function cellBg(v, m) {
+    if (v===null||v===undefined) return '';
+    var vals = anni.map(function(a){return matrix[m]&&matrix[m][a]?matrix[m][a].v:null;}).filter(function(x){return x!==null;});
+    if (!vals.length) return '';
+    var mx = Math.max.apply(null,vals), mn = Math.min.apply(null,vals);
+    if (mx===mn) return '';
+    var pct = (v-mn)/(mx-mn);
+    var r = Math.round(255-pct*(255-0));
+    var g = Math.round(255-pct*(255-92));
+    var b = Math.round(255-pct*(255-169));
+    return 'background:rgb('+r+','+g+','+b+');color:'+(pct>0.55?'white':'#0f172a')+';';
   }
 
-  // ── KPI strip ──
-  var annoCorrente = new Date().getFullYear();
-  var recAnnoCorr = data.filter(function(r){return r.anno===annoCorrente;});
-  var totCorr = recAnnoCorr.reduce(function(s,r){return s+(r.valore||0);},0);
-  var recPrecCorr = data.filter(function(r){return r.anno===annoCorrente-1;});
-  var totPrec = recPrecCorr.reduce(function(r,d){return r+(d.valore||0);},0);
-  var delta = totPrec>0?(totCorr-totPrec)/totPrec*100:null;
-  var deltaHtml = delta!==null ? '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(delta>=0?'#10B981':'#EF4444')+';color:white">'+(delta>=0?'▲':'▼')+' '+Math.abs(delta).toFixed(1)+'%</span>' : '';
-
-  var maxAnno = anni.reduce(function(mx,a){return totAnno[a]>totAnno[mx]?a:mx;}, anni[0]);
-  var minAnno = anni.reduce(function(mn,a){return totAnno[a]<totAnno[mn]?a:mn;}, anni[0]);
-
-  var kpiHtml = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px">'
-    + storicaKPI('Totale '+annoCorrente, totCorr, 'Contratti YTD', '#3B82F6', deltaHtml)
-    + storicaKPI('Anno migliore', maxAnno+' ('+totAnno[maxAnno]+')', 'Contratti totali', '#10B981', '')
-    + storicaKPI('Anno minore', minAnno+' ('+totAnno[minAnno]+')', 'Contratti totali', '#F59E0B', '')
-    + storicaKPI('Anni tracciati', anni.length, 'Dal '+anni[0]+' al '+anni[anni.length-1], '#8B5CF6', '')
-    + '</div>';
-
   // ── TABELLA ──
-  // Header anni
-  var thAnni = '<th style="'+thStyle()+';position:sticky;left:0;z-index:2;background:#1e293b;min-width:110px">Mese</th>';
-  anniVis.forEach(function(a) {
-    var isNow = a === annoCorrente;
-    thAnni += '<th style="'+thStyle()+(isNow?';background:#005CA9;':'')+'min-width:60px;text-align:center">' + a + '</th>';
+  var th = '<thead><tr style="background:#1e293b;position:sticky;top:0;z-index:3">'
+    +'<th style="'+thSt()+';position:sticky;left:0;z-index:4;background:#1e293b;min-width:110px;border-right:2px solid #334155">Mese</th>';
+  anni.forEach(function(a) {
+    var isNow = a===annoCorrente;
+    th += '<th style="'+thSt()+';min-width:55px;text-align:center'+(isNow?';background:#005CA9':'')+'">' + a + '</th>';
   });
-  thAnni += '<th style="'+thStyle()+';text-align:center;min-width:70px">Totale</th>';
+  th += '</tr></thead>';
 
-  var rows = mesiOrd.map(function(m) {
-    var nomeMese = STORICA_MESI[m];
-    var isLugAgo = m === 7;
-
-    var tds = '<td style="padding:7px 12px;font-size:12px;font-weight:700;color:#0f172a;position:sticky;left:0;background:white;border-right:2px solid #e2e8f0;white-space:nowrap;z-index:1">' + nomeMese + '</td>';
-    var totMese = 0;
-
-    anniVis.forEach(function(a) {
-      var cell = matrix[m] && matrix[m][a] ? matrix[m][a] : null;
-      var v = cell ? cell.v : null;
-      var isAuto = cell && cell.auto;
-      // Cella futura (anno>=2026 mese>=auto_da e nessun valore)
-      var isFuture = (a > STORICA_AUTO_DA_ANNO || (a === STORICA_AUTO_DA_ANNO && m > STORICA_AUTO_DA_MESE)) && v === null;
-
-      if (v !== null) totMese += v;
-
-      var bg = (v !== null) ? cellBg(v, m) : '';
-      var cellContent = v !== null ? v : (isFuture ? '<span style="color:#cbd5e1">–</span>' : '<span style="color:#cbd5e1">–</span>');
-      var autoDot = isAuto ? '<span title="Auto-calcolato" style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#10B981;margin-left:3px;vertical-align:middle"></span>' : '';
-
-      tds += '<td style="padding:6px 8px;font-size:12px;text-align:center;border-bottom:1px solid #f1f5f9;'+bg+'">' + cellContent + autoDot + '</td>';
+  var tbody = '<tbody>';
+  MESI_ORD.forEach(function(m) {
+    var rowBg = m%2===0?'background:#fafafa':'';
+    var tds = '<td style="padding:7px 12px;font-size:12px;font-weight:700;color:#0f172a;position:sticky;left:0;border-right:2px solid #e2e8f0;white-space:nowrap;z-index:1;'+(m%2===0?'background:#fafafa':'background:white')+'">'+STORICA_MESI_NOMI[m]+'</td>';
+    anni.forEach(function(a) {
+      var cell = matrix[m]&&matrix[m][a]?matrix[m][a]:null;
+      var v = cell?cell.v:null;
+      var isAuto = cell&&cell.auto;
+      var bg = v!==null ? cellBg(v,m) : '';
+      var dot = isAuto?'<span title="Auto" style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#10B981;margin-left:3px;vertical-align:middle"></span>':'';
+      tds += '<td style="padding:5px 8px;font-size:12px;text-align:center;border-bottom:1px solid #f1f5f9;'+bg+'">'+(v!==null?v+''+dot:'<span style="color:#cbd5e1">–</span>')+'</td>';
     });
-
-    // Totale riga
-    tds += '<td style="padding:6px 10px;font-size:12px;font-weight:700;text-align:center;background:#f8fafc;color:#0f172a;border-left:2px solid #e2e8f0">' + (totMese || '–') + '</td>';
-
-    var rowBg = m % 2 === 0 ? 'background:#fafafa' : '';
-    return '<tr style="border-bottom:1px solid #f1f5f9;'+rowBg+'">' + tds + '</tr>';
-  }).join('');
-
-  // Riga totale
-  var totRow = '<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700">'
-    + '<td style="padding:7px 12px;font-size:12px;font-weight:700;position:sticky;left:0;background:#f8fafc;border-right:2px solid #e2e8f0;z-index:1">Totale</td>';
-  var grandTot = 0;
-  anniVis.forEach(function(a) {
-    var t = totAnno[a] || 0;
-    grandTot += t;
-    var isNow = a === annoCorrente;
-    totRow += '<td style="padding:7px 8px;font-size:12px;font-weight:700;text-align:center;'+(isNow?'color:#005CA9':'color:#475569')+'">' + (t||'–') + '</td>';
+    tbody += '<tr style="border-bottom:1px solid #f1f5f9;'+rowBg+'">'+tds+'</tr>';
   });
-  totRow += '<td style="padding:7px 10px;font-size:12px;font-weight:800;text-align:center;color:#005CA9;border-left:2px solid #e2e8f0">' + grandTot + '</td>';
-  totRow += '</tr>';
 
-  var tableHtml = '<div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;background:white;box-shadow:var(--shadow-sm)">'
-    + '<div style="overflow-x:auto">'
-    + '<table style="width:100%;border-collapse:collapse;min-width:900px">'
-    + '<thead><tr style="background:#1e293b">' + thAnni + '</tr></thead>'
-    + '<tbody>' + rows + totRow + '</tbody>'
-    + '</table></div>'
-    + '<div style="padding:10px 16px;border-top:1px solid #f1f5f9;display:flex;align-items:center;gap:16px">'
-    + '<div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#10B981"></div><span style="font-size:11px;color:#64748b">Auto-calcolato da Supabase (dal Apr 2026)</span></div>'
-    + '<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:8px;border-radius:2px;background:linear-gradient(to right,#f0f5ff,#005CA9)"></div><span style="font-size:11px;color:#64748b">Intensità del valore</span></div>'
-    + '</div></div>';
+  // Riga Totale
+  tbody += '<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;position:sticky;bottom:0;z-index:2">'
+    +'<td style="padding:7px 12px;font-size:12px;font-weight:700;position:sticky;left:0;background:#f8fafc;border-right:2px solid #e2e8f0;z-index:3">Totale</td>';
+  anni.forEach(function(a) {
+    var t = totAnno[a]||0;
+    var isNow = a===annoCorrente;
+    tbody += '<td style="padding:7px 8px;font-size:12px;font-weight:700;text-align:center;'+(isNow?'color:#005CA9':'color:#475569')+'">'+( t||'–')+'</td>';
+  });
+  tbody += '</tr></tbody>';
 
-  // ── GRAFICO TREND ──
-  var chartHtml = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-top:20px;box-shadow:var(--shadow-sm)">'
-    + '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">📈 Trend totale annuale</div>'
-    + '<canvas id="storica-chart-trend" height="100"></canvas></div>';
+  var tbl = G('storica-table');
+  if (tbl) tbl.innerHTML = th + tbody;
 
-  ct.innerHTML = kpiHtml + tableHtml + chartHtml;
-
-  // Renderizza grafico
-  setTimeout(function() {
-    var el = G('storica-chart-trend');
-    if (!el) return;
-    var ck = 'storicaTrend';
-    if (charts[ck]) { charts[ck].destroy(); delete charts[ck]; }
-    charts[ck] = new Chart(el.getContext('2d'), {
-      type: 'line',
-      data: {
-        labels: anniVis.map(String),
-        datasets: [{
-          label: 'Totale contratti',
-          data: anniVis.map(function(a){ return totAnno[a]||0; }),
-          borderColor: '#005CA9',
-          backgroundColor: 'rgba(0,92,169,0.07)',
-          tension: 0.4, fill: true,
-          pointBackgroundColor: anniVis.map(function(a){ return a===annoCorrente?'#EF4444':'#005CA9'; }),
-          pointRadius: anniVis.map(function(a){ return a===annoCorrente?6:4; }),
-          pointBorderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true, maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: { callbacks: { label: function(c){ return ' '+c.raw+' contratti'; } } }
-        },
-        scales: {
-          x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-          y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } }
-        }
-      }
-    });
-  }, 100);
+  // ── GRAFICI ──
+  setTimeout(function(){ storicaRenderGrafici(anni, totAnno, matrix, annoCorrente); }, 120);
 }
 
+// ── GRAFICI GRADIENT ─────────────────────────────────────────────────────────
+function storicaRenderGrafici(anni, totAnno, matrix, annoCorrente) {
+  storicaRenderAnni(anni, totAnno, annoCorrente);
+  storicaRenderMese(anni, matrix);
+}
+
+function storicaGradient(ctx, colorStart, colorEnd) {
+  var h = ctx.canvas.height;
+  var grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, colorStart);
+  grad.addColorStop(1, colorEnd);
+  return grad;
+}
+
+function storicaRenderAnni(anni, totAnno, annoCorrente) {
+  var el = G('storica-chart-anni');
+  if (!el) return;
+  var ck = 'storicaAnni';
+  if (charts[ck]) { charts[ck].destroy(); delete charts[ck]; }
+  var ctx = el.getContext('2d');
+  var grad = storicaGradient(ctx, 'rgba(0,92,169,0.85)', 'rgba(0,92,169,0.05)');
+  charts[ck] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: anni.map(String),
+      datasets: [{
+        label: 'Contratti totali',
+        data: anni.map(function(a){ return totAnno[a]||0; }),
+        backgroundColor: anni.map(function(a){
+          return a===annoCorrente ? 'rgba(239,68,68,0.85)' : grad;
+        }),
+        borderRadius: 5,
+        borderSkipped: false
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(c){ return ' '+c.raw+' contratti'; } } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function storicaRenderMese(anni, matrix) {
+  var m = storicaMeseSelezionato;
+  var el = G('storica-chart-mese');
+  if (!el) return;
+  var ck = 'storicaMese';
+  if (charts[ck]) { charts[ck].destroy(); delete charts[ck]; }
+  var ctx = el.getContext('2d');
+  var vals = anni.map(function(a){ return matrix[m]&&matrix[m][a]?matrix[m][a].v:null; });
+  var grad = storicaGradient(ctx, 'rgba(139,92,246,0.7)', 'rgba(139,92,246,0.03)');
+  charts[ck] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: anni.map(String),
+      datasets: [{
+        label: STORICA_MESI_NOMI[m],
+        data: vals,
+        borderColor: '#7C3AED',
+        backgroundColor: grad,
+        tension: 0.4,
+        fill: true,
+        pointBackgroundColor: anni.map(function(a){ return a===new Date().getFullYear()?'#EF4444':'#7C3AED'; }),
+        pointRadius: anni.map(function(a){ return a===new Date().getFullYear()?6:4; }),
+        pointBorderWidth: 0,
+        spanGaps: true
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: function(c){ return ' '+c.raw+' contratti'; } } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
+        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } }
+      }
+    }
+  });
+}
+
+function storicaCambiaMese(val) {
+  storicaMeseSelezionato = parseInt(val);
+  // Ricostruisce matrice dalla cache
+  var matrix = {};
+  storicaData.forEach(function(r){
+    if(!matrix[r.mese]) matrix[r.mese]={};
+    matrix[r.mese][r.anno]={v:r.valore,auto:r.auto_calcolato};
+  });
+  var anniSet={};
+  storicaData.forEach(function(r){anniSet[r.anno]=1;});
+  var anni=Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
+  storicaRenderMese(anni, matrix);
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
 function storicaKPI(label, value, sub, color, extraHtml) {
   return '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-top:3px solid '+color+';background:var(--surface)">'
-    + '<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">'+label+'</div>'
-    + '<div style="font-size:22px;font-weight:800;color:var(--text);line-height:1">'+value+'</div>'
-    + '<div style="font-size:10px;color:#94a3b8;margin-top:3px">'+sub+'</div>'
-    + (extraHtml ? '<div style="margin-top:6px">'+extraHtml+'</div>' : '')
-    + '</div>';
+    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">'+label+'</div>'
+    +'<div style="font-size:20px;font-weight:800;color:var(--text);line-height:1">'+value+'</div>'
+    +'<div style="font-size:10px;color:#94a3b8;margin-top:3px">'+sub+'</div>'
+    +(extraHtml?'<div style="margin-top:6px">'+extraHtml+'</div>':'')
+    +'</div>';
 }
 
-function thStyle() {
+function thSt() {
   return 'padding:9px 8px;font-size:11px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:0.3px;white-space:nowrap';
 }
 
-// ── RICALCOLA 2026 (solo admin) ───────────────────────────────────────────────
+// ── RICALCOLA 2026 ────────────────────────────────────────────────────────────
 async function storicaAggiornaDal2026() {
   if (!isAdmin()) return;
   storicaSetStatus(true, 'Lettura contratti 2026 da Supabase…');
-
   try {
-    // Conta contratti per anno/mese dalla tabella contratti (TR)
     var allContratti = await sbGetAll(TR);
-
-    // Filtra solo 2026, mese >= 4
     var countMap = {};
     allContratti.forEach(function(r) {
-      var a = parseInt(r.anno);
-      var m = parseInt(r.mese);
-      if (a < STORICA_AUTO_DA_ANNO) return;
-      if (a === STORICA_AUTO_DA_ANNO && m < STORICA_AUTO_DA_MESE) return;
-      var key = a + '_' + m;
-      countMap[key] = (countMap[key] || 0) + 1;
+      var a=parseInt(r.anno), m=parseInt(r.mese);
+      if(a<STORICA_AUTO_DA_ANNO) return;
+      if(a===STORICA_AUTO_DA_ANNO&&m<STORICA_AUTO_DA_MESE) return;
+      var key=a+'_'+m;
+      countMap[key]=(countMap[key]||0)+1;
     });
-
     storicaSetStatus(true, 'Aggiornamento serie storica…');
-
-    // Upsert per ogni combinazione trovata
-    var upserts = Object.keys(countMap).map(function(key) {
-      var parts = key.split('_');
-      return { anno: parseInt(parts[0]), mese: parseInt(parts[1]), valore: countMap[key], auto_calcolato: true };
+    var upserts = Object.keys(countMap).map(function(key){
+      var p=key.split('_');
+      return {anno:parseInt(p[0]),mese:parseInt(p[1]),valore:countMap[key],auto_calcolato:true};
     });
-
-    if (upserts.length === 0) {
-      storicaSetStatus(false);
-      toast('Nessun contratto 2026 (mese ≥ Aprile) trovato', 'info');
-      return;
-    }
-
-    // Upsert tramite POST con Prefer: resolution=merge-duplicates
-    await sbPost(
-      'serie_storica',
-      upserts,
-      { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
-    );
-
+    if (!upserts.length) { storicaSetStatus(false); toast('Nessun contratto 2026 trovato','info'); return; }
+    await sbPost('serie_storica', upserts, {'Prefer':'resolution=merge-duplicates,return=minimal'});
     storicaSetStatus(false);
-    toast('✓ Aggiornati ' + upserts.length + ' mesi per il 2026', 'success');
-
-    // Ricarica
+    toast('✓ Aggiornati '+upserts.length+' mesi per il 2026','success');
     storicaLoaded = false;
     await storicaLoad();
-
   } catch(e) {
     console.error(e);
     storicaSetStatus(false);
-    toast('Errore aggiornamento: ' + e.message, 'error');
+    toast('Errore: '+e.message,'error');
   }
 }
