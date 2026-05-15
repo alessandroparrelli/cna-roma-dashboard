@@ -60,10 +60,12 @@ async function repCaricaEAnteprima() {
   G('rep-anteprima').style.display = 'none';
   try {
     repAllData = await sbGetAll(TR);
+    repSetStatus(true, 'Caricamento serie storica…');
+    var repStoricaData = await sbGetAll('serie_storica');
     repSetStatus(true, 'Elaborazione e rendering…');
     G('rep-periodo-label').textContent = MESI[mese] + ' ' + anno;
     G('rep-pages-container').innerHTML = '';
-    var pages = repBuildAllPages(repAllData, anno, mese);
+    var pages = repBuildAllPages(repAllData, anno, mese, repStoricaData);
     pages.forEach(function(pageHtml, i) {
       var wrapper = document.createElement('div');
       wrapper.style.cssText = 'margin-bottom:28px;box-shadow:0 4px 24px rgba(0,0,0,0.13);border-radius:4px;overflow:hidden;background:white';
@@ -93,9 +95,10 @@ function repSetStatus(show, msg) {
 // ══════════════════════════════════════════════════════════════════════════════
 // COSTRUZIONE PAGINE
 // ══════════════════════════════════════════════════════════════════════════════
-var REP_TOTAL_PAGES = 8; // copertina + 7 pagine dati
+var REP_TOTAL_PAGES = 9; // copertina + 8 pagine dati
 
-function repBuildAllPages(data, anno, mese) {
+function repBuildAllPages(data, anno, mese, storicaData) {
+  storicaData = storicaData || [];
   return [
     repPag0_Copertina(anno, mese),           // Copertina
     repPag1_Mensile(data, anno, mese),       // 1
@@ -105,6 +108,7 @@ function repBuildAllPages(data, anno, mese) {
     repPag5_SchedeA(data, anno, mese),       // 5
     repPag6_SchedeB(data, anno, mese),       // 6
     repPag7_SerieStorica(data, anno, mese),  // 7
+    repPag8_SerieStoricaTabella(storicaData, anno, mese), // 8
   ];
 }
 
@@ -562,6 +566,126 @@ function repPag7_SerieStorica(data, anno, mese) {
     +'<table style="width:100%;border-collapse:collapse"><thead>'+th+'</thead><tbody>'+rows+totRow+'</tbody></table></div>';
 
   return repPage(repHeader('Serie storica',anno,mese),body,repFooter('7'));
+}
+
+// ── PAGINA 8: SERIE STORICA DA TABELLA serie_storica (ultimi 10 anni) ─────────
+function repPag8_SerieStoricaTabella(storicaData, anno, mese) {
+  var MESI_ORD = [1,2,3,4,5,6,7,9,10,11,12];
+  var MESI_NOMI = {1:'Gennaio',2:'Febbraio',3:'Marzo',4:'Aprile',5:'Maggio',6:'Giugno',
+    7:'Luglio/Ago',9:'Settembre',10:'Ottobre',11:'Novembre',12:'Dicembre'};
+
+  // Costruisce matrice da serie_storica
+  var mat = {};
+  var anniSet = {};
+  storicaData.forEach(function(r) {
+    var a = parseInt(r.anno), m = parseInt(r.mese);
+    if (!a || !m) return;
+    anniSet[a] = 1;
+    if (!mat[m]) mat[m] = {};
+    mat[m][a] = r.valore || 0;
+  });
+
+  // Prende solo gli ultimi 10 anni disponibili
+  var tuttiAnni = Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
+  var anni = tuttiAnni.slice(-10);
+
+  if (!anni.length) {
+    return repPage(repHeader('Serie storica', anno, mese),
+      '<div style="padding:40px;text-align:center;color:#94a3b8">Dati serie storica non disponibili</div>',
+      repFooter('8'));
+  }
+
+  var la = anni[anni.length-1];
+  var pa = anni[anni.length-2];
+  var ppa = anni[anni.length-3];
+
+  // ── HEADER TABELLA ──
+  var colW = Math.floor(900 / (anni.length + 3)); // larghezza colonna dinamica
+
+  var th = '<tr style="background:#1e293b">'
+    + '<th style="padding:8px 12px;text-align:left;font-size:10px;font-weight:700;color:white;text-transform:uppercase;letter-spacing:0.4px;min-width:90px">Mese</th>';
+  anni.forEach(function(a) {
+    var isLa = a === la;
+    th += '<th style="padding:8px 6px;text-align:right;font-size:10px;font-weight:700;color:white;text-transform:uppercase;'
+      + (isLa ? 'background:#005CA9;' : '') + 'min-width:'+colW+'px">' + a + '</th>';
+  });
+  th += '<th style="padding:8px 6px;text-align:right;font-size:10px;font-weight:700;color:#FCA5A5;text-transform:uppercase;min-width:50px">su '+pa+'</th>';
+  th += '<th style="padding:8px 6px;text-align:right;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;min-width:50px">su '+ppa+'</th>';
+  th += '</tr>';
+
+  // ── RIGHE MESI ──
+  // Heat-map: calcola min/max per riga
+  function cellStyle(v, m) {
+    var vals = anni.map(function(a){ return mat[m]&&mat[m][a]?mat[m][a]:0; }).filter(function(x){return x>0;});
+    if (!vals.length || v === 0) return '';
+    var mx = Math.max.apply(null,vals), mn = Math.min.apply(null,vals);
+    if (mx === mn) return '';
+    var pct = (v-mn)/(mx-mn);
+    var r = Math.round(255-pct*(255-0));
+    var g = Math.round(255-pct*(255-92));
+    var b = Math.round(255-pct*(255-169));
+    var txtCol = pct > 0.55 ? 'white' : '#0f172a';
+    return 'background:rgb('+r+','+g+','+b+');color:'+txtCol+';';
+  }
+
+  var rows = '';
+  MESI_ORD.forEach(function(m) {
+    var row = mat[m] || {};
+    var lv = row[la]||0, pv = pa?(row[pa]||0):0, ppv = ppa?(row[ppa]||0):0;
+    var d1 = lv-pv, d2 = lv-ppv;
+    var c1 = d1>0?'#10B981':d1<0?'#EF4444':'#64748b';
+    var c2 = d2>0?'#10B981':d2<0?'#EF4444':'#64748b';
+    var rowBg = (MESI_ORD.indexOf(m)%2===0)?'background:#f8fafc':'';
+
+    rows += '<tr style="border-bottom:1px solid #f1f5f9;'+rowBg+'">'
+      + '<td style="padding:6px 12px;font-size:11px;font-weight:700;color:#0f172a;white-space:nowrap">'+MESI_NOMI[m]+'</td>';
+    anni.forEach(function(a) {
+      var v = row[a]||0;
+      var isLa = a === la;
+      var hs = cellStyle(v, m);
+      rows += '<td style="padding:6px 6px;font-size:11px;text-align:right;'
+        + (hs || (isLa?'font-weight:700;color:#005CA9':'color:#475569')) + '">'
+        + (v || '–') + '</td>';
+    });
+    rows += '<td style="padding:6px 6px;font-size:11px;text-align:right;font-weight:700;color:'+c1+'">'+(d1!==0?(d1>0?'+':'')+d1:'–')+'</td>';
+    rows += '<td style="padding:6px 6px;font-size:11px;text-align:right;color:'+c2+'">'+(d2!==0?(d2>0?'+':'')+d2:'–')+'</td></tr>';
+  });
+
+  // ── TOTALE ──
+  var anniTot = {};
+  anni.forEach(function(a){
+    anniTot[a] = MESI_ORD.reduce(function(s,m){ return s+(mat[m]&&mat[m][a]?mat[m][a]:0); }, 0);
+  });
+  var td1 = anniTot[la]-(anniTot[pa]||0), td2 = anniTot[la]-(anniTot[ppa]||0);
+  var totRow = '<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700">'
+    + '<td style="padding:7px 12px;font-size:11px;font-weight:800;color:#0f172a">Totale</td>';
+  anni.forEach(function(a){
+    var isLa = a===la;
+    totRow += '<td style="padding:7px 6px;font-size:11px;font-weight:800;text-align:right;'+(isLa?'color:#005CA9':'color:#475569')+'">'+anniTot[a]+'</td>';
+  });
+  totRow += '<td style="padding:7px 6px;font-size:11px;font-weight:800;text-align:right;color:'+(td1>0?'#10B981':'#EF4444')+'">'+(td1>0?'+':'')+td1+'</td>';
+  totRow += '<td style="padding:7px 6px;font-size:11px;font-weight:700;text-align:right;color:'+(td2>0?'#10B981':'#EF4444')+'">'+(td2>0?'+':'')+td2+'</td></tr>';
+
+  // ── LEGENDA ──
+  var legenda = '<div style="display:flex;align-items:center;gap:20px;padding:10px 14px;border-top:1px solid #f1f5f9">'
+    + '<div style="display:flex;align-items:center;gap:6px">'
+    + '<div style="width:36px;height:8px;border-radius:3px;background:linear-gradient(to right,#e0ecfb,#005CA9)"></div>'
+    + '<span style="font-size:9px;color:#64748b;font-weight:600">Intensità contratti per riga</span></div>'
+    + '<div style="display:flex;align-items:center;gap:6px">'
+    + '<div style="width:10px;height:10px;background:#005CA9;border-radius:2px"></div>'
+    + '<span style="font-size:9px;color:#64748b;font-weight:600">Anno corrente ('+la+')</span></div>'
+    + '<div style="font-size:9px;color:#94a3b8;margin-left:auto">Fonte: Supabase · serie_storica · ultimi 10 anni</div>'
+    + '</div>';
+
+  var body = '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
+    + '<table style="width:100%;border-collapse:collapse">'
+    + '<thead>' + th + '</thead>'
+    + '<tbody>' + rows + totRow + '</tbody>'
+    + '</table>'
+    + legenda
+    + '</div>';
+
+  return repPage(repHeader('Serie storica', anno, mese), body, repFooter('8'));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
