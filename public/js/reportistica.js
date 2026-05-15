@@ -108,6 +108,7 @@ function repBuildAllPages(data, anno, mese, storicaData) {
     repPag5_SchedeA(data, anno, mese),                      // 5
     repPag6_SchedeB(data, anno, mese),                      // 6
     repPag8_SerieStoricaTabella(storicaData, anno, mese),   // 7
+    repPagPrevisione(storicaData, anno),                    // 8 — Previsione
   ];
   // Ateco mese: 4 pagine (KPI, Unione, Mestiere, Settore)
   var atecoMese = repPagAtecoSplit(data, anno, mese, true);
@@ -770,7 +771,151 @@ async function repGeneraPDF() {
   }
 }
 
-// ── PAGINE ATECO — 4 pagine per periodo (KPI, Unione, Mestiere, Settore) ──────
+// ── PAGINA 8: PREVISIONE ANNO CORRENTE ───────────────────────────────────────
+function repPagPrevisione(storicaData, anno) {
+  var ANNO_CUR = anno;
+  var OBIETTIVO = (window.storicaObiettivi && window.storicaObiettivi[ANNO_CUR]) || 1000;
+  var MESI_ORD_P = [1,2,3,4,5,6,7,9,10,11,12];
+  var NOMI_P = {1:'Gennaio',2:'Febbraio',3:'Marzo',4:'Aprile',5:'Maggio',6:'Giugno',
+    7:'Lug/Ago',9:'Settembre',10:'Ottobre',11:'Novembre',12:'Dicembre'};
+  var ANNI_RIFE = [ANNO_CUR-5,ANNO_CUR-4,ANNO_CUR-3,ANNO_CUR-2,ANNO_CUR-1];
+
+  // Costruisce matrice da serie_storica
+  var matrix = {};
+  storicaData.forEach(function(r) {
+    if (!matrix[r.mese]) matrix[r.mese] = {};
+    matrix[r.mese][r.anno] = {v: r.valore || 0};
+  });
+
+  // Valori reali anno corrente
+  var realiCur = {};
+  storicaData.forEach(function(r) { if (r.anno === ANNO_CUR) realiCur[r.mese] = r.valore || 0; });
+  var totReale = Object.values(realiCur).reduce(function(s,v){return s+v;},0);
+  var mesiReali = Object.keys(realiCur).map(Number).sort(function(a,b){return a-b;});
+  var mesiFuturi = MESI_ORD_P.filter(function(m){ return !realiCur.hasOwnProperty(m); });
+
+  // Regressione lineare per ogni mese
+  function stimaMese(m) {
+    var vals = ANNI_RIFE.map(function(a){ return matrix[m]&&matrix[m][a]?matrix[m][a].v:0; });
+    var n=vals.length, mx=(n-1)/2;
+    var my=vals.reduce(function(s,v){return s+v;},0)/n;
+    var num=vals.reduce(function(s,v,i){return s+(i-mx)*(v-my);},0);
+    var den=vals.reduce(function(s,v,i){return s+(i-mx)*(i-mx);},0);
+    var slope=den?num/den:0;
+    var trend=Math.max(0,Math.round(my+slope*(5-mx)));
+    return Math.round(0.6*trend+0.4*my);
+  }
+
+  var stime = {};
+  MESI_ORD_P.forEach(function(m){ stime[m]=stimaMese(m); });
+
+  var totStimaNaturale = totReale + mesiFuturi.reduce(function(s,m){return s+stime[m];},0);
+  var fabbisogno = OBIETTIVO - totReale;
+  var stimaNatFut = mesiFuturi.reduce(function(s,m){return s+stime[m];},0);
+  var boost = stimaNatFut > 0 ? fabbisogno / stimaNatFut : 1;
+
+  var piano = {}, cumPiano = totReale;
+  mesiFuturi.forEach(function(m){
+    var t = Math.round(stime[m] * boost);
+    cumPiano += t;
+    piano[m] = {target:t, naturale:stime[m], extra:t-stime[m], cum:cumPiano};
+  });
+
+  var pctRaggiunta = Math.min(100, Math.round(totReale/OBIETTIVO*100));
+  var pctStima = Math.min(100, Math.round(totStimaNaturale/OBIETTIVO*100));
+  var mancanti = OBIETTIVO - totReale;
+  var mancherannoCon = OBIETTIVO - totStimaNaturale;
+  var colStima = totStimaNaturale>=OBIETTIVO ? '#10B981' : '#F59E0B';
+  var boostPct = Math.round((boost-1)*100);
+
+  // ── HEADER scuro ──
+  var header_block = '<div style="background:linear-gradient(135deg,#0a1628,#0d2d5e,#1a3a6e);border-radius:10px;padding:16px 22px;margin-bottom:14px;display:flex;align-items:center;gap:14px">'
+    +'<div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+    +'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>'
+    +'<div>'
+    +'<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:18px;font-weight:800;color:white;line-height:1.15">Previsione '+ANNO_CUR+'</div>'
+    +'<div style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.55);margin-top:2px">Piano mensile · obiettivo '+OBIETTIVO.toLocaleString('it-IT')+' contratti · regressione lineare '+(ANNO_CUR-5)+'–'+(ANNO_CUR-1)+'</div>'
+    +'</div></div>';
+
+  // ── 4 KPI ──
+  function kpi(label, val, sub, color, subColor) {
+    return '<div style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;border-left:4px solid '+color+';background:white">'
+      +'<div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">'+label+'</div>'
+      +'<div style="font-size:26px;font-weight:800;color:#0f172a;line-height:1;font-family:Inter,Helvetica,Arial,sans-serif">'+val+'</div>'
+      +'<div style="font-size:10px;font-weight:600;color:'+(subColor||'#94a3b8')+';margin-top:3px">'+sub+'</div>'
+      +'</div>';
+  }
+  var kpiHtml = '<div style="display:flex;gap:10px;margin-bottom:12px">'
+    +kpi('Già realizzati', totReale, 'contratti '+ANNO_CUR, '#3B82F6')
+    +kpi('Stima fine anno', totStimaNaturale, totStimaNaturale>=OBIETTIVO?'✓ Sopra obiettivo':'▼ '+Math.abs(mancherannoCon)+' sotto', colStima, colStima)
+    +kpi('Ancora da fare', mancanti, 'per arrivare a '+OBIETTIVO.toLocaleString('it-IT'), '#EF4444', '#EF4444')
+    +kpi('Boost necessario', (boostPct>0?'+':'')+boostPct+'%', 'rispetto al trend naturale', '#8B5CF6')
+    +'</div>';
+
+  // ── BARRA PROGRESSO ──
+  var barHtml = '<div style="margin-bottom:14px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">'
+    +'<span style="font-size:11px;font-weight:700;color:#0f172a">Avanzamento verso '+OBIETTIVO.toLocaleString('it-IT')+'</span>'
+    +'<span style="font-size:11px;font-weight:700;color:#005CA9">'+totReale+' / '+OBIETTIVO+' ('+pctRaggiunta+'%)</span>'
+    +'</div>'
+    +'<div style="background:#f1f5f9;border-radius:99px;height:12px;overflow:hidden;position:relative">'
+    +'<div style="position:absolute;left:0;top:0;height:100%;width:'+pctRaggiunta+'%;background:linear-gradient(90deg,#005CA9,#3B82F6);border-radius:99px"></div>'
+    +'<div style="position:absolute;left:'+pctRaggiunta+'%;top:1px;height:calc(100% - 2px);width:'+(pctStima-pctRaggiunta)+'%;background:repeating-linear-gradient(90deg,#F59E0B 0,#F59E0B 7px,transparent 7px,transparent 13px);border-radius:99px;opacity:0.7"></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:14px;margin-top:4px">'
+    +'<div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:5px;border-radius:2px;background:linear-gradient(90deg,#005CA9,#3B82F6)"></div><span style="font-size:9px;color:#64748b">Realizzati ('+pctRaggiunta+'%)</span></div>'
+    +'<div style="display:flex;align-items:center;gap:4px"><div style="width:10px;height:5px;border-radius:2px;background:repeating-linear-gradient(90deg,#F59E0B 0,#F59E0B 4px,transparent 4px,transparent 7px)"></div><span style="font-size:9px;color:#64748b">Stima trend (+'+(pctStima-pctRaggiunta)+'%)</span></div>'
+    +'</div></div>';
+
+  // ── PIANO MENSILE (griglia compatta) ──
+  var pianoTitle = '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+    +'<div style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#005CA9,#3B82F6);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+    +'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
+    +'</div>'
+    +'<span style="font-size:12px;font-weight:700;color:#0f172a">Piano mensile per raggiungere '+OBIETTIVO.toLocaleString('it-IT')+'</span>'
+    +'</div>';
+
+  var cardsHtml = '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">';
+
+  mesiReali.forEach(function(m){
+    var v = realiCur[m];
+    var nat = stime[m];
+    var vs = v-nat;
+    var vsColor = vs>=0?'#10B981':'#EF4444';
+    cardsHtml += '<div style="border:1px solid #d1fae5;border-radius:7px;padding:8px 10px;background:#f0fdf4;display:flex;align-items:center;gap:8px">'
+      +'<div style="width:26px;height:26px;border-radius:50%;background:#10B981;display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>'
+      +'<div style="min-width:0">'
+      +'<div style="font-size:9px;font-weight:700;color:#059669;text-transform:uppercase">'+NOMI_P[m]+'</div>'
+      +'<div style="font-size:14px;font-weight:800;color:#064e3b">'+v+' <span style="font-size:9px;color:'+vsColor+';font-weight:700">'+(vs>=0?'+':'')+vs+'</span></div>'
+      +'</div></div>';
+  });
+
+  mesiFuturi.forEach(function(m){
+    var p = piano[m];
+    var isRaggiunto = p.cum >= OBIETTIVO;
+    var barColor = isRaggiunto ? '#10B981' : '#005CA9';
+    var pctBar = Math.min(100, Math.round(p.cum/OBIETTIVO*100));
+    cardsHtml += '<div style="border:1px solid #dbeafe;border-radius:7px;padding:8px 10px;background:white;display:flex;align-items:center;gap:8px">'
+      +'<div style="width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#005CA9,#3B82F6);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg></div>'
+      +'<div style="flex:1;min-width:0">'
+      +'<div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase">'+NOMI_P[m]+'</div>'
+      +'<div style="font-size:14px;font-weight:800;color:#005CA9">'+p.target+' <span style="font-size:9px;color:#8B5CF6;font-weight:700">+'+p.extra+'</span></div>'
+      +'<div style="background:#f1f5f9;border-radius:3px;height:3px;margin-top:3px"><div style="height:100%;width:'+pctBar+'%;background:'+barColor+';border-radius:3px"></div></div>'
+      +'</div>'
+      +'<div style="text-align:right;flex-shrink:0"><div style="font-size:12px;font-weight:800;color:'+barColor+'">'+p.cum+'</div><div style="font-size:8px;color:#94a3b8">cum.</div></div>'
+      +'</div>';
+  });
+
+  cardsHtml += '</div>';
+
+  var body = header_block + kpiHtml + barHtml + pianoTitle + cardsHtml;
+
+  return repPage(repHeader('Previsione '+ANNO_CUR+' · Piano per '+OBIETTIVO.toLocaleString('it-IT'), anno, 4), body, repFooter('9'));
+}
+
+// ── PAGINE ATECO — 3 pagine per periodo ──────────────────────────────────────
 function repPagAtecoSplit(data, anno, mese, soloMese) {
   var periodoLabel = soloMese ? MESI[mese] + ' ' + anno : 'Anno ' + anno;
   var prefisso = 'Analisi Ateco · ' + periodoLabel + ' · ';
@@ -889,7 +1034,7 @@ function repPagAtecoSplit(data, anno, mese, soloMese) {
     +'</div>';
 
   // 3 pagine: Unione (con KPI in cima), Mestiere, Settore
-  var pBase = soloMese ? 9 : 12;
+  var pBase = soloMese ? 10 : 13;
   return [
     repPage(repHeader(prefisso+'Unione',   anno, mese), kpiStrip6 + atecoTblFull(byUnione,   'Unione',   '#0047AB'), repFooter(String(pBase))),
     repPage(repHeader(prefisso+'Mestiere', anno, mese), atecoTblFull(byMestiere, 'Mestiere', '#DC2626'), repFooter(String(pBase+1))),
