@@ -28,10 +28,13 @@ function buildStoricaUI() {
 
   tab.innerHTML =
     '<div style="max-width:1300px;margin:0 auto;padding:24px 20px 60px">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">'
-    +'<div><h2 style="margin:0;font-size:22px;font-weight:800;color:var(--text)">📅 Serie Storica</h2>'
-    +'<p style="margin:4px 0 0;font-size:13px;color:var(--text-secondary)">Contratti per anno e mese · dal Apr 2026 aggiornati automaticamente da Supabase</p></div>'
-    +(isAdmin()?'<button onclick="storicaAggiornaDal2026()" style="padding:9px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">🔄 Ricalcola 2026</button>':'')
+    // HERO — stile Home
+    +'<div class="home-hero" style="padding:20px 0 22px;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:12px">'
+    +'<div>'
+    +'<p class="hero-sub" style="margin-bottom:8px">TESSERAMENTO · CNA ROMA</p>'
+    +'<h2 class="hero-title" style="font-size:clamp(28px,3.5vw,44px);margin-bottom:8px">Serie storica<br>Lo storico degli associati diretti di <span class="hero-accent">CNA Roma</span><br>dal 2000 ad oggi</h2>'
+    +'</div>'
+    +(isAdmin()?'<button onclick="storicaAggiornaDal2026()" style="padding:9px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0">🔄 Ricalcola 2026</button>':'')
     +'</div>'
     +'<div id="storica-status" style="display:none;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">'
     +'<span id="storica-status-text" style="font-size:13px;color:var(--text-secondary)">Caricamento…</span></div>'
