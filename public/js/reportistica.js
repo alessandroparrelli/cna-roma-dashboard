@@ -68,10 +68,7 @@ async function repCaricaEAnteprima() {
     var pages = repBuildAllPages(repAllData, anno, mese, repStoricaData);
     pages.forEach(function(pageHtml, i) {
       var wrapper = document.createElement('div');
-      // Pagine Ateco (indice 8 e 9) → anteprima portrait più stretta
-      var isAtecoPreview = (i === 8 || i === 9);
-      wrapper.style.cssText = 'margin-bottom:28px;box-shadow:0 4px 24px rgba(0,0,0,0.13);border-radius:4px;overflow:hidden;background:white'
-        + (isAtecoPreview ? ';max-width:794px;margin-left:auto;margin-right:auto' : '');
+      wrapper.style.cssText = 'margin-bottom:28px;box-shadow:0 4px 24px rgba(0,0,0,0.13);border-radius:4px;overflow:hidden;background:white';
       wrapper.setAttribute('data-page', i + 1);
       wrapper.innerHTML = pageHtml;
       G('rep-pages-container').appendChild(wrapper);
@@ -98,11 +95,11 @@ function repSetStatus(show, msg) {
 // ══════════════════════════════════════════════════════════════════════════════
 // COSTRUZIONE PAGINE
 // ══════════════════════════════════════════════════════════════════════════════
-var REP_TOTAL_PAGES = 10; // copertina + 9 pagine dati
+var REP_TOTAL_PAGES = 15; // copertina + 14 pagine dati (7 base + 4 Ateco mese + 4 Ateco anno — aggiornato dinamicamente)
 
 function repBuildAllPages(data, anno, mese, storicaData) {
   storicaData = storicaData || [];
-  return [
+  var basePages = [
     repPag0_Copertina(anno, mese),                          // Copertina
     repPag1_Mensile(data, anno, mese),                      // 1
     repPag2_Annuale(data, anno, mese),                      // 2
@@ -110,10 +107,15 @@ function repBuildAllPages(data, anno, mese, storicaData) {
     repPag4_RaffrontoYTD(data, anno, mese),                 // 4
     repPag5_SchedeA(data, anno, mese),                      // 5
     repPag6_SchedeB(data, anno, mese),                      // 6
-    repPag8_SerieStoricaTabella(storicaData, anno, mese),   // 7 — da serie_storica
-    repPagAteco(data, anno, mese, true),                    // 8 — Ateco mese
-    repPagAteco(data, anno, mese, false),                   // 9 — Ateco anno
+    repPag8_SerieStoricaTabella(storicaData, anno, mese),   // 7
   ];
+  // Ateco mese: 4 pagine (KPI, Unione, Mestiere, Settore)
+  var atecoMese = repPagAtecoSplit(data, anno, mese, true);
+  // Ateco anno: 4 pagine
+  var atecoAnno = repPagAtecoSplit(data, anno, mese, false);
+  var allPages = basePages.concat(atecoMese).concat(atecoAnno);
+  REP_TOTAL_PAGES = allPages.length;
+  return allPages;
 }
 
 // ── PAGINA 0: COPERTINA ───────────────────────────────────────────────────────
@@ -143,19 +145,18 @@ function repFooter(n) {
     + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">Pagina ' + (parseInt(n) + 1) + ' di ' + REP_TOTAL_PAGES + '</span></div>';
 }
 
+// Landscape A4 a 96dpi ≈ 1122×794px — usiamo 1060×748 con margini
+// Header fisso in alto, footer fisso in basso, body inizia sotto l'header
 function repPage(header, body, footer) {
-  return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px">'
+  return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px;display:flex;flex-direction:column;min-height:748px">'
     + header
-    + '<div style="padding:10px 28px 14px;background:white">' + body + '</div>'
+    + '<div style="flex:1;padding:10px 28px 14px;background:white;overflow:hidden">' + body + '</div>'
     + footer + '</div>';
 }
 
-// Versione portrait (794px = A4 portrait a 96dpi)
+// Portrait non più necessario — tutte le pagine in landscape
 function repPagePortrait(header, body, footer) {
-  return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:794px">'
-    + header
-    + '<div style="padding:10px 22px 14px;background:white">' + body + '</div>'
-    + footer + '</div>';
+  return repPage(header, body, footer);
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
@@ -725,8 +726,7 @@ async function repGeneraPDF() {
     var mese=parseInt(G('rep-mese').value);
     var {jsPDF}=window.jspdf;
     var pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-    var PW_L=297, PH_L=210; // landscape
-    var PW_P=210, PH_P=297; // portrait
+    var PW=297, PH=210;
     var container=G('rep-pages-container');
     if(!container) throw new Error('Anteprima non trovata. Clicca prima Carica Dati.');
     var pageDivs=container.querySelectorAll('[data-page]');
@@ -735,20 +735,9 @@ async function repGeneraPDF() {
       showLoad('Rendering pagina '+(i+1)+' di '+pageDivs.length+'…');
       await new Promise(function(r){setTimeout(r,400);});
       var pd=pageDivs[i].firstElementChild||pageDivs[i];
-
-      // Pagine Ateco (indice 8 e 9 = pagine 9 e 10) → portrait, larghezza 794px
-      var isAteco = (i === 8 || i === 9);
-      var canvasW = isAteco ? 794 : 1060;
-
-      var cv=await html2canvas(pd,{scale:1.8,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#ffffff',width:canvasW,windowWidth:canvasW});
+      var cv=await html2canvas(pd,{scale:1.8,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#ffffff',width:1060,windowWidth:1060});
       var id=cv.toDataURL('image/jpeg',0.93);
-
-      if(i>0){
-        pdf.addPage('a4', isAteco ? 'portrait' : 'landscape');
-      }
-
-      var PW = isAteco ? PW_P : PW_L;
-      var PH = isAteco ? PH_P : PH_L;
+      if(i>0) pdf.addPage('a4','landscape');
       var ratio=cv.width/cv.height;
       var iw=PW, ih=iw/ratio;
       if(ih>PH){ih=PH;iw=ih*ratio;}
@@ -767,12 +756,10 @@ async function repGeneraPDF() {
   }
 }
 
-// ── PAGINE 8-9: ANALISI ATECO (mese e anno) ───────────────────────────────────
-function repPagAteco(data, anno, mese, soloMese) {
-  var nPag = soloMese ? '8' : '9';
-  var titolo = soloMese
-    ? 'Analisi Ateco · ' + MESI[mese] + ' ' + anno
-    : 'Analisi Ateco · Anno ' + anno;
+// ── PAGINE ATECO — 4 pagine per periodo (KPI, Unione, Mestiere, Settore) ──────
+function repPagAtecoSplit(data, anno, mese, soloMese) {
+  var periodoLabel = soloMese ? MESI[mese] + ' ' + anno : 'Anno ' + anno;
+  var prefisso = 'Analisi Ateco · ' + periodoLabel + ' · ';
 
   var rec = data.filter(function(r) {
     var a = parseInt(r.anno), m = parseInt(r.mese);
@@ -781,118 +768,113 @@ function repPagAteco(data, anno, mese, soloMese) {
   });
 
   var tot = rec.length;
-  if (!tot) {
-    return repPagePortrait(repHeader(titolo, anno, mese),
-      '<div style="padding:40px;text-align:center;color:#94a3b8;font-size:13px">Nessun dato Ateco per questo periodo</div>',
-      repFooter(nPag));
-  }
-
   var byUnione = {}, byMestiere = {}, bySettore = {};
   var donne = 0, stranieri = 0;
   rec.forEach(function(r) {
-    var u = r.unione||'N/D', m2 = r.mestiere||'N/D', s = r.settore||'N/D';
-    var sx = String(r.sesso||'').trim(), naz = String(r.nazionalita||'').trim();
-    if (!byUnione[u]) byUnione[u]={tot:0,f:0,str:0};
-    byUnione[u].tot++; if(sx==='Femmina'){byUnione[u].f++;donne++;} if(naz==='Straniero'){byUnione[u].str++;stranieri++;}
-    if (!byMestiere[m2]) byMestiere[m2]={tot:0,f:0,str:0};
-    byMestiere[m2].tot++; if(sx==='Femmina')byMestiere[m2].f++; if(naz==='Straniero')byMestiere[m2].str++;
-    if (!bySettore[s]) bySettore[s]={tot:0,f:0,str:0};
-    bySettore[s].tot++; if(sx==='Femmina')bySettore[s].f++; if(naz==='Straniero')bySettore[s].str++;
+    var u=r.unione||'N/D', m2=r.mestiere||'N/D', s=r.settore||'N/D';
+    var sx=String(r.sesso||'').trim(), naz=String(r.nazionalita||'').trim();
+    if(!byUnione[u])    byUnione[u]   ={tot:0,f:0,str:0};
+    if(!byMestiere[m2]) byMestiere[m2]={tot:0,f:0,str:0};
+    if(!bySettore[s])   bySettore[s]  ={tot:0,f:0,str:0};
+    byUnione[u].tot++;   if(sx==='Femmina'){byUnione[u].f++;donne++;}     if(naz==='Straniero'){byUnione[u].str++;stranieri++;}
+    byMestiere[m2].tot++; if(sx==='Femmina')byMestiere[m2].f++;            if(naz==='Straniero')byMestiere[m2].str++;
+    bySettore[s].tot++;  if(sx==='Femmina')bySettore[s].f++;               if(naz==='Straniero')bySettore[s].str++;
   });
 
-  function kpi(label, val, color) {
-    return '<div style="flex:1;min-width:0;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;border-top:3px solid '+color+';background:white">'
-      +'<div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">'+label+'</div>'
-      +'<div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:3px">'+val+'</div></div>';
+  if (!tot) {
+    return [repPage(repHeader(prefisso+'Riepilogo', anno, mese),
+      '<div style="padding:60px;text-align:center;color:#94a3b8;font-size:14px">Nessun dato per questo periodo</div>',
+      repFooter('–'))];
   }
-  var kpiHtml = '<div style="display:flex;gap:10px;margin-bottom:14px">'
-    +kpi('Imprese totali',tot.toLocaleString('it-IT'),'#3B82F6')
-    +kpi('Unioni',Object.keys(byUnione).length,'#0047AB')
-    +kpi('Mestieri',Object.keys(byMestiere).length,'#DC2626')
-    +kpi('Settori',Object.keys(bySettore).length,'#F59E0B')
-    +kpi('% Donne',tot>0?(donne/tot*100).toFixed(1)+'%':'0%','#EC4899')
-    +kpi('% Stranieri',tot>0?(stranieri/tot*100).toFixed(1)+'%':'0%','#8B5CF6')
-    +'</div>';
 
-  function atecoTbl(byKey, label, color) {
-    var sorted = Object.keys(byKey).sort(function(a,b){return byKey[b].tot-byKey[a].tot;}).slice(0,15);
-    var totVoci = Object.keys(byKey).length;
-    var maxTot = byKey[sorted[0]] ? byKey[sorted[0]].tot : 1;
-    var rows = sorted.map(function(k,i){
-      var d = byKey[k];
-      var pct  = tot>0  ? (d.tot/tot*100).toFixed(1) : '0.0';
-      var nF   = d.f;
-      var pF   = d.tot>0 ? (d.f/d.tot*100).toFixed(0) : '0';
-      var nS   = d.str;
-      var pS   = d.tot>0 ? (d.str/d.tot*100).toFixed(0) : '0';
-      var bw   = Math.max(3, Math.round(d.tot/maxTot*60));
-      var bg   = i%2===0 ? '' : 'background:#f8fafc';
-      return '<tr style="border-bottom:1px solid #f1f5f9;'+bg+'">'
-        +'<td style="padding:4px 10px;font-size:10px;font-weight:600;color:#0f172a;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+k+'</td>'
-        +'<td style="padding:4px 8px;font-size:11px;font-weight:800;text-align:right;color:#0f172a">'+d.tot+'</td>'
-        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#6366f1">'+pct+'%</td>'
-        +'<td style="padding:4px 8px"><div style="width:'+bw+'px;height:4px;background:'+color+';border-radius:2px"></div></td>'
-        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#EC4899;font-weight:700">'+nF+'</td>'
-        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#EC4899">'+pF+'%</td>'
-        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#8B5CF6;font-weight:700">'+nS+'</td>'
-        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#8B5CF6">'+pS+'%</td>'
-        +'</tr>';
-    }).join('');
-
-    // Riga totale (su tutti i record del gruppo, non solo top 15)
+  // Tabella landscape full-width per una sola card
+  function atecoTblFull(byKey, label, color) {
     var allKeys = Object.keys(byKey);
+    var sorted = allKeys.sort(function(a,b){return byKey[b].tot-byKey[a].tot;}).slice(0,15);
+    var totVoci = allKeys.length;
+    var maxTot = byKey[sorted[0]] ? byKey[sorted[0]].tot : 1;
     var totGruppo = allKeys.reduce(function(s,k){return s+byKey[k].tot;},0);
     var totF      = allKeys.reduce(function(s,k){return s+byKey[k].f;},0);
     var totStr    = allKeys.reduce(function(s,k){return s+byKey[k].str;},0);
-    var totPct    = tot>0 ? (totGruppo/tot*100).toFixed(1) : '0.0';
-    var totPctF   = totGruppo>0 ? (totF/totGruppo*100).toFixed(0) : '0';
-    var totPctStr = totGruppo>0 ? (totStr/totGruppo*100).toFixed(0) : '0';
-    var totRow = '<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700">'
-      +'<td style="padding:5px 10px;font-size:10px;font-weight:800;color:#0f172a">Totale</td>'
-      +'<td style="padding:5px 8px;font-size:11px;font-weight:800;text-align:right;color:#0f172a">'+totGruppo+'</td>'
-      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#6366f1;font-weight:700">'+totPct+'%</td>'
-      +'<td style="padding:5px 8px"></td>'
-      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#EC4899;font-weight:800">'+totF+'</td>'
-      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#EC4899;font-weight:700">'+totPctF+'%</td>'
-      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#8B5CF6;font-weight:800">'+totStr+'</td>'
-      +'<td style="padding:5px 8px;font-size:10px;text-align:right;color:#8B5CF6;font-weight:700">'+totPctStr+'%</td>'
+    var totPct    = tot>0?(totGruppo/tot*100).toFixed(1):'0.0';
+    var tpF       = totGruppo>0?(totF/totGruppo*100).toFixed(0):'0';
+    var tpS       = totGruppo>0?(totStr/totGruppo*100).toFixed(0):'0';
+    var badge = sorted.length < totVoci ? 'Top '+sorted.length+' di '+totVoci : totVoci+' voci';
+
+    var rows = sorted.map(function(k,i){
+      var d=byKey[k];
+      var pct=tot>0?(d.tot/tot*100).toFixed(1):'0.0';
+      var nF=d.f, pF=d.tot>0?(d.f/d.tot*100).toFixed(0):'0';
+      var nS=d.str, pS=d.tot>0?(d.str/d.tot*100).toFixed(0):'0';
+      var bw=Math.max(5,Math.round(d.tot/maxTot*160));
+      var bg=i%2===0?'':'background:#f8fafc';
+      return '<tr style="border-bottom:1px solid #f1f5f9;'+bg+'">'
+        +'<td style="padding:7px 14px;font-size:12px;font-weight:600;color:#0f172a">'+k+'</td>'
+        +'<td style="padding:7px 12px;font-size:13px;font-weight:800;text-align:right;color:#0f172a">'+d.tot+'</td>'
+        +'<td style="padding:7px 12px;font-size:11px;text-align:right;color:#6366f1">'+pct+'%</td>'
+        +'<td style="padding:7px 14px;width:200px"><div style="width:'+bw+'px;height:6px;background:'+color+';border-radius:3px"></div></td>'
+        +'<td style="padding:7px 12px;font-size:12px;text-align:right;color:#EC4899;font-weight:700;border-left:1px solid #f1f5f9">'+nF+'</td>'
+        +'<td style="padding:7px 12px;font-size:11px;text-align:right;color:#EC4899">'+pF+'%</td>'
+        +'<td style="padding:7px 12px;font-size:12px;text-align:right;color:#8B5CF6;font-weight:700;border-left:1px solid #f1f5f9">'+nS+'</td>'
+        +'<td style="padding:7px 12px;font-size:11px;text-align:right;color:#8B5CF6">'+pS+'%</td>'
+        +'</tr>';
+    }).join('');
+
+    var totRow = '<tr style="background:#f8fafc;border-top:2px solid #e2e8f0">'
+      +'<td style="padding:8px 14px;font-size:12px;font-weight:800;color:#0f172a">Totale ('+totVoci+' voci)</td>'
+      +'<td style="padding:8px 12px;font-size:13px;font-weight:800;text-align:right;color:#0f172a">'+totGruppo+'</td>'
+      +'<td style="padding:8px 12px;font-size:11px;text-align:right;color:#6366f1;font-weight:700">'+totPct+'%</td>'
+      +'<td style="padding:8px 14px"></td>'
+      +'<td style="padding:8px 12px;font-size:12px;text-align:right;color:#EC4899;font-weight:800;border-left:1px solid #e2e8f0">'+totF+'</td>'
+      +'<td style="padding:8px 12px;font-size:11px;text-align:right;color:#EC4899;font-weight:700">'+tpF+'%</td>'
+      +'<td style="padding:8px 12px;font-size:12px;text-align:right;color:#8B5CF6;font-weight:800;border-left:1px solid #e2e8f0">'+totStr+'</td>'
+      +'<td style="padding:8px 12px;font-size:11px;text-align:right;color:#8B5CF6;font-weight:700">'+tpS+'%</td>'
       +'</tr>';
 
-    var badgeText = sorted.length < totVoci
-      ? 'Top '+sorted.length+' di '+totVoci
-      : totVoci+' voci';
-
-    return '<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:white;margin-bottom:10px">'
-      +'<div style="background:'+color+';padding:7px 14px;display:flex;align-items:center;justify-content:space-between">'
-      +'<span style="font-size:11px;font-weight:700;color:white;letter-spacing:0.2px">'+label+'</span>'
-      +'<span style="background:rgba(255,255,255,0.2);color:white;font-size:10px;padding:2px 10px;border-radius:20px">'+badgeText+'</span>'
-      +'</div>'
+    return '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
+      +'<div style="background:'+color+';padding:11px 18px;display:flex;align-items:center;justify-content:space-between">'
+      +'<span style="font-size:14px;font-weight:700;color:white;letter-spacing:0.2px">'+label+'</span>'
+      +'<span style="background:rgba(255,255,255,0.2);color:white;font-size:11px;padding:3px 14px;border-radius:20px">'+badge+'</span></div>'
       +'<table style="width:100%;border-collapse:collapse">'
       +'<thead>'
-      +'<tr style="background:#f0f0f0;border-bottom:1px solid #e2e8f0">'
-      +'<th style="padding:4px 10px;font-size:9px;color:#64748b;text-transform:uppercase;text-align:left" colspan="4">'+label+'</th>'
-      +'<th colspan="2" style="padding:4px 8px;font-size:9px;font-weight:700;color:#EC4899;text-transform:uppercase;text-align:center;border-left:1px solid #e2e8f0">♀ Donne</th>'
-      +'<th colspan="2" style="padding:4px 8px;font-size:9px;font-weight:700;color:#8B5CF6;text-transform:uppercase;text-align:center;border-left:1px solid #e2e8f0">Stranieri</th>'
+      +'<tr style="background:#f0f2f4;border-bottom:1px solid #e2e8f0">'
+      +'<th colspan="4" style="padding:5px 14px;font-size:10px;color:#64748b;text-transform:uppercase;text-align:left">'+label+'</th>'
+      +'<th colspan="2" style="padding:5px 12px;font-size:10px;font-weight:700;color:#EC4899;text-transform:uppercase;text-align:center;border-left:1px solid #e2e8f0">♀ Donne</th>'
+      +'<th colspan="2" style="padding:5px 12px;font-size:10px;font-weight:700;color:#8B5CF6;text-transform:uppercase;text-align:center;border-left:1px solid #e2e8f0">Stranieri</th>'
       +'</tr>'
       +'<tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'
-      +'<th style="padding:4px 10px;text-align:left;font-size:9px;color:#64748b;text-transform:uppercase">Nome</th>'
-      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">Nr.</th>'
-      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">% Tot.</th>'
-      +'<th style="padding:4px 8px;font-size:9px;color:#64748b;text-transform:uppercase">Peso</th>'
-      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#EC4899;text-transform:uppercase;border-left:1px solid #e2e8f0">Nr.</th>'
-      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#EC4899;text-transform:uppercase">%</th>'
-      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#8B5CF6;text-transform:uppercase;border-left:1px solid #e2e8f0">Nr.</th>'
-      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#8B5CF6;text-transform:uppercase">%</th>'
-      +'</tr>'
-      +'</thead>'
-      +'<tbody>'+rows+totRow+'</tbody>'
-      +'</table></div>';
+      +'<th style="padding:6px 14px;text-align:left;font-size:10px;color:#64748b;text-transform:uppercase">Nome</th>'
+      +'<th style="padding:6px 12px;text-align:right;font-size:10px;color:#64748b;text-transform:uppercase">Nr.</th>'
+      +'<th style="padding:6px 12px;text-align:right;font-size:10px;color:#64748b;text-transform:uppercase">% Tot.</th>'
+      +'<th style="padding:6px 14px;font-size:10px;color:#64748b;text-transform:uppercase">Peso</th>'
+      +'<th style="padding:6px 12px;text-align:right;font-size:10px;color:#EC4899;text-transform:uppercase;border-left:1px solid #e2e8f0">Nr.</th>'
+      +'<th style="padding:6px 12px;text-align:right;font-size:10px;color:#EC4899;text-transform:uppercase">%</th>'
+      +'<th style="padding:6px 12px;text-align:right;font-size:10px;color:#8B5CF6;text-transform:uppercase;border-left:1px solid #e2e8f0">Nr.</th>'
+      +'<th style="padding:6px 12px;text-align:right;font-size:10px;color:#8B5CF6;text-transform:uppercase">%</th>'
+      +'</tr></thead>'
+      +'<tbody>'+rows+totRow+'</tbody></table></div>';
   }
 
-  var body = kpiHtml
-    + atecoTbl(byUnione,  'Unione',   '#0047AB')
-    + atecoTbl(byMestiere,'Mestiere', '#DC2626')
-    + atecoTbl(bySettore, 'Settore',  '#F59E0B');
+  // KPI page
+  function kpiCard(label, val, color) {
+    return '<div style="flex:1;border:1px solid #e2e8f0;border-radius:10px;padding:20px 22px;border-top:3px solid '+color+';background:white">'
+      +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">'+label+'</div>'
+      +'<div style="font-size:38px;font-weight:800;color:#0f172a;line-height:1;letter-spacing:-0.5px;font-family:Inter,Helvetica,Arial,sans-serif">'+val+'</div></div>';
+  }
+  var kpiBody = '<div style="display:flex;gap:16px">'
+    +kpiCard('Imprese totali', tot.toLocaleString('it-IT'), '#3B82F6')
+    +kpiCard('Unioni', Object.keys(byUnione).length, '#0047AB')
+    +kpiCard('Mestieri', Object.keys(byMestiere).length, '#DC2626')
+    +kpiCard('Settori', Object.keys(bySettore).length, '#F59E0B')
+    +kpiCard('Donne', donne+' ('+(tot>0?(donne/tot*100).toFixed(1):0)+'%)', '#EC4899')
+    +kpiCard('Stranieri', stranieri+' ('+(tot>0?(stranieri/tot*100).toFixed(1):0)+'%)', '#8B5CF6')
+    +'</div>';
 
-  return repPagePortrait(repHeader(titolo, anno, mese), body, repFooter(nPag));
+  var pBase = soloMese ? 9 : 13;
+  return [
+    repPage(repHeader(prefisso+'Riepilogo KPI', anno, mese), kpiBody, repFooter(String(pBase))),
+    repPage(repHeader(prefisso+'Unione',   anno, mese), atecoTblFull(byUnione,   'Unione',   '#0047AB'), repFooter(String(pBase+1))),
+    repPage(repHeader(prefisso+'Mestiere', anno, mese), atecoTblFull(byMestiere, 'Mestiere', '#DC2626'), repFooter(String(pBase+2))),
+    repPage(repHeader(prefisso+'Settore',  anno, mese), atecoTblFull(bySettore,  'Settore',  '#F59E0B'), repFooter(String(pBase+3))),
+  ];
 }
