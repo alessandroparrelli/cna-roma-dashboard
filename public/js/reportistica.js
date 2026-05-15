@@ -93,38 +93,51 @@ function repSetStatus(show, msg) {
 // ══════════════════════════════════════════════════════════════════════════════
 // COSTRUZIONE PAGINE
 // ══════════════════════════════════════════════════════════════════════════════
+var REP_TOTAL_PAGES = 8; // copertina + 7 pagine dati
+
 function repBuildAllPages(data, anno, mese) {
   return [
-    repPag1_Mensile(data, anno, mese),
-    repPag2_Annuale(data, anno, mese),
-    repPag3_RaffrontoMese(data, anno, mese),
-    repPag4_RaffrontoYTD(data, anno, mese),
-    repPag5_SchedeA(data, anno, mese),
-    repPag6_SchedeB(data, anno, mese),
-    repPag7_SerieStorica(data, anno, mese),
+    repPag0_Copertina(anno, mese),           // Copertina
+    repPag1_Mensile(data, anno, mese),       // 1
+    repPag2_Annuale(data, anno, mese),       // 2
+    repPag3_RaffrontoMese(data, anno, mese), // 3
+    repPag4_RaffrontoYTD(data, anno, mese),  // 4
+    repPag5_SchedeA(data, anno, mese),       // 5
+    repPag6_SchedeB(data, anno, mese),       // 6
+    repPag7_SerieStorica(data, anno, mese),  // 7
   ];
+}
+
+// ── PAGINA 0: COPERTINA ───────────────────────────────────────────────────────
+function repPag0_Copertina(anno, mese) {
+  var meseStr = MESI[mese] + ' ' + anno;
+  return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px;height:740px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0">'
+    + '<img src="' + LOGO_URL + '" style="height:120px;width:auto;max-width:340px;object-fit:contain;margin-bottom:52px" crossorigin="anonymous" />'
+    + '<div style="font-size:36px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;text-align:center;line-height:1.15">Andamento Tesseramento</div>'
+    + '<div style="margin-top:16px;font-size:16px;font-weight:500;color:#64748b;text-align:center">Mese di riferimento: <strong style="color:#0f172a;font-weight:700">' + meseStr + '</strong></div>'
+    + '</div>';
 }
 
 // HEADER: bianco, logo proporzionato (non deformato), titolo Inter Bold nero
 function repHeader(titoloPagina, anno, mese) {
   var meseStr = MESI[mese] + ' ' + anno;
-  return '<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 28px 12px;border-bottom:2px solid #e2e8f0;background:white">'
-    + '<img src="' + LOGO_URL + '" style="height:50px;width:auto;max-width:180px;object-fit:contain;object-position:left center" crossorigin="anonymous" />'
-    + '<div style="text-align:right"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:20px;font-weight:800;color:#0f172a;line-height:1.2">Dati tesseramento ' + meseStr + '</div></div>'
+  return '<div style="display:flex;align-items:flex-start;justify-content:space-between;padding:8px 28px 6px;border-bottom:1.5px solid #e2e8f0;background:white">'
+    + '<img src="' + LOGO_URL + '" style="height:38px;width:auto;max-width:150px;object-fit:contain;object-position:left top;margin-top:2px" crossorigin="anonymous" />'
+    + '<div style="text-align:right;padding-top:2px"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:17px;font-weight:800;color:#0f172a;line-height:1.2">Dati tesseramento ' + meseStr + '</div></div>'
     + '</div>'
-    + '<div style="padding:10px 28px 6px;background:white"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;color:#0f172a">● ' + titoloPagina + '</div></div>';
+    + '<div style="padding:5px 28px 4px;background:white"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:13px;font-weight:700;color:#0f172a">● ' + titoloPagina + '</div></div>';
 }
 
 function repFooter(n) {
-  return '<div style="padding:7px 28px;border-top:1px solid #e2e8f0;background:white;display:flex;justify-content:space-between;align-items:center">'
-    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif">CNA Roma — Confederazione Nazionale dell\'Artigianato</span>'
-    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif">' + n + '</span></div>';
+  return '<div style="padding:6px 28px;border-top:1px solid #e2e8f0;background:white;display:flex;justify-content:space-between;align-items:center;min-height:28px">'
+    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">CNA Roma — Confederazione Nazionale dell\'Artigianato</span>'
+    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">Pagina ' + n + ' di ' + (REP_TOTAL_PAGES - 1) + '</span></div>';
 }
 
 function repPage(header, body, footer) {
   return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px">'
     + header
-    + '<div style="padding:14px 28px 18px;background:white">' + body + '</div>'
+    + '<div style="padding:10px 28px 14px;background:white">' + body + '</div>'
     + footer + '</div>';
 }
 
