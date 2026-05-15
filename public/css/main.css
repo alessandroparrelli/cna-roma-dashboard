@@ -1404,9 +1404,10 @@ body.dark-mode .home-kpi-card{background:var(--surface);}
 
 /* ── Home Nav ── */
 .home-nav-section{margin-top:8px;}
-.home-nav-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
-@media(max-width:900px){.home-nav-grid{grid-template-columns:repeat(2,1fr);}}
-@media(max-width:540px){.home-nav-grid{grid-template-columns:1fr;}}
+.home-nav-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;}
+@media(max-width:1100px){.home-nav-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:768px){.home-nav-grid{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:480px){.home-nav-grid{grid-template-columns:1fr;}}
 
 .home-nav-btn{
   display:flex;flex-direction:column;align-items:flex-start;gap:10px;
@@ -1418,20 +1419,29 @@ body.dark-mode .home-kpi-card{background:var(--surface);}
 body.dark-mode .home-nav-btn{background:var(--surface);}
 .home-nav-btn:hover{transform:translateY(-3px);box-shadow:var(--shadow-md);border-color:var(--border-strong);}
 .home-nav-btn::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;opacity:.85;}
-.home-nav-andamento::before{background:var(--grad-primary);}
-.home-nav-analisi::before{background:var(--grad-accent);}
-.home-nav-ateco::before{background:var(--grad-purple);}
+.home-nav-andamento::before{background:linear-gradient(90deg,#005CA9,#3B82F6);}
+.home-nav-analisi::before{background:linear-gradient(90deg,#EC4899,#F472B6);}
+.home-nav-ateco::before{background:linear-gradient(90deg,#8B5CF6,#A78BFA);}
+.home-nav-anagrafiche::before{background:linear-gradient(90deg,#06B6D4,#22D3EE);}
+.home-nav-contratti::before{background:linear-gradient(90deg,#F59E0B,#FCD34D);}
+.home-nav-consulenti::before{background:linear-gradient(90deg,#7C3AED,#A78BFA);}
+.home-nav-storica::before{background:linear-gradient(90deg,#D97706,#F59E0B);}
 
 .home-nav-icon{
-  width:42px;height:42px;border-radius:var(--radius-md);
+  width:44px;height:44px;border-radius:50%;
   display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,0.15);
 }
-.home-nav-andamento .home-nav-icon{background:var(--grad-primary);}
-.home-nav-analisi .home-nav-icon{background:var(--grad-accent);}
-.home-nav-ateco .home-nav-icon{background:var(--grad-purple);}
+.home-nav-andamento   .home-nav-icon{background:#005CA9;}
+.home-nav-analisi     .home-nav-icon{background:#EC4899;}
+.home-nav-ateco       .home-nav-icon{background:#8B5CF6;}
+.home-nav-anagrafiche .home-nav-icon{background:#06B6D4;}
+.home-nav-contratti   .home-nav-icon{background:#F59E0B;}
+.home-nav-consulenti  .home-nav-icon{background:#7C3AED;}
+.home-nav-storica     .home-nav-icon{background:#D97706;}
 
-.home-nav-label{font-family:var(--font-display);font-size:15px;font-weight:800;color:var(--text);letter-spacing:-0.02em;line-height:1.2;}
-.home-nav-desc{font-size:12px;color:var(--text-secondary);line-height:1.55;font-weight:500;flex:1;}
+.home-nav-label{font-family:var(--font-display);font-size:14px;font-weight:800;color:var(--text);letter-spacing:-0.02em;line-height:1.2;}
+.home-nav-desc{font-size:11px;color:var(--text-secondary);line-height:1.55;font-weight:500;flex:1;}
 .home-nav-arrow{position:absolute;bottom:18px;right:18px;color:var(--text-tertiary);transition:var(--transition);}
 .home-nav-btn:hover .home-nav-arrow{color:var(--primary);transform:translateX(3px);}
 
