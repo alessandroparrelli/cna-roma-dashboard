@@ -496,10 +496,10 @@ function storicaRenderPrevisione(data, matrix, anni) {
 
   function kpiCard(label, val, sub, color, subColor) {
     subColor = subColor || '#94a3b8';
-    return '<div class="sp-kpi" style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid '+color+';background:white">'
-      +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">'+label+'</div>'
-      +'<div style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:4px">'+val+'</div>'
-      +'<div style="font-size:11px;color:'+subColor+';margin-top:3px;font-weight:600">'+sub+'</div>'
+    return '<div class="sp-kpi" style="border:1px solid #e2e8f0;border-radius:10px;padding:18px 20px;border-left:4px solid '+color+';background:white">'
+      +'<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">'+label+'</div>'
+      +'<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:36px;font-weight:800;color:#0f172a;line-height:1;letter-spacing:-0.5px">'+val+'</div>'
+      +'<div style="font-size:12px;font-weight:500;color:'+subColor+';margin-top:6px">'+sub+'</div>'
       +'</div>';
   }
 
@@ -639,11 +639,11 @@ function storicaRenderPrevisione(data, matrix, anni) {
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 function storicaKPI(label, value, sub, color, extraHtml) {
-  return '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-top:3px solid '+color+';background:var(--surface)">'
-    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">'+label+'</div>'
-    +'<div style="font-size:20px;font-weight:800;color:var(--text);line-height:1">'+value+'</div>'
-    +'<div style="font-size:10px;color:#94a3b8;margin-top:3px">'+sub+'</div>'
-    +(extraHtml?'<div style="margin-top:6px">'+extraHtml+'</div>':'')
+  return '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:18px 20px;border-top:3px solid '+color+';background:var(--surface)">'
+    +'<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:8px">'+label+'</div>'
+    +'<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:36px;font-weight:800;color:#0f172a;line-height:1;letter-spacing:-0.5px">'+value+'</div>'
+    +'<div style="font-size:12px;font-weight:500;color:#94a3b8;margin-top:6px">'+sub+'</div>'
+    +(extraHtml?'<div style="margin-top:8px">'+extraHtml+'</div>':'')
     +'</div>';
 }
 
