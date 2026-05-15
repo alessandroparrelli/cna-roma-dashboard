@@ -129,7 +129,7 @@ function repPag0_Copertina(anno, mese) {
   return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px;height:740px;display:flex;flex-direction:column">'
     // Contenuto centrato verticalmente — flex:1 occupa lo spazio, footer rimane in fondo
     + '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">'
-    + '<img src="' + LOGO_URL + '" style="height:auto;width:180px;object-fit:contain;object-position:center;margin-bottom:44px" crossorigin="anonymous" />'
+    + '<img src="' + LOGO_URL + '" style="height:auto;width:240px;object-fit:contain;object-position:center;margin-bottom:44px" crossorigin="anonymous" />'
     + '<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:44px;font-weight:800;color:#0f172a;letter-spacing:-1.5px;text-align:center;line-height:1.05">'
     +   'Analisi adesioni dirette della<br>'
     +   '<span style="color:#005CA9">CNA di Roma</span>'
@@ -796,9 +796,13 @@ function repPagAtecoSplit(data, anno, mese, soloMese) {
   });
 
   if (!tot) {
-    return [repPage(repHeader(prefisso+'Riepilogo', anno, mese),
-      '<div style="padding:60px;text-align:center;color:#94a3b8;font-size:14px">Nessun dato per questo periodo</div>',
-      repFooter('–'))];
+    var pBase0 = soloMese ? 9 : 12;
+    var vuota = '<div style="padding:60px;text-align:center;color:#94a3b8;font-size:14px">Nessun dato per questo periodo</div>';
+    return [
+      repPage(repHeader(prefisso+'Unione',   anno, mese), vuota, repFooter(String(pBase0))),
+      repPage(repHeader(prefisso+'Mestiere', anno, mese), vuota, repFooter(String(pBase0+1))),
+      repPage(repHeader(prefisso+'Settore',  anno, mese), vuota, repFooter(String(pBase0+2))),
+    ];
   }
 
   // Tabella landscape full-width per una sola card
