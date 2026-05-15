@@ -95,7 +95,7 @@ function repSetStatus(show, msg) {
 // ══════════════════════════════════════════════════════════════════════════════
 // COSTRUZIONE PAGINE
 // ══════════════════════════════════════════════════════════════════════════════
-var REP_TOTAL_PAGES = 9; // copertina + 8 pagine dati
+var REP_TOTAL_PAGES = 8; // copertina + 7 pagine dati
 
 function repBuildAllPages(data, anno, mese, storicaData) {
   storicaData = storicaData || [];
@@ -107,8 +107,7 @@ function repBuildAllPages(data, anno, mese, storicaData) {
     repPag4_RaffrontoYTD(data, anno, mese),  // 4
     repPag5_SchedeA(data, anno, mese),       // 5
     repPag6_SchedeB(data, anno, mese),       // 6
-    repPag7_SerieStorica(data, anno, mese),  // 7
-    repPag8_SerieStoricaTabella(storicaData, anno, mese), // 8
+    repPag8_SerieStoricaTabella(storicaData, anno, mese), // 7 — da serie_storica
   ];
 }
 
@@ -508,67 +507,7 @@ function repPag6_SchedeB(data, anno, mese) {
   return repPage(repHeader('Schede individuali per promotore',anno,mese),body,repFooter('6'));
 }
 
-// ── PAGINA 7: SERIE STORICA ───────────────────────────────────────────────────
-function repPag7_SerieStorica(data, anno, mese) {
-  var anniSet={};
-  data.forEach(function(r){if(r.anno)anniSet[r.anno]=1;});
-  var anni=Object.keys(anniSet).map(Number).sort();
-
-  var mat={};
-  data.forEach(function(r){
-    var a=parseInt(r.anno), m=parseInt(r.mese);
-    if(!m||m<1||m>12) return;
-    if(!mat[m]) mat[m]={};
-    mat[m][a]=(mat[m][a]||0)+1;
-  });
-
-  var la=anni[anni.length-1], pa=anni[anni.length-2], ppa=anni[anni.length-3];
-
-  var th='<tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0"><th style="padding:6px 10px;text-align:left;font-size:10px;color:#64748b;text-transform:uppercase;font-weight:700">Mese</th>';
-  anni.forEach(function(a){
-    var bold=a===la?'font-weight:800;color:#005CA9':'';
-    th+='<th style="padding:6px 8px;text-align:right;font-size:10px;color:#64748b;'+bold+';text-transform:uppercase">'+a+'</th>';
-  });
-  th+='<th style="padding:6px 8px;text-align:right;font-size:10px;color:#EF4444;text-transform:uppercase">su '+(pa||'')+'</th>';
-  th+='<th style="padding:6px 8px;text-align:right;font-size:10px;color:#64748b;text-transform:uppercase">su '+(ppa||ppa||'')+'</th></tr>';
-
-  var rows='';
-  for(var m=1;m<=12;m++){
-    var row=mat[m]||{};
-    var lv=row[la]||0, pv=pa?(row[pa]||0):0, ppv=ppa?(row[ppa]||0):0;
-    var d1=lv-pv, d2=lv-ppv;
-    var c1=d1>0?'#10B981':d1<0?'#EF4444':'#64748b';
-    var c2=d2>0?'#10B981':d2<0?'#EF4444':'#64748b';
-    var bg=m%2===0?'background:#f8fafc':'';
-    rows+='<tr style="border-bottom:1px solid #f1f5f9;'+bg+'">'
-      +'<td style="padding:5px 10px;font-size:11px;font-weight:700;color:#0f172a">'+MESI[m]+'</td>';
-    anni.forEach(function(a){
-      var v=row[a]||0;
-      var s=a===la?'font-weight:700;color:#005CA9':'color:#475569';
-      rows+='<td style="padding:5px 8px;font-size:11px;text-align:right;'+s+'">'+(v||'–')+'</td>';
-    });
-    rows+='<td style="padding:5px 8px;font-size:11px;text-align:right;font-weight:700;color:'+c1+'">'+(d1!==0?(d1>0?'+':'')+d1:'–')+'</td>';
-    rows+='<td style="padding:5px 8px;font-size:11px;text-align:right;color:'+c2+'">'+(d2!==0?(d2>0?'+':'')+d2:'–')+'</td></tr>';
-  }
-
-  var anniTot={};
-  anni.forEach(function(a){anniTot[a]=Object.values(mat).reduce(function(s,r){return s+(r[a]||0);},0);});
-  var td1=anniTot[la]-(anniTot[pa]||0), td2=anniTot[la]-(anniTot[ppa]||0);
-  var totRow='<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;font-weight:700"><td style="padding:6px 10px;font-size:11px">Totale</td>';
-  anni.forEach(function(a){
-    var s=a===la?'color:#005CA9':'color:#475569';
-    totRow+='<td style="padding:6px 8px;font-size:11px;text-align:right;font-weight:700;'+s+'">'+anniTot[a]+'</td>';
-  });
-  totRow+='<td style="padding:6px 8px;font-size:11px;text-align:right;font-weight:700;color:'+(td1>0?'#10B981':'#EF4444')+'">'+(td1>0?'+':'')+td1+'</td>';
-  totRow+='<td style="padding:6px 8px;font-size:11px;text-align:right;color:'+(td2>0?'#10B981':'#EF4444')+'">'+(td2>0?'+':'')+td2+'</td></tr>';
-
-  var body='<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
-    +'<table style="width:100%;border-collapse:collapse"><thead>'+th+'</thead><tbody>'+rows+totRow+'</tbody></table></div>';
-
-  return repPage(repHeader('Serie storica',anno,mese),body,repFooter('7'));
-}
-
-// ── PAGINA 8: SERIE STORICA DA TABELLA serie_storica (ultimi 10 anni) ─────────
+// ── PAGINA 7: SERIE STORICA (da tabella serie_storica — ultimi 10 anni) ────────
 function repPag8_SerieStoricaTabella(storicaData, anno, mese) {
   var MESI_ORD = [1,2,3,4,5,6,7,9,10,11,12];
   var MESI_NOMI = {1:'Gennaio',2:'Febbraio',3:'Marzo',4:'Aprile',5:'Maggio',6:'Giugno',
@@ -592,7 +531,7 @@ function repPag8_SerieStoricaTabella(storicaData, anno, mese) {
   if (!anni.length) {
     return repPage(repHeader('Serie storica', anno, mese),
       '<div style="padding:40px;text-align:center;color:#94a3b8">Dati serie storica non disponibili</div>',
-      repFooter('8'));
+      repFooter('7'));
   }
 
   var la = anni[anni.length-1];
@@ -685,7 +624,7 @@ function repPag8_SerieStoricaTabella(storicaData, anno, mese) {
     + legenda
     + '</div>';
 
-  return repPage(repHeader('Serie storica', anno, mese), body, repFooter('8'));
+  return repPage(repHeader('Serie storica', anno, mese), body, repFooter('7'));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
