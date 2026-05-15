@@ -68,7 +68,10 @@ async function repCaricaEAnteprima() {
     var pages = repBuildAllPages(repAllData, anno, mese, repStoricaData);
     pages.forEach(function(pageHtml, i) {
       var wrapper = document.createElement('div');
-      wrapper.style.cssText = 'margin-bottom:28px;box-shadow:0 4px 24px rgba(0,0,0,0.13);border-radius:4px;overflow:hidden;background:white';
+      // Pagine Ateco (indice 8 e 9) → anteprima portrait più stretta
+      var isAtecoPreview = (i === 8 || i === 9);
+      wrapper.style.cssText = 'margin-bottom:28px;box-shadow:0 4px 24px rgba(0,0,0,0.13);border-radius:4px;overflow:hidden;background:white'
+        + (isAtecoPreview ? ';max-width:794px;margin-left:auto;margin-right:auto' : '');
       wrapper.setAttribute('data-page', i + 1);
       wrapper.innerHTML = pageHtml;
       G('rep-pages-container').appendChild(wrapper);
@@ -144,6 +147,14 @@ function repPage(header, body, footer) {
   return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px">'
     + header
     + '<div style="padding:10px 28px 14px;background:white">' + body + '</div>'
+    + footer + '</div>';
+}
+
+// Versione portrait (794px = A4 portrait a 96dpi)
+function repPagePortrait(header, body, footer) {
+  return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:794px">'
+    + header
+    + '<div style="padding:10px 22px 14px;background:white">' + body + '</div>'
     + footer + '</div>';
 }
 
@@ -714,7 +725,8 @@ async function repGeneraPDF() {
     var mese=parseInt(G('rep-mese').value);
     var {jsPDF}=window.jspdf;
     var pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
-    var PW=297, PH=210;
+    var PW_L=297, PH_L=210; // landscape
+    var PW_P=210, PH_P=297; // portrait
     var container=G('rep-pages-container');
     if(!container) throw new Error('Anteprima non trovata. Clicca prima Carica Dati.');
     var pageDivs=container.querySelectorAll('[data-page]');
@@ -723,13 +735,24 @@ async function repGeneraPDF() {
       showLoad('Rendering pagina '+(i+1)+' di '+pageDivs.length+'…');
       await new Promise(function(r){setTimeout(r,400);});
       var pd=pageDivs[i].firstElementChild||pageDivs[i];
-      var cv=await html2canvas(pd,{scale:1.8,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#ffffff',width:1060,windowWidth:1060});
+
+      // Pagine Ateco (indice 8 e 9 = pagine 9 e 10) → portrait, larghezza 794px
+      var isAteco = (i === 8 || i === 9);
+      var canvasW = isAteco ? 794 : 1060;
+
+      var cv=await html2canvas(pd,{scale:1.8,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#ffffff',width:canvasW,windowWidth:canvasW});
       var id=cv.toDataURL('image/jpeg',0.93);
+
+      if(i>0){
+        pdf.addPage('a4', isAteco ? 'portrait' : 'landscape');
+      }
+
+      var PW = isAteco ? PW_P : PW_L;
+      var PH = isAteco ? PH_P : PH_L;
       var ratio=cv.width/cv.height;
       var iw=PW, ih=iw/ratio;
       if(ih>PH){ih=PH;iw=ih*ratio;}
       var x=(PW-iw)/2, y=(PH-ih)/2;
-      if(i>0) pdf.addPage();
       pdf.addImage(id,'JPEG',x,y,iw,ih);
     }
     var fname='Report_CNA_Roma_'+MESI[mese]+'_'+anno+'.pdf';
@@ -759,7 +782,7 @@ function repPagAteco(data, anno, mese, soloMese) {
 
   var tot = rec.length;
   if (!tot) {
-    return repPage(repHeader(titolo, anno, mese),
+    return repPagePortrait(repHeader(titolo, anno, mese),
       '<div style="padding:40px;text-align:center;color:#94a3b8;font-size:13px">Nessun dato Ateco per questo periodo</div>',
       repFooter(nPag));
   }
@@ -871,5 +894,5 @@ function repPagAteco(data, anno, mese, soloMese) {
     + atecoTbl(byMestiere,'Mestiere', '#DC2626')
     + atecoTbl(bySettore, 'Settore',  '#F59E0B');
 
-  return repPage(repHeader(titolo, anno, mese), body, repFooter(nPag));
+  return repPagePortrait(repHeader(titolo, anno, mese), body, repFooter(nPag));
 }
