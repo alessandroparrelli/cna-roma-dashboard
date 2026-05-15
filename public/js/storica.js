@@ -53,14 +53,11 @@ async function storicaLoad() {
   storicaSetStatus(true, 'Caricamento serie storica…');
 
   try {
-    // Carica tutti i record della serie storica
-    var { data, error } = await sb
-      .from('serie_storica')
-      .select('*')
-      .order('anno', { ascending: true })
-      .order('mese', { ascending: true });
+    // Carica tutti i record della serie storica tramite fetch diretto
+    var data = await sbGetAll('serie_storica');
 
-    if (error) throw error;
+    // Ordina per anno poi mese
+    data.sort(function(a,b){ return a.anno!==b.anno ? a.anno-b.anno : a.mese-b.mese; });
 
     storicaRender(data || []);
     storicaSetStatus(false);
@@ -298,8 +295,12 @@ async function storicaAggiornaDal2026() {
       return;
     }
 
-    var { error } = await sb.from('serie_storica').upsert(upserts, { onConflict: 'anno,mese' });
-    if (error) throw error;
+    // Upsert tramite POST con Prefer: resolution=merge-duplicates
+    await sbPost(
+      'serie_storica',
+      upserts,
+      { 'Prefer': 'resolution=merge-duplicates,return=minimal' }
+    );
 
     storicaSetStatus(false);
     toast('✓ Aggiornati ' + upserts.length + ' mesi per il 2026', 'success');
