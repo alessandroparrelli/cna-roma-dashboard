@@ -749,14 +749,14 @@ async function repGeneraPDF() {
       showLoad('Rendering pagina '+(i+1)+' di '+pageDivs.length+'…');
       await new Promise(function(r){setTimeout(r,400);});
       var pd=pageDivs[i].firstElementChild||pageDivs[i];
-      var cv=await html2canvas(pd,{scale:1.8,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#ffffff',width:1060,windowWidth:1060});
-      var id=cv.toDataURL('image/jpeg',0.93);
+      var cv=await html2canvas(pd,{scale:3,useCORS:true,allowTaint:true,logging:false,backgroundColor:'#ffffff',width:1060,windowWidth:1060});
+      var id=cv.toDataURL('image/png');
       if(i>0) pdf.addPage('a4','landscape');
       var ratio=cv.width/cv.height;
       var iw=PW, ih=iw/ratio;
       if(ih>PH){ih=PH;iw=ih*ratio;}
       var x=(PW-iw)/2, y=(PH-ih)/2;
-      pdf.addImage(id,'JPEG',x,y,iw,ih);
+      pdf.addImage(id,'PNG',x,y,iw,ih);
     }
     var fname='Report_CNA_Roma_'+MESI[mese]+'_'+anno+'.pdf';
     pdf.save(fname);
