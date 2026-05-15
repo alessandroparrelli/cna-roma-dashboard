@@ -39,8 +39,12 @@ function buildStoricaUI() {
     +'<div id="storica-kpi" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:20px"></div>'
     // TABELLA
     +'<div id="storica-table-wrap" style="border:1px solid #e2e8f0;border-radius:12px;background:white;box-shadow:var(--shadow-sm);margin-bottom:24px;overflow:hidden">'
-    +'<div style="overflow-x:auto;overflow-y:auto;max-height:480px;">'
+    +'<div id="storica-scroll-body" style="overflow-x:auto;overflow-y:auto;max-height:440px;">'
     +'<table id="storica-table" style="border-collapse:collapse;white-space:nowrap"></table>'
+    +'</div>'
+    // Riga Totale fuori dallo scroll — non coperta dalla scrollbar
+    +'<div id="storica-scroll-tot" style="overflow-x:hidden;border-top:2px solid #e2e8f0;">'
+    +'<table id="storica-table-tot" style="border-collapse:collapse;white-space:nowrap"></table>'
     +'</div>'
     +'<div style="padding:10px 16px;border-top:1px solid #f1f5f9;display:flex;align-items:center;gap:16px">'
     +'<div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#10B981"></div><span style="font-size:11px;color:#64748b">Auto-calcolato da Supabase</span></div>'
@@ -148,14 +152,14 @@ function storicaRender(data) {
   }
 
   // ── TABELLA ──
-  var th = '<thead><tr style="background:#1e293b;position:sticky;top:0;z-index:3">'
-    +'<th style="'+thSt()+';position:sticky;left:0;z-index:4;background:#1e293b;min-width:110px;border-right:2px solid #334155">Mese</th>';
+  // Header
+  var thCells = '<th style="'+thSt()+';position:sticky;left:0;z-index:4;background:#1e293b;min-width:110px;border-right:2px solid #334155">Mese</th>';
   anni.forEach(function(a) {
     var isNow = a===annoCorrente;
-    th += '<th style="'+thSt()+';min-width:55px;text-align:center'+(isNow?';background:#005CA9':'')+'">' + a + '</th>';
+    thCells += '<th style="'+thSt()+';min-width:55px;text-align:center'+(isNow?';background:#005CA9':'')+'">' + a + '</th>';
   });
-  th += '</tr></thead>';
 
+  // Righe mesi (senza Totale)
   var tbody = '<tbody>';
   MESI_ORD.forEach(function(m) {
     var rowBg = m%2===0?'background:#fafafa':'';
@@ -170,19 +174,29 @@ function storicaRender(data) {
     });
     tbody += '<tr style="border-bottom:1px solid #f1f5f9;'+rowBg+'">'+tds+'</tr>';
   });
+  tbody += '</tbody>';
 
-  // Riga Totale
-  tbody += '<tr style="background:#f8fafc;border-top:2px solid #e2e8f0;position:sticky;bottom:0;z-index:2">'
-    +'<td style="padding:7px 12px;font-size:12px;font-weight:700;position:sticky;left:0;background:#f8fafc;border-right:2px solid #e2e8f0;z-index:3">Totale</td>';
+  // Riga Totale separata (fuori dallo scroll)
+  var totCells = '<td style="padding:7px 12px;font-size:12px;font-weight:700;position:sticky;left:0;background:#f8fafc;border-right:2px solid #e2e8f0;z-index:1;white-space:nowrap;min-width:110px">Totale</td>';
   anni.forEach(function(a) {
     var t = totAnno[a]||0;
     var isNow = a===annoCorrente;
-    tbody += '<td style="padding:7px 8px;font-size:12px;font-weight:700;text-align:center;'+(isNow?'color:#005CA9':'color:#475569')+'">'+( t||'–')+'</td>';
+    totCells += '<td style="padding:7px 8px;font-size:12px;font-weight:700;text-align:center;min-width:55px;'+(isNow?'color:#005CA9':'color:#475569')+'">'+t+'</td>';
   });
-  tbody += '</tr></tbody>';
 
   var tbl = G('storica-table');
-  if (tbl) tbl.innerHTML = th + tbody;
+  if (tbl) tbl.innerHTML = '<thead><tr style="background:#1e293b;position:sticky;top:0;z-index:3">'+thCells+'</tr></thead>' + tbody;
+
+  // Inserisce riga Totale nella tabella separata sotto
+  var totTbl = G('storica-table-tot');
+  if (totTbl) totTbl.innerHTML = '<tbody><tr style="background:#f8fafc;border-top:2px solid #e2e8f0">'+totCells+'</tr></tbody>';
+
+  // Sincronizza scroll orizzontale tra le due tabelle
+  var scrollDiv = G('storica-scroll-body');
+  var scrollTot = G('storica-scroll-tot');
+  if (scrollDiv && scrollTot) {
+    scrollDiv.onscroll = function() { scrollTot.scrollLeft = scrollDiv.scrollLeft; };
+  }
 
   // ── GRAFICI ──
   setTimeout(function(){ storicaRenderGrafici(anni, totAnno, matrix, annoCorrente); }, 120);
