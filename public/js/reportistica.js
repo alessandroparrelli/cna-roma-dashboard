@@ -861,26 +861,27 @@ function repPagAtecoSplit(data, anno, mese, soloMese) {
       +'<tbody>'+rows+totRow+'</tbody></table></div>';
   }
 
-  // KPI page
-  function kpiCard(label, val, color) {
-    return '<div style="flex:1;border:1px solid #e2e8f0;border-radius:10px;padding:20px 22px;border-top:3px solid '+color+';background:white">'
-      +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px">'+label+'</div>'
-      +'<div style="font-size:38px;font-weight:800;color:#0f172a;line-height:1;letter-spacing:-0.5px;font-family:Inter,Helvetica,Arial,sans-serif">'+val+'</div></div>';
+  // KPI strip compatta — va in cima alla pagina Unione
+  function kpiStrip(label, val, color) {
+    return '<div style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;border-top:2px solid '+color+';background:white">'
+      +'<div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">'+label+'</div>'
+      +'<div style="font-size:22px;font-weight:800;color:#0f172a;line-height:1;font-family:Inter,Helvetica,Arial,sans-serif">'+val+'</div></div>';
   }
-  var kpiBody = '<div style="display:flex;gap:16px">'
-    +kpiCard('Imprese totali', tot.toLocaleString('it-IT'), '#3B82F6')
-    +kpiCard('Unioni', Object.keys(byUnione).length, '#0047AB')
-    +kpiCard('Mestieri', Object.keys(byMestiere).length, '#DC2626')
-    +kpiCard('Settori', Object.keys(bySettore).length, '#F59E0B')
-    +kpiCard('Donne', donne+' ('+(tot>0?(donne/tot*100).toFixed(1):0)+'%)', '#EC4899')
-    +kpiCard('Stranieri', stranieri+' ('+(tot>0?(stranieri/tot*100).toFixed(1):0)+'%)', '#8B5CF6')
+  var kpiStrip6 = '<div style="display:flex;gap:10px;margin-bottom:14px">'
+    +kpiStrip('Imprese totali', tot.toLocaleString('it-IT'), '#3B82F6')
+    +kpiStrip('Unioni', Object.keys(byUnione).length, '#0047AB')
+    +kpiStrip('Mestieri', Object.keys(byMestiere).length, '#DC2626')
+    +kpiStrip('Settori', Object.keys(bySettore).length, '#F59E0B')
+    +kpiStrip('Donne', donne+' ('+(tot>0?(donne/tot*100).toFixed(1):0)+'%)', '#EC4899')
+    +kpiStrip('Stranieri', stranieri+' ('+(tot>0?(stranieri/tot*100).toFixed(1):0)+'%)', '#8B5CF6')
     +'</div>';
 
-  var pBase = soloMese ? 9 : 13;
+  // 3 pagine: Unione (con KPI in cima), Mestiere, Settore
+  var pBase = soloMese ? 9 : 12;
   return [
-    repPage(repHeader(prefisso+'Riepilogo KPI', anno, mese), kpiBody, repFooter(String(pBase))),
-    repPage(repHeader(prefisso+'Unione',   anno, mese), atecoTblFull(byUnione,   'Unione',   '#0047AB'), repFooter(String(pBase+1))),
-    repPage(repHeader(prefisso+'Mestiere', anno, mese), atecoTblFull(byMestiere, 'Mestiere', '#DC2626'), repFooter(String(pBase+2))),
-    repPage(repHeader(prefisso+'Settore',  anno, mese), atecoTblFull(bySettore,  'Settore',  '#F59E0B'), repFooter(String(pBase+3))),
+    repPage(repHeader(prefisso+'Unione',   anno, mese), kpiStrip6 + atecoTblFull(byUnione,   'Unione',   '#0047AB'), repFooter(String(pBase))),
+    repPage(repHeader(prefisso+'Mestiere', anno, mese), atecoTblFull(byMestiere, 'Mestiere', '#DC2626'), repFooter(String(pBase+1))),
+    repPage(repHeader(prefisso+'Settore',  anno, mese), atecoTblFull(bySettore,  'Settore',  '#F59E0B'), repFooter(String(pBase+2))),
   ];
+}
 }
