@@ -127,6 +127,8 @@ function storicaRender(data) {
     matrix[r.mese][r.anno] = { v: r.valore, auto: r.auto_calcolato };
   });
   var anni = Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
+  // Per la tabella: anni dal più recente al più vecchio (es. 2026, 2025, 2024...)
+  var anniTabella = anni.slice().reverse();
 
   // Totale per anno (somma tutti i mesi)
   var totAnno = {};
@@ -170,7 +172,7 @@ function storicaRender(data) {
   // ── TABELLA ──
   // Header
   var thCells = '<th style="'+thSt()+';position:sticky;left:0;z-index:4;background:#1e293b;min-width:110px;border-right:2px solid #334155">Mese</th>';
-  anni.forEach(function(a) {
+  anniTabella.forEach(function(a) {
     var isNow = a===annoCorrente;
     thCells += '<th style="'+thSt()+';min-width:55px;text-align:center'+(isNow?';background:#005CA9':'')+'">' + a + '</th>';
   });
@@ -180,7 +182,7 @@ function storicaRender(data) {
   MESI_ORD.forEach(function(m) {
     var rowBg = m%2===0?'background:#fafafa':'';
     var tds = '<td style="padding:7px 12px;font-size:12px;font-weight:700;color:#0f172a;position:sticky;left:0;border-right:2px solid #e2e8f0;white-space:nowrap;z-index:1;'+(m%2===0?'background:#fafafa':'background:white')+'">'+STORICA_MESI_NOMI[m]+'</td>';
-    anni.forEach(function(a) {
+    anniTabella.forEach(function(a) {
       var cell = matrix[m]&&matrix[m][a]?matrix[m][a]:null;
       var v = cell?cell.v:null;
       var isAuto = cell&&cell.auto;
@@ -194,7 +196,7 @@ function storicaRender(data) {
 
   // Riga Totale separata (fuori dallo scroll)
   var totCells = '<td style="padding:7px 12px;font-size:12px;font-weight:700;position:sticky;left:0;background:#f8fafc;border-right:2px solid #e2e8f0;z-index:1;white-space:nowrap;min-width:110px">Totale</td>';
-  anni.forEach(function(a) {
+  anniTabella.forEach(function(a) {
     var t = totAnno[a]||0;
     var isNow = a===annoCorrente;
     totCells += '<td style="padding:7px 8px;font-size:12px;font-weight:700;text-align:center;min-width:55px;'+(isNow?'color:#005CA9':'color:#475569')+'">'+t+'</td>';

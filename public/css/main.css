@@ -1631,6 +1631,29 @@ header .btn svg,
   margin:4px 0;
 }
 
+/* Su schermi larghi: tutte le tab in linea, dropdown nascosto */
+@media(min-width:1200px){
+  .tabs-dropdown-wrap{ display:none !important; }
+  .tabs-separator{ display:none !important; }
+  .tab-btn[data-tab="tab-contratti"],
+  .tab-btn[data-tab="tab-consulenti"],
+  .tab-btn[data-tab="tab-storica"],
+  .tab-btn[data-tab="tab-reportistica"],
+  .tab-btn[data-tab="tab-import"]{
+    display:inline-flex !important;
+  }
+}
+/* Su schermi stretti: tab extra nascoste, dropdown visibile */
+@media(max-width:1199px){
+  .tab-btn[data-tab="tab-contratti"],
+  .tab-btn[data-tab="tab-consulenti"],
+  .tab-btn[data-tab="tab-storica"],
+  .tab-btn[data-tab="tab-import"]{
+    display:none !important;
+  }
+  /* Reportistica rimane display:none controllato da JS — non tocchiamo */
+}
+
 /* ══════════════════════════════════════════
    APP FOOTER
    ══════════════════════════════════════════ */

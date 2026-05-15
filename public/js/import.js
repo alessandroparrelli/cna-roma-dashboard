@@ -755,9 +755,10 @@ G('btn-clr-pfilters').addEventListener('click',function(){['fp-anno','fp-mese-da
 ['fp-anno','fp-mese-da','fp-mese-a','fp-tiporete'].forEach(function(id){G(id).addEventListener('change',renderPromoTrend);});
 
 // TABS
-document.querySelectorAll('.tab-btn').forEach(function(btn){
+document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
   btn.addEventListener('click',function(){
     var tabId=this.getAttribute('data-tab');
+    if(!tabId) return;
     
     // Controllo autorizzazione
     if(!canAccessTab(tabId)){
@@ -765,10 +766,21 @@ document.querySelectorAll('.tab-btn').forEach(function(btn){
       return;
     }
     
-    document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
+    document.querySelectorAll('.tab-btn[data-tab]').forEach(function(b){b.classList.remove('active');});
     document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
     this.classList.add('active');
     G(tabId).classList.add('active');
+
+    // Chiudi il dropdown se aperto
+    var drop = G('tabs-dropdown');
+    if(drop) drop.style.display = 'none';
+    var chevron = G('tabs-more-chevron');
+    if(chevron) chevron.style.transform = '';
+    var moreBtn = G('tabs-more-btn');
+    if(moreBtn){ moreBtn.setAttribute('aria-expanded','false'); }
+    // Evidenzia "Altro" se la tab attiva è nel dropdown
+    if(typeof syncTabsMoreBtn === 'function') syncTabsMoreBtn();
+
     // Gestione upload-zone: visibile solo su overview per admin senza dati tesseramento
     if(tabId==='tab-overview' && allData.length===0 && isAdmin()){
       G('upload-zone').style.display='flex';
