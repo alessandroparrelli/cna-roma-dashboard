@@ -884,4 +884,3 @@ function repPagAtecoSplit(data, anno, mese, soloMese) {
     repPage(repHeader(prefisso+'Settore',  anno, mese), atecoTblFull(bySettore,  'Settore',  '#F59E0B'), repFooter(String(pBase+2))),
   ];
 }
-}
