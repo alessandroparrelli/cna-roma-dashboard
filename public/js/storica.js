@@ -57,7 +57,7 @@ function buildStoricaUI() {
     // DUE GRAFICI — uno sopra l'altro, compatti
     +'<div style="display:flex;flex-direction:column;gap:16px">'
     // Grafico 1: totale annuale
-    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow-sm)">'
+    +'<div class="storica-chart-card" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow-sm)">'
     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:2px">'
     +'<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#005CA9,#3B82F6);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
     +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'
@@ -67,7 +67,7 @@ function buildStoricaUI() {
     +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Contratti totali per ogni anno (anno corrente in rosso)</div>'
     +'<div style="position:relative;height:180px"><canvas id="storica-chart-anni"></canvas></div></div>'
     // Grafico 2: mese selezionato
-    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow-sm)">'
+    +'<div class="storica-chart-card" style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow-sm)">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">'
     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:2px">'
     +'<div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#7C3AED,#A78BFA);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
@@ -459,15 +459,7 @@ function storicaRenderPrevisione(data, matrix, anni) {
 
   var html = '';
 
-  // CSS hover inline — iniettato una volta sola
-  html += '<style>'
-    +'.sp-kpi{transition:all .2s ease;cursor:default;}'
-    +'.sp-kpi:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(0,0,0,0.1);}'
-    +'.sp-mese-card{transition:all .2s ease;}'
-    +'.sp-mese-card:hover{transform:translateY(-2px);box-shadow:0 6px 16px rgba(0,0,0,0.08);border-color:#93c5fd!important;}'
-    +'.sp-ob-btn{transition:all .18s ease;}'
-    +'.sp-ob-btn:hover{background:#0073C8!important;transform:translateY(-1px);box-shadow:0 4px 12px rgba(0,92,169,0.35);}'
-    +'</style>';
+  // (hover effects definiti in main.css — classi .sp-kpi, .sp-mese-card, .sp-ob-btn)
 
   // ── HEADER ──
   html += '<div style="background:linear-gradient(135deg,#0a1628 0%,#0d2d5e 60%,#1a3a6e 100%);border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.2)">';
