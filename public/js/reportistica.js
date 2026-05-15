@@ -126,10 +126,18 @@ function repBuildAllPages(data, anno, mese, storicaData) {
 // ── PAGINA 0: COPERTINA ───────────────────────────────────────────────────────
 function repPag0_Copertina(anno, mese) {
   var meseStr = MESI[mese] + ' ' + anno;
-  return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px;height:740px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0">'
-    + '<img src="' + LOGO_URL + '" style="height:120px;width:auto;max-width:340px;object-fit:contain;margin-bottom:52px" crossorigin="anonymous" />'
-    + '<div style="font-size:36px;font-weight:800;color:#0f172a;letter-spacing:-0.5px;text-align:center;line-height:1.15">Andamento Tesseramento</div>'
-    + '<div style="margin-top:16px;font-size:16px;font-weight:500;color:#64748b;text-align:center">Mese di riferimento: <strong style="color:#0f172a;font-weight:700">' + meseStr + '</strong></div>'
+  return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px;height:740px;display:flex;flex-direction:column">'
+    // Contenuto centrato verticalmente — flex:1 occupa lo spazio, footer rimane in fondo
+    + '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">'
+    + '<img src="' + LOGO_URL + '" style="height:auto;width:180px;object-fit:contain;object-position:center;margin-bottom:44px" crossorigin="anonymous" />'
+    + '<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:44px;font-weight:800;color:#0f172a;letter-spacing:-1.5px;text-align:center;line-height:1.05">'
+    +   'Analisi adesioni dirette della<br>'
+    +   '<span style="color:#005CA9">CNA di Roma</span>'
+    + '</div>'
+    + '<div style="margin-top:10px;font-size:15px;font-weight:500;color:#64748b;text-align:center;letter-spacing:0">Mese di riferimento: <strong style="color:#0f172a;font-weight:700">' + meseStr + '</strong></div>'
+    + '</div>'
+    // Footer identico alle altre pagine
+    + repFooter('1')
     + '</div>';
 }
 
