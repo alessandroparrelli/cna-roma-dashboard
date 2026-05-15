@@ -46,21 +46,21 @@ function buildStoricaUI() {
     +'<div style="display:flex;align-items:center;gap:5px"><div style="width:8px;height:8px;border-radius:50%;background:#10B981"></div><span style="font-size:11px;color:#64748b">Auto-calcolato da Supabase</span></div>'
     +'<div style="display:flex;align-items:center;gap:5px"><div style="width:40px;height:8px;border-radius:2px;background:linear-gradient(to right,#f0f5ff,#005CA9)"></div><span style="font-size:11px;color:#64748b">Intensità</span></div>'
     +'</div></div>'
-    // DUE GRAFICI
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">'
+    // DUE GRAFICI — uno sopra l'altro, compatti
+    +'<div style="display:flex;flex-direction:column;gap:16px">'
     // Grafico 1: totale annuale
-    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow-sm)">'
-    +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">📊 Totale annuale</div>'
-    +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:14px">Contratti totali per ogni anno</div>'
-    +'<canvas id="storica-chart-anni" height="220"></canvas></div>'
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow-sm)">'
+    +'<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px">📊 Totale annuale</div>'
+    +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Contratti totali per ogni anno (anno corrente in rosso)</div>'
+    +'<div style="position:relative;height:180px"><canvas id="storica-chart-anni"></canvas></div></div>'
     // Grafico 2: mese selezionato
-    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow-sm)">'
-    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">'
+    +'<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 20px;box-shadow:var(--shadow-sm)">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">'
     +'<div style="font-size:13px;font-weight:700;color:var(--text)">📈 Andamento mensile</div>'
     +'<select id="storica-sel-mese" onchange="storicaCambiaMese(this.value)" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface);color:var(--text);font-size:12px;font-weight:600">'+mesiOpt+'</select>'
     +'</div>'
-    +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:14px">Andamento dal 2000 per il mese selezionato</div>'
-    +'<canvas id="storica-chart-mese" height="220"></canvas></div>'
+    +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Andamento dal 2000 per il mese selezionato</div>'
+    +'<div style="position:relative;height:180px"><canvas id="storica-chart-mese"></canvas></div></div>'
     +'</div>'
     +'</div>';
 
@@ -194,21 +194,18 @@ function storicaRenderGrafici(anni, totAnno, matrix, annoCorrente) {
   storicaRenderMese(anni, matrix);
 }
 
-function storicaGradient(ctx, colorStart, colorEnd) {
-  var h = ctx.canvas.height;
-  var grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, colorStart);
-  grad.addColorStop(1, colorEnd);
-  return grad;
-}
-
 function storicaRenderAnni(anni, totAnno, annoCorrente) {
   var el = G('storica-chart-anni');
   if (!el) return;
   var ck = 'storicaAnni';
   if (charts[ck]) { charts[ck].destroy(); delete charts[ck]; }
   var ctx = el.getContext('2d');
-  var grad = storicaGradient(ctx, 'rgba(0,92,169,0.85)', 'rgba(0,92,169,0.05)');
+
+  // Colori: anno corrente rosso, gli altri blu CNA fisso
+  var bgColors = anni.map(function(a) {
+    return a === annoCorrente ? 'rgba(239,68,68,0.85)' : 'rgba(0,92,169,0.75)';
+  });
+
   charts[ck] = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -216,10 +213,8 @@ function storicaRenderAnni(anni, totAnno, annoCorrente) {
       datasets: [{
         label: 'Contratti totali',
         data: anni.map(function(a){ return totAnno[a]||0; }),
-        backgroundColor: anni.map(function(a){
-          return a===annoCorrente ? 'rgba(239,68,68,0.85)' : grad;
-        }),
-        borderRadius: 5,
+        backgroundColor: bgColors,
+        borderRadius: 4,
         borderSkipped: false
       }]
     },
@@ -232,7 +227,24 @@ function storicaRenderAnni(anni, totAnno, annoCorrente) {
       },
       scales: {
         x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
-        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } }
+        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } }, beginAtZero: true }
+      },
+      animation: {
+        onComplete: function() {
+          // Applica gradient reale dopo che il canvas ha le dimensioni definitive
+          var c = charts[ck];
+          if (!c) return;
+          var chartCtx = c.ctx;
+          var chartArea = c.chartArea;
+          if (!chartArea) return;
+          var grad = chartCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          grad.addColorStop(0, 'rgba(0,92,169,0.9)');
+          grad.addColorStop(1, 'rgba(0,92,169,0.15)');
+          c.data.datasets[0].backgroundColor = anni.map(function(a) {
+            return a === annoCorrente ? 'rgba(239,68,68,0.85)' : grad;
+          });
+          c.update('none'); // aggiorna senza rianimate
+        }
       }
     }
   });
@@ -246,7 +258,8 @@ function storicaRenderMese(anni, matrix) {
   if (charts[ck]) { charts[ck].destroy(); delete charts[ck]; }
   var ctx = el.getContext('2d');
   var vals = anni.map(function(a){ return matrix[m]&&matrix[m][a]?matrix[m][a].v:null; });
-  var grad = storicaGradient(ctx, 'rgba(139,92,246,0.7)', 'rgba(139,92,246,0.03)');
+  var annoCorr = new Date().getFullYear();
+
   charts[ck] = new Chart(ctx, {
     type: 'line',
     data: {
@@ -255,11 +268,11 @@ function storicaRenderMese(anni, matrix) {
         label: STORICA_MESI_NOMI[m],
         data: vals,
         borderColor: '#7C3AED',
-        backgroundColor: grad,
+        backgroundColor: 'rgba(139,92,246,0.15)', // placeholder, sostituito in onComplete
         tension: 0.4,
         fill: true,
-        pointBackgroundColor: anni.map(function(a){ return a===new Date().getFullYear()?'#EF4444':'#7C3AED'; }),
-        pointRadius: anni.map(function(a){ return a===new Date().getFullYear()?6:4; }),
+        pointBackgroundColor: anni.map(function(a){ return a===annoCorr?'#EF4444':'#7C3AED'; }),
+        pointRadius: anni.map(function(a){ return a===annoCorr?6:4; }),
         pointBorderWidth: 0,
         spanGaps: true
       }]
@@ -273,7 +286,21 @@ function storicaRenderMese(anni, matrix) {
       },
       scales: {
         x: { grid: { display: false }, ticks: { font: { size: 10 }, maxRotation: 45 } },
-        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } } }
+        y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } }, beginAtZero: true }
+      },
+      animation: {
+        onComplete: function() {
+          var c = charts[ck];
+          if (!c) return;
+          var chartCtx = c.ctx;
+          var chartArea = c.chartArea;
+          if (!chartArea) return;
+          var grad = chartCtx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
+          grad.addColorStop(0, 'rgba(139,92,246,0.6)');
+          grad.addColorStop(1, 'rgba(139,92,246,0.02)');
+          c.data.datasets[0].backgroundColor = grad;
+          c.update('none');
+        }
       }
     }
   });
