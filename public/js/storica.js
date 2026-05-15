@@ -66,6 +66,8 @@ function buildStoricaUI() {
     +'<div style="font-size:11px;color:var(--text-secondary);margin-bottom:12px">Andamento dal 2000 per il mese selezionato</div>'
     +'<div style="position:relative;height:180px"><canvas id="storica-chart-mese"></canvas></div></div>'
     +'</div>'
+    // ── SEZIONE PREVISIONALE ──
+    +'<div id="storica-previsione" style="margin-top:24px"></div>'
     +'</div>';
 
   storicaLoad();
@@ -200,6 +202,9 @@ function storicaRender(data) {
 
   // ── GRAFICI ──
   setTimeout(function(){ storicaRenderGrafici(anni, totAnno, matrix, annoCorrente); }, 120);
+
+  // ── PREVISIONE ──
+  storicaRenderPrevisione(data, matrix, anni);
 }
 
 // ── GRAFICI GRADIENT ─────────────────────────────────────────────────────────
@@ -341,6 +346,263 @@ function storicaCambiaMese(val) {
   storicaData.forEach(function(r){anniSet[r.anno]=1;});
   var anni=Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
   storicaRenderMese(anni, matrix);
+}
+
+// ── SEZIONE PREVISIONALE ─────────────────────────────────────────────────────
+function storicaRenderPrevisione(data, matrix, anni) {
+  var el = G('storica-previsione');
+  if (!el) return;
+
+  var OBIETTIVO = 1000;
+  var ANNO_CUR = 2026;
+  var ANNI_RIFE = [2021,2022,2023,2024,2025];
+  var MESI_ORD_P = [1,2,3,4,5,6,7,9,10,11,12];
+  var NOMI_P = {1:'Gennaio',2:'Febbraio',3:'Marzo',4:'Aprile',5:'Maggio',6:'Giugno',
+    7:'Lug/Ago',9:'Settembre',10:'Ottobre',11:'Novembre',12:'Dicembre'};
+
+  // Valori reali 2026 già disponibili
+  var reali2026 = {};
+  data.forEach(function(r){ if(r.anno===ANNO_CUR) reali2026[r.mese]=r.valore; });
+  var totReale = Object.values(reali2026).reduce(function(s,v){return s+v;},0);
+  var mesiReali = Object.keys(reali2026).map(Number);
+  var mesiFuturi = MESI_ORD_P.filter(function(m){ return !reali2026.hasOwnProperty(m); });
+
+  // Regressione lineare per ogni mese sugli ultimi 5 anni
+  function stimaMese(m) {
+    var vals = ANNI_RIFE.map(function(a){ return matrix[m]&&matrix[m][a]?matrix[m][a].v||0:0; });
+    var n=vals.length, xs=vals.map(function(_,i){return i;}),
+        mx=(n-1)/2, my=vals.reduce(function(s,v){return s+v;},0)/n;
+    var num=xs.reduce(function(s,x,i){return s+(x-mx)*(vals[i]-my);},0);
+    var den=xs.reduce(function(s,x){return s+(x-mx)*(x-mx);},0);
+    var slope=den?num/den:0;
+    var trend=Math.max(0,Math.round(my+slope*(5-mx)));
+    var media=Math.round(my);
+    var stima=Math.round(0.6*trend+0.4*media);
+    return {stima:stima,trend:trend,media:media,slope:Math.round(slope*10)/10,vals:vals};
+  }
+
+  // Calcola stime per tutti i mesi
+  var stime = {};
+  MESI_ORD_P.forEach(function(m){ stime[m]=stimaMese(m); });
+
+  // Stima totale naturale 2026
+  var totStimaNaturale = totReale + mesiFuturi.reduce(function(s,m){return s+stime[m].stima;},0);
+
+  // Piano per arrivare a 1000
+  var fabbisogno = OBIETTIVO - totReale;
+  var stimaNaturaleFutura = mesiFuturi.reduce(function(s,m){return s+stime[m].stima;},0);
+  var boost = stimaNaturaleFutura>0 ? fabbisogno/stimaNaturaleFutura : 1;
+
+  var piano = {};
+  var cumPiano = totReale;
+  mesiFuturi.forEach(function(m){
+    var t = Math.round(stime[m].stima * boost);
+    cumPiano += t;
+    piano[m] = {target:t, naturale:stime[m].stima, extra:t-stime[m].stima, cum:cumPiano};
+  });
+
+  // Percentuale raggiunta
+  var pctRaggiunta = Math.min(100, Math.round(totReale/OBIETTIVO*100));
+  var pctStima = Math.min(100, Math.round(totStimaNaturale/OBIETTIVO*100));
+  var gapStima = OBIETTIVO - totStimaNaturale;
+
+  // ── HTML ──
+  var html = '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow-sm)">';
+
+  // Header
+  html += '<div style="background:linear-gradient(135deg,#0f172a,#1e3a5f);padding:18px 24px">'
+    +'<div style="font-size:16px;font-weight:800;color:white;margin-bottom:2px">🎯 Previsione 2026 & Piano per 1.000 contratti</div>'
+    +'<div style="font-size:12px;color:rgba(255,255,255,0.6)">Stima basata su regressione lineare degli ultimi 5 anni (2021-2025)</div>'
+    +'</div>';
+
+  html += '<div style="padding:20px 24px">';
+
+  // ── KPI principali ──
+  var mancanti = OBIETTIVO - totReale;
+  var mancherannoCon = OBIETTIVO - totStimaNaturale;
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:24px">';
+
+  // Già fatti
+  html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid #3B82F6;background:white">'
+    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Già realizzati</div>'
+    +'<div style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:4px">'+totReale+'</div>'
+    +'<div style="font-size:11px;color:#94a3b8;margin-top:2px">gen–apr 2026</div></div>';
+
+  // Stima a fine anno
+  var colStima = totStimaNaturale>=OBIETTIVO?'#10B981':'#F59E0B';
+  html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid '+colStima+';background:white">'
+    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Stima a fine anno</div>'
+    +'<div style="font-size:28px;font-weight:800;color:#0f172a;line-height:1.1;margin-top:4px">'+totStimaNaturale+'</div>'
+    +'<div style="font-size:11px;color:'+colStima+';margin-top:2px;font-weight:600">'+(totStimaNaturale>=OBIETTIVO?'✓ Sopra obiettivo':'▼ '+Math.abs(mancherannoCon)+' sotto obiettivo')+'</div></div>';
+
+  // Mancanti per 1000
+  html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid #EF4444;background:white">'
+    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Ancora da fare</div>'
+    +'<div style="font-size:28px;font-weight:800;color:#EF4444;line-height:1.1;margin-top:4px">'+mancanti+'</div>'
+    +'<div style="font-size:11px;color:#94a3b8;margin-top:2px">per arrivare a 1.000</div></div>';
+
+  // Boost necessario
+  html += '<div style="border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px;border-left:4px solid #8B5CF6;background:white">'
+    +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.5px">Boost necessario</div>'
+    +'<div style="font-size:28px;font-weight:800;color:#8B5CF6;line-height:1.1;margin-top:4px">+'+Math.round((boost-1)*100)+'%</div>'
+    +'<div style="font-size:11px;color:#94a3b8;margin-top:2px">rispetto al trend naturale</div></div>';
+
+  html += '</div>';
+
+  // ── Barra progresso ──
+  html += '<div style="margin-bottom:24px">'
+    +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'
+    +'<span style="font-size:12px;font-weight:700;color:var(--text)">Avanzamento verso 1.000</span>'
+    +'<span style="font-size:12px;font-weight:700;color:#005CA9">'+totReale+' / '+OBIETTIVO+' ('+pctRaggiunta+'%)</span>'
+    +'</div>'
+    +'<div style="background:#f1f5f9;border-radius:99px;height:16px;overflow:hidden;position:relative">'
+    // Barra reale
+    +'<div style="position:absolute;left:0;top:0;height:100%;width:'+pctRaggiunta+'%;background:linear-gradient(90deg,#005CA9,#3B82F6);border-radius:99px;transition:width 0.6s ease"></div>'
+    // Barra stima (tratteggiata)
+    +'<div style="position:absolute;left:'+pctRaggiunta+'%;top:2px;height:calc(100% - 4px);width:'+(pctStima-pctRaggiunta)+'%;background:repeating-linear-gradient(90deg,#F59E0B 0px,#F59E0B 8px,transparent 8px,transparent 14px);border-radius:99px;opacity:0.7"></div>'
+    +'</div>'
+    +'<div style="display:flex;gap:16px;margin-top:6px">'
+    +'<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:6px;border-radius:3px;background:linear-gradient(90deg,#005CA9,#3B82F6)"></div><span style="font-size:10px;color:#64748b">Realizzati ('+pctRaggiunta+'%)</span></div>'
+    +'<div style="display:flex;align-items:center;gap:5px"><div style="width:12px;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,#F59E0B 0,#F59E0B 4px,transparent 4px,transparent 7px)"></div><span style="font-size:10px;color:#64748b">Stima trend (+'+(pctStima-pctRaggiunta)+'%)</span></div>'
+    +'</div></div>';
+
+  // ── PIANO MENSILE ──
+  html += '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px">📅 Piano mensile per raggiungere 1.000</div>';
+
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:10px;margin-bottom:20px">';
+
+  // Mesi già realizzati
+  mesiReali.sort(function(a,b){return a-b;}).forEach(function(m){
+    var v = reali2026[m];
+    var nat = stime[m].stima;
+    var vs = v-nat;
+    var vsColor = vs>=0?'#10B981':'#EF4444';
+    var vsSign = vs>=0?'+':'';
+    html += '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;background:#f8fafc;display:flex;align-items:center;gap:12px">'
+      +'<div style="width:8px;height:8px;border-radius:50%;background:#10B981;flex-shrink:0"></div>'
+      +'<div style="flex:1">'
+      +'<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">'+NOMI_P[m]+'</div>'
+      +'<div style="font-size:15px;font-weight:800;color:#0f172a">'+v+' <span style="font-size:11px;font-weight:600;color:'+vsColor+'">'+vsSign+vs+' vs trend</span></div>'
+      +'</div>'
+      +'<div style="text-align:right;font-size:11px;color:#94a3b8">trend: '+nat+'</div>'
+      +'</div>';
+  });
+
+  // Mesi futuri con target piano
+  mesiFuturi.forEach(function(m){
+    var p = piano[m];
+    var extra = p.extra;
+    var pctBar = Math.min(100, Math.round(p.cum/OBIETTIVO*100));
+    var barColor = p.cum>=OBIETTIVO?'#10B981':'#005CA9';
+    html += '<div style="border:1px solid #dbeafe;border-radius:8px;padding:10px 14px;background:white;display:flex;align-items:center;gap:12px">'
+      +'<div style="width:8px;height:8px;border-radius:50%;background:#005CA9;border:2px solid #bfdbfe;flex-shrink:0"></div>'
+      +'<div style="flex:1">'
+      +'<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase">'+NOMI_P[m]+'</div>'
+      +'<div style="font-size:15px;font-weight:800;color:#005CA9">'+p.target+' '
+        +'<span style="font-size:11px;font-weight:600;color:#8B5CF6">+'+extra+' extra</span></div>'
+      +'<div style="background:#f1f5f9;border-radius:4px;height:4px;margin-top:4px">'
+        +'<div style="height:100%;width:'+pctBar+'%;background:'+barColor+';border-radius:4px"></div>'
+      +'</div></div>'
+      +'<div style="text-align:right">'
+        +'<div style="font-size:13px;font-weight:800;color:'+barColor+'">'+p.cum+'</div>'
+        +'<div style="font-size:9px;color:#94a3b8">cum.</div>'
+      +'</div></div>';
+  });
+
+  html += '</div>';
+
+  // ── Grafico piano ──
+  html += '<div style="position:relative;height:200px;margin-top:4px"><canvas id="storica-chart-piano"></canvas></div>';
+
+  html += '</div></div>';
+
+  el.innerHTML = html;
+
+  // Grafico piano mensile
+  setTimeout(function() {
+    var cvs = G('storica-chart-piano');
+    if (!cvs) return;
+    var ck = 'storicaPiano';
+    if (charts[ck]) { charts[ck].destroy(); delete charts[ck]; }
+
+    var labelsAll = MESI_ORD_P.map(function(m){ return NOMI_P[m].substring(0,3); });
+    var datiReali = MESI_ORD_P.map(function(m){ return reali2026[m]!==undefined ? reali2026[m] : null; });
+    var datiTarget = MESI_ORD_P.map(function(m){ return piano[m] ? piano[m].target : null; });
+    var datiNaturale = MESI_ORD_P.map(function(m){ return stime[m].stima; });
+    var gradientApplied = false;
+    var ctx = cvs.getContext('2d');
+
+    charts[ck] = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labelsAll,
+        datasets: [
+          {
+            label: 'Realizzati',
+            data: datiReali,
+            backgroundColor: 'rgba(0,92,169,0.85)',
+            borderRadius: 4,
+            borderSkipped: false,
+            order: 1
+          },
+          {
+            label: 'Target piano',
+            data: datiTarget,
+            backgroundColor: 'rgba(139,92,246,0.7)',
+            borderRadius: 4,
+            borderSkipped: false,
+            order: 2
+          },
+          {
+            label: 'Trend naturale',
+            data: datiNaturale,
+            type: 'line',
+            borderColor: '#F59E0B',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [5,4],
+            pointBackgroundColor: '#F59E0B',
+            pointRadius: 4,
+            tension: 0.3,
+            order: 0
+          }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            position: 'top',
+            labels: { font: { size: 11 }, boxWidth: 12, padding: 12 }
+          },
+          tooltip: { callbacks: { label: function(c){ return ' '+c.dataset.label+': '+c.raw; } } }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+          y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 10 } }, beginAtZero: true }
+        },
+        animation: {
+          onComplete: function() {
+            if (gradientApplied) return;
+            gradientApplied = true;
+            var c = charts[ck];
+            if (!c||!c.chartArea) return;
+            var ca = c.chartArea;
+            var grad = ctx.createLinearGradient(0, ca.top, 0, ca.bottom);
+            grad.addColorStop(0, 'rgba(0,92,169,0.9)');
+            grad.addColorStop(1, 'rgba(0,92,169,0.2)');
+            c.data.datasets[0].backgroundColor = grad;
+            var grad2 = ctx.createLinearGradient(0, ca.top, 0, ca.bottom);
+            grad2.addColorStop(0, 'rgba(139,92,246,0.85)');
+            grad2.addColorStop(1, 'rgba(139,92,246,0.2)');
+            c.data.datasets[1].backgroundColor = grad2;
+            c.update('none');
+          }
+        }
+      }
+    });
+  }, 200);
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
