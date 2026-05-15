@@ -129,9 +129,10 @@ function repHeader(titoloPagina, anno, mese) {
 }
 
 function repFooter(n) {
-  return '<div style="padding:6px 28px;border-top:1px solid #e2e8f0;background:white;display:flex;justify-content:space-between;align-items:center;min-height:28px">'
+  // n=1..7 (pagine dati); nel conteggio totale la copertina è pag.1, quindi le dati partono da pag.2
+  return '<div style="padding:6px 28px;background:white;display:flex;justify-content:space-between;align-items:center;min-height:28px">'
     + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">CNA Roma — Confederazione Nazionale dell\'Artigianato</span>'
-    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">Pagina ' + n + ' di ' + (REP_TOTAL_PAGES - 1) + '</span></div>';
+    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">Pagina ' + (parseInt(n) + 1) + ' di ' + REP_TOTAL_PAGES + '</span></div>';
 }
 
 function repPage(header, body, footer) {
