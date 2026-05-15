@@ -792,46 +792,67 @@ function repPagAteco(data, anno, mese, soloMese) {
     +'</div>';
 
   function atecoTbl(byKey, label, color) {
-    var sorted = Object.keys(byKey).sort(function(a,b){return byKey[b].tot-byKey[a].tot;});
+    var sorted = Object.keys(byKey).sort(function(a,b){return byKey[b].tot-byKey[a].tot;}).slice(0,15);
+    var totVoci = Object.keys(byKey).length;
     var maxTot = byKey[sorted[0]] ? byKey[sorted[0]].tot : 1;
     var rows = sorted.map(function(k,i){
-      var d=byKey[k];
-      var pct=tot>0?(d.tot/tot*100).toFixed(1):'0.0';
-      var pF=d.tot>0?(d.f/d.tot*100).toFixed(0):'0';
-      var pS=d.tot>0?(d.str/d.tot*100).toFixed(0):'0';
-      var bw=Math.max(3,Math.round(d.tot/maxTot*80));
-      var bg=i%2===0?'':'background:#f8fafc';
+      var d = byKey[k];
+      var pct  = tot>0  ? (d.tot/tot*100).toFixed(1) : '0.0';
+      var nF   = d.f;
+      var pF   = d.tot>0 ? (d.f/d.tot*100).toFixed(0) : '0';
+      var nS   = d.str;
+      var pS   = d.tot>0 ? (d.str/d.tot*100).toFixed(0) : '0';
+      var bw   = Math.max(3, Math.round(d.tot/maxTot*60));
+      var bg   = i%2===0 ? '' : 'background:#f8fafc';
       return '<tr style="border-bottom:1px solid #f1f5f9;'+bg+'">'
-        +'<td style="padding:4px 8px;font-size:10px;font-weight:600;color:#0f172a;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+k+'</td>'
-        +'<td style="padding:4px 8px;font-size:10px;font-weight:800;text-align:right">'+d.tot+'</td>'
+        +'<td style="padding:4px 10px;font-size:10px;font-weight:600;color:#0f172a;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+k+'</td>'
+        +'<td style="padding:4px 8px;font-size:11px;font-weight:800;text-align:right;color:#0f172a">'+d.tot+'</td>'
         +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#6366f1">'+pct+'%</td>'
         +'<td style="padding:4px 8px"><div style="width:'+bw+'px;height:4px;background:'+color+';border-radius:2px"></div></td>'
+        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#EC4899;font-weight:700">'+nF+'</td>'
         +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#EC4899">'+pF+'%</td>'
+        +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#8B5CF6;font-weight:700">'+nS+'</td>'
         +'<td style="padding:4px 8px;font-size:10px;text-align:right;color:#8B5CF6">'+pS+'%</td>'
         +'</tr>';
     }).join('');
-    return '<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:white">'
-      +'<div style="background:'+color+';padding:7px 12px;display:flex;align-items:center;justify-content:space-between">'
-      +'<span style="font-size:11px;font-weight:700;color:white">'+label+'</span>'
-      +'<span style="background:rgba(255,255,255,0.2);color:white;font-size:10px;padding:1px 8px;border-radius:20px">'+sorted.length+' voci</span></div>'
+
+    var badgeText = sorted.length < totVoci
+      ? 'Top '+sorted.length+' di '+totVoci
+      : totVoci+' voci';
+
+    return '<div style="border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;background:white;margin-bottom:10px">'
+      +'<div style="background:'+color+';padding:7px 14px;display:flex;align-items:center;justify-content:space-between">'
+      +'<span style="font-size:11px;font-weight:700;color:white;letter-spacing:0.2px">'+label+'</span>'
+      +'<span style="background:rgba(255,255,255,0.2);color:white;font-size:10px;padding:2px 10px;border-radius:20px">'+badgeText+'</span>'
+      +'</div>'
       +'<table style="width:100%;border-collapse:collapse">'
-      +'<thead><tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'
-      +'<th style="padding:5px 8px;text-align:left;font-size:9px;color:#64748b;text-transform:uppercase">'+label+'</th>'
-      +'<th style="padding:5px 8px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">Nr.</th>'
-      +'<th style="padding:5px 8px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">%</th>'
-      +'<th style="padding:5px 8px;font-size:9px;color:#64748b;text-transform:uppercase">Peso</th>'
-      +'<th style="padding:5px 8px;text-align:right;font-size:9px;color:#EC4899;text-transform:uppercase">% ♀</th>'
-      +'<th style="padding:5px 8px;text-align:right;font-size:9px;color:#8B5CF6;text-transform:uppercase">% Str.</th>'
-      +'</tr></thead>'
-      +'<tbody>'+rows+'</tbody></table></div>';
+      +'<thead>'
+      // Prima riga header: raggruppamento Donne e Stranieri
+      +'<tr style="background:#f0f0f0;border-bottom:1px solid #e2e8f0">'
+      +'<th style="padding:4px 10px;font-size:9px;color:#64748b;text-transform:uppercase;text-align:left" colspan="4">'+label+'</th>'
+      +'<th colspan="2" style="padding:4px 8px;font-size:9px;font-weight:700;color:#EC4899;text-transform:uppercase;text-align:center;border-left:1px solid #e2e8f0">♀ Donne</th>'
+      +'<th colspan="2" style="padding:4px 8px;font-size:9px;font-weight:700;color:#8B5CF6;text-transform:uppercase;text-align:center;border-left:1px solid #e2e8f0">Stranieri</th>'
+      +'</tr>'
+      // Seconda riga header: nomi colonne
+      +'<tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0">'
+      +'<th style="padding:4px 10px;text-align:left;font-size:9px;color:#64748b;text-transform:uppercase">Nome</th>'
+      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">Nr.</th>'
+      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#64748b;text-transform:uppercase">% Tot.</th>'
+      +'<th style="padding:4px 8px;font-size:9px;color:#64748b;text-transform:uppercase">Peso</th>'
+      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#EC4899;text-transform:uppercase;border-left:1px solid #e2e8f0">Nr.</th>'
+      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#EC4899;text-transform:uppercase">%</th>'
+      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#8B5CF6;text-transform:uppercase;border-left:1px solid #e2e8f0">Nr.</th>'
+      +'<th style="padding:4px 8px;text-align:right;font-size:9px;color:#8B5CF6;text-transform:uppercase">%</th>'
+      +'</tr>'
+      +'</thead>'
+      +'<tbody>'+rows+'</tbody>'
+      +'</table></div>';
   }
 
   var body = kpiHtml
-    + '<div style="margin-bottom:12px">'+atecoTbl(byUnione,'Unione','#0047AB')+'</div>'
-    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">'
-    + atecoTbl(byMestiere,'Mestiere','#DC2626')
-    + atecoTbl(bySettore,'Settore','#F59E0B')
-    + '</div>';
+    + atecoTbl(byUnione,  'Unione',   '#0047AB')
+    + atecoTbl(byMestiere,'Mestiere', '#DC2626')
+    + atecoTbl(bySettore, 'Settore',  '#F59E0B');
 
   return repPage(repHeader(titolo, anno, mese), body, repFooter(nPag));
 }
