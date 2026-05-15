@@ -95,7 +95,7 @@ function repSetStatus(show, msg) {
 // ══════════════════════════════════════════════════════════════════════════════
 // COSTRUZIONE PAGINE
 // ══════════════════════════════════════════════════════════════════════════════
-var REP_TOTAL_PAGES = 15; // copertina + 14 pagine dati (7 base + 4 Ateco mese + 4 Ateco anno — aggiornato dinamicamente)
+var REP_TOTAL_PAGES = 16; // aggiornato dinamicamente in repBuildAllPages // copertina + 14 pagine dati (7 base + 4 Ateco mese + 4 Ateco anno — aggiornato dinamicamente)
 
 function repBuildAllPages(data, anno, mese, storicaData) {
   storicaData = storicaData || [];
@@ -114,7 +114,12 @@ function repBuildAllPages(data, anno, mese, storicaData) {
   // Ateco anno: 4 pagine
   var atecoAnno = repPagAtecoSplit(data, anno, mese, false);
   var allPages = basePages.concat(atecoMese).concat(atecoAnno);
-  REP_TOTAL_PAGES = allPages.length;
+  var totale = allPages.length;
+  REP_TOTAL_PAGES = totale;
+  // Sostituisce il placeholder __TOTPAG__ con il numero reale in tutti i footer
+  allPages = allPages.map(function(html) {
+    return html.replace(/__TOTPAG__/g, String(totale));
+  });
   return allPages;
 }
 
@@ -139,10 +144,11 @@ function repHeader(titoloPagina, anno, mese) {
 }
 
 function repFooter(n) {
-  // n=1..7 (pagine dati); nel conteggio totale la copertina è pag.1, quindi le dati partono da pag.2
+  // n = numero pagina assoluto (1=copertina, 2=pag1 dati, ecc.)
+  // __TOTPAG__ viene sostituito dopo il conteggio in repBuildAllPages
   return '<div style="padding:6px 28px;background:white;display:flex;justify-content:space-between;align-items:center;min-height:28px">'
     + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">CNA Roma — Confederazione Nazionale dell\'Artigianato</span>'
-    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">Pagina ' + (parseInt(n) + 1) + ' di ' + REP_TOTAL_PAGES + '</span></div>';
+    + '<span style="font-size:10px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">Pagina ' + parseInt(n) + ' di __TOTPAG__</span></div>';
 }
 
 // Landscape A4 a 96dpi ≈ 1122×794px — usiamo 1060×748 con margini
@@ -287,7 +293,7 @@ function repPag1_Mensile(data, anno, mese) {
     + repCardSezione('Promotore','#EC4899','👤',Object.keys(byPromo).length+' voci',repDimTable(byPromo,tot,'#EC4899'),'rep-c1-promo')
     + '</div>';
 
-  return repPage(repHeader('Dato mensile: '+MESI[mese], anno, mese), body, repFooter('1'));
+  return repPage(repHeader('Dato mensile: '+MESI[mese], anno, mese), body, repFooter('2'));
 }
 
 // ── PAGINA 2: DATO ANNUALE ────────────────────────────────────────────────────
@@ -317,7 +323,7 @@ function repPag2_Annuale(data, anno, mese) {
     + repCardSezione('Promotore','#EC4899','👤',Object.keys(byPromo).length+' voci',repDimTable(byPromo,tot,'#EC4899'),'rep-c2-promo')
     + '</div>';
 
-  return repPage(repHeader('Dato annuale: '+anno, anno, mese), body, repFooter('2'));
+  return repPage(repHeader('Dato annuale: '+anno, anno, mese), body, repFooter('3'));
 }
 
 // ── HELPER: TABELLA CONFRONTO ANNI ───────────────────────────────────────────
@@ -408,7 +414,7 @@ function repPag3_RaffrontoMese(data, anno, mese) {
   return repPage(
     repHeader('Raffronto mesi con anni precedenti: '+MESI[mese], anno, mese),
     repBuildConfronto(data, anno, mese, true, 'rep-c3-trend'),
-    repFooter('3')
+    repFooter('4')
   );
 }
 
@@ -417,7 +423,7 @@ function repPag4_RaffrontoYTD(data, anno, mese) {
   return repPage(
     repHeader('Raffronto con anni precedenti, periodo di riferimento: gennaio/'+MESI[mese], anno, mese),
     repBuildConfronto(data, anno, mese, false, 'rep-c4-trend'),
-    repFooter('4')
+    repFooter('5')
   );
 }
 
@@ -508,17 +514,17 @@ function repPag5_SchedeA(data, anno, mese) {
   while(first.length<3) first.push(first[0]||{p:'–',color:'#ccc',anni:[],annData:{},spark:[],totTot:0,totCnt:0,pctGlob:''});
   var body='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">'
     +first.map(function(c,i){return repSchedaHTML(c,'5-'+i);}).join('')+'</div>';
-  return repPage(repHeader('Schede individuali per promotore',anno,mese),body,repFooter('5'));
+  return repPage(repHeader('Schede individuali per promotore',anno,mese),body,repFooter('6'));
 }
 
 function repPag6_SchedeB(data, anno, mese) {
   var cards=repGetPromoCards(data,anno);
   var second=cards.slice(3,6);
-  if(!second.length) return repPage(repHeader('Schede individuali per promotore',anno,mese),'<p style="color:#94a3b8;text-align:center;padding:40px">Meno di 4 promotori presenti.</p>',repFooter('6'));
+  if(!second.length) return repPage(repHeader('Schede individuali per promotore',anno,mese),'<p style="color:#94a3b8;text-align:center;padding:40px">Meno di 4 promotori presenti.</p>',repFooter('7'));
   while(second.length<3) second.push(second[0]);
   var body='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">'
     +second.map(function(c,i){return repSchedaHTML(c,'6-'+i);}).join('')+'</div>';
-  return repPage(repHeader('Schede individuali per promotore',anno,mese),body,repFooter('6'));
+  return repPage(repHeader('Schede individuali per promotore',anno,mese),body,repFooter('7'));
 }
 
 // ── PAGINA 7: SERIE STORICA (da tabella serie_storica — ultimi 10 anni) ────────
@@ -545,7 +551,7 @@ function repPag8_SerieStoricaTabella(storicaData, anno, mese) {
   if (!anni.length) {
     return repPage(repHeader('Serie storica', anno, mese),
       '<div style="padding:40px;text-align:center;color:#94a3b8">Dati serie storica non disponibili</div>',
-      repFooter('7'));
+      repFooter('8'));
   }
 
   var la = anni[anni.length-1];
@@ -638,7 +644,7 @@ function repPag8_SerieStoricaTabella(storicaData, anno, mese) {
     + legenda
     + '</div>';
 
-  return repPage(repHeader('Serie storica', anno, mese), body, repFooter('7'));
+  return repPage(repHeader('Serie storica', anno, mese), body, repFooter('8'));
 }
 
 // ══════════════════════════════════════════════════════════════════════════════
