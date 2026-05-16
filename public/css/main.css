@@ -1337,7 +1337,12 @@ body.dark-mode .btn-toggle-filters{background:rgba(0,92,169,.15);border-color:rg
 /* ════════════ HOME PAGE ════════════ */
 
 /* ── Hero ── */
-.home-hero{padding:16px 0 18px;max-width:720px;}
+.home-hero{
+  padding:16px 0 18px;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;overflow:hidden;
+}
+.home-hero-text{flex:1;min-width:0;}
 .hero-sub{
   font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
   color:var(--primary);margin-bottom:6px;
@@ -1353,6 +1358,39 @@ body.dark-mode .btn-toggle-filters{background:rgba(0,92,169,.15);border-color:rg
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
 }
 .hero-desc{font-size:16px;color:var(--text-secondary);line-height:1.65;max-width:600px;font-weight:500;}
+
+/* Immagine modulo adesione nella hero */
+.home-hero-img-wrap{
+  flex-shrink:0;
+  width:260px;
+  position:relative;
+  align-self:flex-end;
+}
+.home-hero-img-wrap::after{
+  content:'';
+  position:absolute;
+  top:0;right:0;bottom:0;
+  width:55%;
+  background:linear-gradient(to right, transparent 0%, #F1F5F9 100%);
+  pointer-events:none;
+}
+body.dark-mode .home-hero-img-wrap::after{
+  background:linear-gradient(to right, transparent 0%, #0B1220 100%);
+}
+.home-hero-modulo{
+  display:block;width:100%;height:auto;
+  transform:rotate(-12deg) translateY(10px);
+  transform-origin:bottom center;
+  pointer-events:none;
+  /* Nessuna sfumatura interna — quella è nel ::after esterno */
+}
+@media(max-width:900px){
+  .home-hero-img-wrap{width:180px;}
+}
+@media(max-width:650px){
+  .home-hero{flex-direction:column;}
+  .home-hero-img-wrap{display:none;}
+}
 
 /* ── Home KPI Strip ── */
 .home-kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-bottom:40px;}
