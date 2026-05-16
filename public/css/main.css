@@ -1838,3 +1838,4 @@ body.dark-mode .app-footer-copy {
   transform: var(--hover-lift-sm);
   box-shadow: var(--hover-shadow-md);
 }
+/* cache-bust 1778955503 */
