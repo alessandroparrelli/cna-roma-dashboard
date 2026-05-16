@@ -1340,7 +1340,7 @@ body.dark-mode .btn-toggle-filters{background:rgba(0,92,169,.15);border-color:rg
 .home-hero{
   padding:16px 0 18px;
   display:flex;align-items:center;justify-content:space-between;
-  gap:16px;overflow:hidden;
+  gap:16px;overflow:visible;
 }
 .home-hero-text{flex:1;min-width:0;}
 .hero-sub{
@@ -1362,30 +1362,34 @@ body.dark-mode .btn-toggle-filters{background:rgba(0,92,169,.15);border-color:rg
 /* Immagine modulo adesione nella hero */
 .home-hero-img-wrap{
   flex-shrink:0;
-  width:260px;
+  width:240px;
   position:relative;
-  align-self:flex-end;
+  align-self:center;
+  overflow:visible;
 }
 .home-hero-img-wrap::after{
   content:'';
   position:absolute;
   top:0;right:0;bottom:0;
-  width:55%;
+  width:50%;
   background:linear-gradient(to right, transparent 0%, #F1F5F9 100%);
   pointer-events:none;
+  z-index:2;
 }
 body.dark-mode .home-hero-img-wrap::after{
   background:linear-gradient(to right, transparent 0%, #0B1220 100%);
 }
 .home-hero-modulo{
   display:block;width:100%;height:auto;
-  transform:rotate(-12deg) translateY(10px);
-  transform-origin:bottom center;
+  transform:rotate(-8deg);
+  transform-origin:center center;
   pointer-events:none;
-  /* Nessuna sfumatura interna — quella è nel ::after esterno */
+  position:relative;
+  z-index:1;
+  filter:drop-shadow(0 8px 20px rgba(0,0,0,0.15));
 }
 @media(max-width:900px){
-  .home-hero-img-wrap{width:180px;}
+  .home-hero-img-wrap{width:160px;}
 }
 @media(max-width:650px){
   .home-hero{flex-direction:column;}
