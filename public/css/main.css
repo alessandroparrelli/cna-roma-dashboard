@@ -1356,6 +1356,7 @@ body.dark-mode .btn-toggle-filters{background:rgba(0,92,169,.15);border-color:rg
 .hero-accent{
   background:var(--grad-primary);
   -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+  font-weight:900;
 }
 .hero-desc{font-size:16px;color:var(--text-secondary);line-height:1.65;max-width:600px;font-weight:500;}
 
