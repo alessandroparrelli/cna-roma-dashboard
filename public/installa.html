@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sistema ERP CNA di Roma — Installa l'app</title>
+<meta name="description" content="Accedi alle applicazioni CNA di Roma e installale sul tuo smartphone">
+<meta name="theme-color" content="#005CA9">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800;900&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Figtree',sans-serif;background:#F0F4F9;min-height:100vh;color:#0F172A;-webkit-tap-highlight-color:transparent}
+.hero{background:#005CA9;padding:44px 24px 36px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 100% 60% at 50% 120%,rgba(0,30,80,0.3),transparent)}
+.hero-content{position:relative;z-index:1}
+.logo{height:56px;margin-bottom:20px;filter:brightness(0) invert(1)}
+.badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);color:#fff;font-size:11px;font-weight:700;padding:5px 14px;border-radius:20px;margin-bottom:18px;letter-spacing:0.06em;text-transform:uppercase}
+.dot{width:7px;height:7px;border-radius:50%;background:#4ADE80;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero h1{color:#fff;font-size:26px;font-weight:900;letter-spacing:-0.03em;line-height:1.15;margin-bottom:10px}
+.hero p{color:rgba(255,255,255,0.72);font-size:14px;font-weight:400;line-height:1.6}
+.wave{display:block;margin-top:-1px}
+.content{padding:8px 16px 16px;max-width:500px;margin:0 auto}
+.section-label{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748B;margin:28px 0 12px}
+.app-card{background:#fff;border-radius:18px;padding:18px 20px;margin-bottom:12px;border:1px solid #E2E8F0;display:flex;align-items:center;gap:16px;text-decoration:none;color:inherit;-webkit-tap-highlight-color:transparent;transition:transform 0.12s}
+.app-card:active{transform:scale(0.97)}
+.app-icon{width:60px;height:60px;border-radius:15px;flex-shrink:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.app-icon img{width:100%;height:100%;object-fit:cover}
+.app-info{flex:1;min-width:0}
+.app-name{font-size:17px;font-weight:900;color:#0F172A;letter-spacing:-0.025em;line-height:1.2}
+.app-desc{font-size:12px;color:#64748B;margin-top:3px;line-height:1.45}
+.app-url{font-size:11px;color:#005CA9;font-weight:700;margin-top:5px}
+.arrow-wrap{color:#CBD5E1;font-size:22px;flex-shrink:0;font-weight:300}
+.steps-card{background:#fff;border-radius:18px;padding:20px;border:1px solid #E2E8F0;margin-bottom:12px}
+.steps-card h3{font-size:14px;font-weight:800;color:#0F172A;margin-bottom:18px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.os-badge{font-size:10px;font-weight:700;padding:4px 10px;border-radius:7px;letter-spacing:0.02em}
+.ios{background:#F2F2F7;color:#1C1C1E}
+.android{background:#E8F5E9;color:#1B5E20}
+.step{display:flex;gap:14px;margin-bottom:15px;align-items:flex-start}
+.step:last-child{margin-bottom:0}
+.step-num{width:26px;height:26px;border-radius:50%;background:#005CA9;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:0px}
+.step-text{font-size:13px;color:#334155;line-height:1.55;padding-top:3px}
+.step-text strong{color:#0F172A;font-weight:700}
+.step-icon{display:inline-block;background:#F1F5F9;border:1px solid #E2E8F0;border-radius:6px;padding:2px 7px;font-size:11px;font-weight:600;color:#475569;margin:0 1px}
+.tip{background:#EFF6FF;border:1px solid #BFDBFE;border-radius:14px;padding:15px 18px;margin:20px 0 8px}
+.tip-title{font-size:12px;font-weight:700;color:#1E40AF;margin-bottom:4px}
+.tip p{font-size:12px;color:#1E40AF;line-height:1.55}
+.footer{text-align:center;padding:28px 16px 40px;color:#94A3B8;font-size:11px;line-height:1.7}
+.footer-divider{height:1px;background:#E2E8F0;margin:0 0 18px}
+.cna-mark{font-weight:700;color:#005CA9}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-content">
+    <div class="badge"><span class="dot"></span>Sistemi online</div>
+    <img class="logo"
+      src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png"
+      alt="CNA Roma"
+      onerror="this.style.display='none'">
+    <h1>Sistema ERP<br>CNA di Roma</h1>
+    <p>Accedi alle applicazioni e installale<br>sul tuo smartphone in pochi secondi</p>
+  </div>
+  <svg class="wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 40" preserveAspectRatio="none" height="40" width="100%">
+    <path fill="#F0F4F9" d="M0,20 C360,45 1080,0 1440,20 L1440,40 L0,40 Z"/>
+  </svg>
+</div>
+
+<div class="content">
+
+  <div class="section-label">Le applicazioni</div>
+
+  <a class="app-card" href="https://cna-roma-dashboard.vercel.app" target="_blank" rel="noopener">
+    <div class="app-icon" style="background:#005CA9">
+      <img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png"
+        alt="ERP CNA di Roma"
+        onerror="this.style.display='none'">
+    </div>
+    <div class="app-info">
+      <div class="app-name">ERP CNA di Roma</div>
+      <div class="app-desc">Dashboard tesseramento, anagrafiche imprese, analisi dati e report</div>
+      <div class="app-url">cna-roma-dashboard.vercel.app ↗</div>
+    </div>
+    <div class="arrow-wrap">›</div>
+  </a>
+
+  <a class="app-card" href="https://cnacontratti.vercel.app" target="_blank" rel="noopener">
+    <div class="app-icon" style="background:#0F172A">
+      <img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png"
+        alt="Signature"
+        onerror="this.style.display='none'">
+    </div>
+    <div class="app-info">
+      <div class="app-name">Signature</div>
+      <div class="app-desc">Raccolta e firma digitale contratti di adesione CNA</div>
+      <div class="app-url">cnacontratti.vercel.app ↗</div>
+    </div>
+    <div class="arrow-wrap">›</div>
+  </a>
+
+  <div class="section-label" style="margin-top:32px">Come installare sul tuo smartphone</div>
+
+  <div class="steps-card">
+    <h3>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      <span class="os-badge ios">iPhone &amp; iPad</span>
+      Safari
+    </h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Apri il link dell'app con <strong>Safari</strong> — non Chrome o altri browser</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Tocca il pulsante <span class="step-icon">⬆ Condividi</span> nella barra in basso</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Scorri l'elenco verso il basso e tocca <strong>"Aggiungi a schermata Home"</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Tocca <strong>"Aggiungi"</strong> in alto a destra per confermare</div>
+    </div>
+    <div class="step">
+      <div class="step-num">5</div>
+      <div class="step-text">L'icona CNA compare sulla schermata Home — si apre come un'app nativa a schermo intero ✓</div>
+    </div>
+  </div>
+
+  <div class="steps-card">
+    <h3>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      <span class="os-badge android">Android</span>
+      Chrome
+    </h3>
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-text">Apri il link dell'app con <strong>Chrome</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-text">Tocca i <span class="step-icon">⋮</span> tre punti in alto a destra</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-text">Seleziona <strong>"Aggiungi a schermata Home"</strong> oppure <strong>"Installa app"</strong></div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-text">Tocca <strong>"Aggiungi"</strong> — l'icona CNA viene installata ✓</div>
+    </div>
+  </div>
+
+  <div class="tip">
+    <div class="tip-title">ℹ️ Accesso alle app</div>
+    <p>Per accedere alle app è necessario usare le credenziali fornite dall'amministratore CNA. In caso di problemi di accesso contatta il responsabile IT.</p>
+  </div>
+
+  <div class="footer">
+    <div class="footer-divider"></div>
+    <span class="cna-mark">CNA Roma</span> — Sistema ERP · v2026.05.18<br>
+    Sviluppato da Alessandro Parrelli<br>
+    © 2026 Confederazione Nazionale dell'Artigianato e dell'Impresa di Roma
+  </div>
+
+</div>
+</body>
+</html>
