@@ -111,6 +111,12 @@ async function contrattiLoad(force) {
     contrattiSetProgress(80, 'Unificazione dati…');
     contrattiSetStatus('join', 80, null);
 
+    // LOG DIAGNOSTICI — da rimuovere dopo verifica
+    console.log('=== CCIAA sample (primi 3):', cciaaAll.slice(0,3));
+    console.log('=== Diretti sample (primi 3):', diretti.slice(0,3));
+    console.log('=== Anagrafiche sample partitaiva:', anagrafiche.slice(0,3).map(function(a){return {cod: a.codiceanagrafica, piva: a.partitaiva};}));
+    console.log('=== Contratti sample codicecliente:', contratti.slice(0,3).map(function(c){return c.codicecliente;}));
+
     // Mappe
     var cciaaMap = {};
     cciaaAll.forEach(function(cc) { if (cc.partita_iva) cciaaMap[cc.partita_iva] = cc; });
