@@ -43,6 +43,12 @@ async function contrattiLoad(force) {
     contrattiSetProgress(25, 'Caricamento Anagrafiche…');
     contrattiSetStatus('anagrafiche', 25, null);
     var anagrafiche = await contrattisFetchAll('Anagrafiche');
+
+    // Costruisci anaMap subito
+    var anaMap = {};
+    anagrafiche.forEach(function(a) {
+      anaMap[a.codiceanagrafica] = a;
+    });
     
     // Raccoglie le partite IVA delle imprese che hanno contratti
     var pivaSet = {};
@@ -77,12 +83,7 @@ async function contrattiLoad(force) {
     contrattiSetStatus('diretti', 65, null);
     var diretti = await contrattisFetchAll('diretti');
     
-    // Crea mappe
-    var anaMap = {};
-    anagrafiche.forEach(function(a) {
-      anaMap[a.codiceanagrafica] = a;
-    });
-    
+    // Crea mappa diretti (anaMap già costruita sopra)
     var direttiMap = {};
     diretti.forEach(function(d) {
       if (!direttiMap[d.codiceanagrafica]) {
