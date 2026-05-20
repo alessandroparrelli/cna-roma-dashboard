@@ -44,15 +44,43 @@ async function contrattiLoad(force) {
     contrattiSetStatus('anagrafiche', 30, null);
     var anagrafiche = await contrattisFetchAll('Anagrafiche');
     
-    // Carica Diretti e CCIAA in parallelo
-    contrattiSetProgress(60, 'Caricamento Diretti e CCIAA…');
+    // Carica Diretti in parallelo con costruzione anaMap
+    contrattiSetProgress(60, 'Caricamento Diretti…');
     contrattiSetStatus('diretti', 60, null);
     contrattiSetStatus('cciaa', 60, null);
 
-    var results = await Promise.all([
-      contrattisFetchAll('diretti?select=codiceanagrafica,servizio'),
-      contrattisFetchAll('cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul')
-    ]);
+    // Costruisci anaMap subito
+    var anaMap = {};
+    anagrafiche.forEach(function(a) { anaMap[a.codiceanagrafica] = a; });
+
+    // Ricava le partite IVA uniche delle imprese con contratti
+    var pivaSet = {};
+    contratti.forEach(function(c) {
+      var ana = anaMap[c.codicecliente];
+      if (ana && ana.partitaiva) pivaSet[String(ana.partitaiva).trim()] = true;
+    });
+    var pivaList = Object.keys(pivaSet);
+
+    // Carica Diretti completi + CCIAA filtrata per partite IVA (via POST per evitare URL lungo)
+    var fetchDiretti = contrattisFetchAll('diretti?select=codiceanagrafica,servizio');
+
+    var fetchCciaa = Promise.resolve([]);
+    if (pivaList.length > 0) {
+      // Usa POST con header X-HTTP-Method-Override per query filtrata senza URL lungo
+      fetchCciaa = fetch(SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul', {
+        method: 'POST',
+        headers: Object.assign({}, H(), {
+          'Content-Type': 'application/json',
+          'Prefer': 'params=single-object'
+        }),
+        body: JSON.stringify({ partita_iva: pivaList })
+      }).then(function(r) {
+        // Se POST non funziona, fallback: nessun dato CCIAA (non blocca il caricamento)
+        return r.ok ? r.json() : [];
+      }).catch(function() { return []; });
+    }
+
+    var results = await Promise.all([fetchDiretti, fetchCciaa]);
     var diretti  = results[0];
     var cciaaAll = results[1];
 
@@ -63,25 +91,6 @@ async function contrattiLoad(force) {
     var cciaaMap = {};
     cciaaAll.forEach(function(cc) {
       if (cc.partita_iva) cciaaMap[String(cc.partita_iva).trim()] = cc;
-    });
-    
-    // Crea mappe
-    var anaMap = {};
-    anagrafiche.forEach(function(a) {
-      anaMap[a.codiceanagrafica] = a;
-    });
-    
-    var direttiMap = {};
-    diretti.forEach(function(d) {
-      if (!direttiMap[d.codiceanagrafica]) {
-        direttiMap[d.codiceanagrafica] = { iscritto: false, inps: false };
-      }
-      if (d.servizio && d.servizio.indexOf('Iscritto') !== -1) {
-        direttiMap[d.codiceanagrafica].iscritto = true;
-      }
-      if (d.servizio && d.servizio.indexOf('INPS') !== -1) {
-        direttiMap[d.codiceanagrafica].inps = true;
-      }
     });
     
     contrattiSetProgress(80, 'Unificazione dati…');
