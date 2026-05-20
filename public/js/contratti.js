@@ -27,7 +27,7 @@ async function contrattiLoad(force) {
   
   G('contratti-loader').classList.add('active');
   G('contratti-content').style.display = 'none';
-  ['contratti', 'anagrafiche', 'diretti', 'join'].forEach(function(t) {
+  ['contratti', 'anagrafiche', 'cciaa', 'diretti', 'join'].forEach(function(t) {
     contrattiSetStatus(t, 0, null);
   });
   
@@ -44,17 +44,26 @@ async function contrattiLoad(force) {
     contrattiSetStatus('anagrafiche', 30, null);
     var anagrafiche = await contrattisFetchAll('Anagrafiche');
     
-    // Carica Diretti
-    contrattiSetProgress(60, 'Caricamento Diretti…');
+    // Carica Diretti e CCIAA in parallelo
+    contrattiSetProgress(60, 'Caricamento Diretti e CCIAA…');
     contrattiSetStatus('diretti', 60, null);
-    var diretti = await contrattisFetchAll('diretti');
-    
-    console.log('=== DIRETTI TABLE ===');
-    console.log('Total rows:', diretti.length);
-    if (diretti.length > 0) {
-      console.log('Sample diretti[0]:', diretti[0]);
-      console.log('Campi diretti[0]:', Object.keys(diretti[0]));
-    }
+    contrattiSetStatus('cciaa', 60, null);
+
+    var results = await Promise.all([
+      contrattisFetchAll('diretti?select=codiceanagrafica,servizio'),
+      contrattisFetchAll('cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul')
+    ]);
+    var diretti  = results[0];
+    var cciaaAll = results[1];
+
+    contrattiSetStatus('diretti', 100, 'done');
+    contrattiSetStatus('cciaa', 100, 'done');
+
+    // Mappa CCIAA per partita_iva
+    var cciaaMap = {};
+    cciaaAll.forEach(function(cc) {
+      if (cc.partita_iva) cciaaMap[String(cc.partita_iva).trim()] = cc;
+    });
     
     // Crea mappe
     var anaMap = {};
@@ -95,25 +104,39 @@ async function contrattiLoad(force) {
       }
     });
     
-    console.log('ISCRITTI trovati:', Object.keys(iscritti).length);
-    console.log('INPS trovati:', Object.keys(inps).length);
+    console.log('CCIAA trovati:', Object.keys(cciaaMap).length);
     
     contratti.forEach(function(c) {
       var ana = anaMap[c.codicecliente];
       if (!ana) return;
-      
+
+      // Dati CCIAA per questa impresa
+      var piva  = String(ana.partitaiva || '').trim();
+      var cciaa = cciaaMap[piva] || null;
+      var addSub  = cciaa ? (parseInt(cciaa.num_addetti_sub)    || 0) : 0;
+      var addFam  = cciaa ? (parseInt(cciaa.num_addetti_fam_ul) || 0) : 0;
+      var tipoImp = '';
+      if (cciaa && cciaa.art_com_tur) {
+        var tc = String(cciaa.art_com_tur).trim().toUpperCase();
+        tipoImp = tc === 'A' ? 'Artigiano' : tc === 'C' ? 'Commerciante' : 'Varie';
+      }
+
       if (!impreseMap[c.codicecliente]) {
         impreseMap[c.codicecliente] = {
-          partitaiva: ana.partitaiva,
+          partitaiva:     ana.partitaiva,
           ragionesociale: ana.ragionesociale,
-          codicecliente: c.codicecliente,
-          comune: ana.comune,
-          provincia: ana.provincia,
-          mestiere: ana.mestiere,
-          email: ana.email,
-          telefono: ana.telefono,
-          iscritto: iscritti[ana.codiceanagrafica] || false,
-          inps: inps[ana.codiceanagrafica] || false,
+          codicecliente:  c.codicecliente,
+          comune:         ana.comune,
+          provincia:      ana.provincia,
+          mestiere:       ana.mestiere,
+          email:          ana.email,
+          telefono:       ana.telefono,
+          iscritto:       iscritti[ana.codiceanagrafica] || false,
+          inps:           inps[ana.codiceanagrafica]     || false,
+          tipoimpresa:    tipoImp,
+          addetti_sub:    addSub,
+          addetti_fam:    addFam,
+          totale_addetti: addSub + addFam,
           servizi: {}
         };
       }
@@ -245,10 +268,10 @@ function contrattiRender() {
   // Aggiorna header — ricostruisce dinamicamente le colonne servizi (3 per servizio)
   var thead = G('contratti-table').querySelector('thead tr');
   if (thead) {
-    // Rimuovi tutto dopo la th INPS (indice 10) e prima di TOT (ultimo)
+    // Rimuovi tutto dopo la th Tot.Dip. (indice 14) e prima di TOT (ultimo)
     var thList = Array.from(thead.querySelectorAll('th'));
     var totTh = thList[thList.length - 1];
-    for (var j = thList.length - 2; j >= 11; j--) {
+    for (var j = thList.length - 2; j >= 15; j--) {
       thList[j].parentNode.removeChild(thList[j]);
     }
     // Inserisci 3 th per ogni servizio prima di TOT
@@ -297,6 +320,15 @@ function contrattiRender() {
     html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.inps ? 'color:#fff;background:#10B981' : '') + '">' + (r.inps ? 'Attivo' : '') + '</td>');
     if (r.iscritto) conteggio++;
     if (r.inps) conteggio++;
+
+    // Tipo impresa
+    var tipoBg  = r.tipoimpresa === 'Artigiano' ? '#FEE2E2' : r.tipoimpresa === 'Commerciante' ? '#FEF3C7' : r.tipoimpresa ? '#FFEDD5' : '';
+    var tipoCol = r.tipoimpresa === 'Artigiano' ? '#B91C1C' : r.tipoimpresa === 'Commerciante' ? '#92400E' : '#9A3412';
+    html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.tipoimpresa ? 'background:' + tipoBg + ';color:' + tipoCol : 'color:#999') + '">' + (r.tipoimpresa || '-') + '</td>');
+    // Dipendenti
+    html.push('<td style="text-align:center">' + (r.addetti_sub > 0 ? r.addetti_sub : '-') + '</td>');
+    html.push('<td style="text-align:center">' + (r.addetti_fam > 0 ? r.addetti_fam : '-') + '</td>');
+    html.push('<td style="text-align:center;font-weight:700;color:#005CA9;background:#E8F0FE;border-left:2px solid #005CA9">' + (r.totale_addetti > 0 ? r.totale_addetti : '-') + '</td>');
     
     servizi.forEach(function(srv) {
       var c = r.servizi && r.servizi[srv];
@@ -449,7 +481,7 @@ function contrattiExportExcel() {
   wsData.push(['Analisi contratti CNA']);
   
   // Riga 2: Header — Iscritto e INPS prima, poi per ogni servizio: Servizio | Data | Consulente
-  var headerRow = ['PARTITA IVA', 'RAGIONE SOCIALE', 'CODICE CLIENTE', 'COMUNE', 'PROVINCIA', 'MESTIERE', 'EMAIL', 'TELEFONO', 'ISCRITTO', 'TESSERAMENTO INPS'];
+  var headerRow = ['PARTITA IVA', 'RAGIONE SOCIALE', 'CODICE CLIENTE', 'COMUNE', 'PROVINCIA', 'MESTIERE', 'EMAIL', 'TELEFONO', 'TIPO IMPRESA', 'DIP. SUBORDINATI', 'DIP. FAMILIARI', 'TOT. DIPENDENTI', 'ISCRITTO', 'TESSERAMENTO INPS'];
   servizi.forEach(function(s) {
     headerRow.push(s);
     headerRow.push('DATA STIPULA ' + s.toUpperCase());
@@ -462,7 +494,8 @@ function contrattiExportExcel() {
   var indices = Array.from(contrattiSelected).sort(function(a, b) { return a - b; });
   indices.forEach(function(i) {
     var r = contrattiFiltered[i];
-    var row = [r.partitaiva || '', r.ragionesociale || '', r.codicecliente || '', r.comune || '', r.provincia || '', r.mestiere || '', r.email || '', r.telefono || ''];
+    var row = [r.partitaiva || '', r.ragionesociale || '', r.codicecliente || '', r.comune || '', r.provincia || '', r.mestiere || '', r.email || '', r.telefono || '',
+               r.tipoimpresa || '', r.addetti_sub || '', r.addetti_fam || '', r.totale_addetti || ''];
     
     var conteggio = 0;
     row.push(r.iscritto ? 'Attivo' : '');
@@ -490,11 +523,11 @@ function contrattiExportExcel() {
   var ws = XLSX.utils.aoa_to_sheet(wsData);
   
   // --- MERGE TITOLO ---
-  var colCount = 10 + (servizi.length * 3) + 1;
+  var colCount = 14 + (servizi.length * 3) + 1;
   ws['!merges'] = [{s: {r: 0, c: 0}, e: {r: 0, c: colCount - 1}}];
   
   // --- COLONNE LARGHEZZE ---
-  var colWidths = [12.16, 60.83, 14.33, 19.33, 10.33, 70.83, 39.66, 19.66, 12, 18];
+  var colWidths = [12.16, 60.83, 14.33, 19.33, 10.33, 40, 35, 18, 16, 14, 14, 14, 12, 18];
   servizi.forEach(function() { colWidths.push(25, 14, 30); });
   colWidths.push(22);
   ws['!cols'] = colWidths.map(function(w) { return {wch: w}; });
