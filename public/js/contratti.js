@@ -64,20 +64,22 @@ async function contrattiLoad(force) {
     // Carica Diretti completi + CCIAA filtrata per partite IVA (via POST per evitare URL lungo)
     var fetchDiretti = contrattisFetchAll('diretti?select=codiceanagrafica,servizio');
 
+    // Carica CCIAA a batch di 50 partite IVA (evita URL troppo lungo)
     var fetchCciaa = Promise.resolve([]);
     if (pivaList.length > 0) {
-      // Usa POST con header X-HTTP-Method-Override per query filtrata senza URL lungo
-      fetchCciaa = fetch(SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul', {
-        method: 'POST',
-        headers: Object.assign({}, H(), {
-          'Content-Type': 'application/json',
-          'Prefer': 'params=single-object'
-        }),
-        body: JSON.stringify({ partita_iva: pivaList })
-      }).then(function(r) {
-        // Se POST non funziona, fallback: nessun dato CCIAA (non blocca il caricamento)
-        return r.ok ? r.json() : [];
-      }).catch(function() { return []; });
+      var batchSize = 50;
+      var batches = [];
+      for (var b = 0; b < pivaList.length; b += batchSize) {
+        batches.push(pivaList.slice(b, b + batchSize));
+      }
+      fetchCciaa = Promise.all(batches.map(function(batch) {
+        return fetch(
+          SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&partita_iva=in.(' + batch.join(',') + ')',
+          { headers: H() }
+        ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
+      })).then(function(results) {
+        return results.reduce(function(acc, rows) { return acc.concat(rows); }, []);
+      });
     }
 
     var results = await Promise.all([fetchDiretti, fetchCciaa]);
