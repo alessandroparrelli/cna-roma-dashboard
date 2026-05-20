@@ -321,7 +321,7 @@ function contrattiRender() {
       if (c) {
         conteggio++;
         var dataStr = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '-';
-        html.push('<td style="text-align:center;font-weight:bold;color:#005CA9;border-left:1px solid #ddd">X</td>');
+        html.push('<td style="text-align:center;font-size:11px;font-weight:700;color:#fff;background:#10B981;border-left:1px solid #ddd;border-radius:3px">Attivo</td>');
         html.push('<td style="text-align:center;font-size:12px;white-space:nowrap">' + dataStr + '</td>');
         html.push('<td style="font-size:12px">' + (c.consulente || '-') + '</td>');
       } else {
@@ -504,7 +504,7 @@ function contrattiExportExcel() {
       if (c) {
         conteggio++;
         var dataStr = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '';
-        row.push('X');
+        row.push('Attivo');
         row.push(dataStr);
         row.push(c.consulente || '');
       } else {
