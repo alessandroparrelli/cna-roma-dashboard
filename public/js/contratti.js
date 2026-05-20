@@ -240,7 +240,7 @@ function contrattiRender() {
   if (thead) {
     var th_cells = thead.querySelectorAll('th');
     for (var i = 0; i < servizi.length; i++) {
-      var th = th_cells[9 + i];
+      var th = th_cells[11 + i];
       if (th) th.textContent = servizi[i];
     }
   }
@@ -269,18 +269,19 @@ function contrattiRender() {
     html.push('<td>' + (r.telefono || '-') + '</td>');
     
     var conteggio = 0;
-    servizi.forEach(function(srv) {
-      var haServizio = r.servizi && r.servizi[srv];
-      html.push('<td style="text-align:center;font-weight:bold;color:#005CA9">' + (haServizio ? 'X' : '') + '</td>');
-      if (haServizio) conteggio++;
-    });
     
-    var iscritto_mark = r.iscritto ? 'X' : '';
-    var inps_mark = r.inps ? 'X' : '';
-    html.push('<td style="text-align:center;font-weight:bold;color:#005CA9">' + iscritto_mark + '</td>');
-    html.push('<td style="text-align:center;font-weight:bold;color:#005CA9">' + inps_mark + '</td>');
+    var iscritto_mark = r.iscritto ? 'Attivo' : '';
+    var inps_mark = r.inps ? 'Attivo' : '';
+    html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.iscritto ? 'color:#fff;background:#10B981' : '') + '">' + iscritto_mark + '</td>');
+    html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.inps ? 'color:#fff;background:#10B981' : '') + '">' + inps_mark + '</td>');
     if (r.iscritto) conteggio++;
     if (r.inps) conteggio++;
+    
+    servizi.forEach(function(srv) {
+      var haServizio = r.servizi && r.servizi[srv];
+      html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (haServizio ? 'color:#fff;background:#10B981' : '') + '">' + (haServizio ? 'Attivo' : '') + '</td>');
+      if (haServizio) conteggio++;
+    });
     
     html.push('<td style="text-align:center;font-weight:bold;color:#005CA9;background:#F0F4FF;border-left:2px solid #005CA9">' + conteggio + '</td>');
     html.push('</tr>');
