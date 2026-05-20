@@ -65,7 +65,7 @@ async function contrattiLoad(force) {
     var codiciList = Object.keys(codiciSet);
     var pivaList   = Object.keys(pivaSet);
 
-    // STEP 2 — CCIAA + Diretti in parallelo, entrambi filtrati
+    // STEP 2 — CCIAA + Diretti + Codiciateco in parallelo, tutti filtrati
     contrattiSetProgress(50, 'Caricamento CCIAA e Diretti…');
     contrattiSetStatus('cciaa', 50, null);
     contrattiSetStatus('diretti', 50, null);
@@ -86,9 +86,25 @@ async function contrattiLoad(force) {
       ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
     }
 
-    var results2 = await Promise.all([fetchCciaa, fetchDiretti]);
-    var cciaaAll = results2[0];
-    var diretti  = results2[1];
+    // Codiciateco: carica solo i codici presenti nelle anagrafiche con contratti
+    var atecoSet = {};
+    contratti.forEach(function(c) {
+      var ana = anaMap[c.codicecliente];
+      if (ana && ana.codiceateco) atecoSet[String(ana.codiceateco).trim()] = true;
+    });
+    var atecoList = Object.keys(atecoSet);
+    var fetchAteco = Promise.resolve([]);
+    if (atecoList.length > 0) {
+      fetchAteco = fetch(
+        SB + '/rest/v1/codiciateco?select=codiceateco,mestiere&codiceateco=in.(' + atecoList.join(',') + ')',
+        { headers: H() }
+      ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
+    }
+
+    var results2 = await Promise.all([fetchCciaa, fetchDiretti, fetchAteco]);
+    var cciaaAll  = results2[0];
+    var diretti   = results2[1];
+    var atecoAll  = results2[2];
 
     contrattiSetStatus('cciaa', 100, 'done');
     contrattiSetStatus('diretti', 100, 'done');
@@ -98,10 +114,15 @@ async function contrattiLoad(force) {
     // Crea array di imprese UNICHE con tutti i servizi
     var impreseMap = {};
 
-    // Mappe CCIAA e Diretti
+    // Mappa CCIAA
     var cciaaMap = {};
     cciaaAll.forEach(function(cc) { if (cc.partita_iva) cciaaMap[cc.partita_iva] = cc; });
 
+    // Mappa Codiciateco: codiceateco → mestiere
+    var atecoMap = {};
+    atecoAll.forEach(function(a) { if (a.codiceateco) atecoMap[String(a.codiceateco).trim()] = a.mestiere || ''; });
+
+    // Iscritto e INPS da diretti
     var iscritti = {}, inps = {};
     diretti.forEach(function(d) {
       if (!d.servizio) return;
@@ -127,13 +148,15 @@ async function contrattiLoad(force) {
       }
       
       if (!impreseMap[c.codicecliente]) {
+        // Mestiere da codiciateco
+        var mestiere = atecoMap[String(ana.codiceateco || '').trim()] || ana.mestiere || '';
         impreseMap[c.codicecliente] = {
           partitaiva: ana.partitaiva,
           ragionesociale: ana.ragionesociale,
           codicecliente: c.codicecliente,
           comune: ana.comune,
           provincia: ana.provincia,
-          mestiere: ana.mestiere,
+          mestiere: mestiere,
           iscritto: iscritti[ana.codiceanagrafica] || false,
           inps: inps[ana.codiceanagrafica] || false,
           tipoimpresa: tipoImp,
@@ -173,9 +196,11 @@ async function contrattiLoad(force) {
     contrattiFiltered = contrattiAll.slice();
     contrattiSelected.clear();
     
-    // Raccoglie set servizi per filtro
+    // Raccoglie set servizi per filtro dropdown
     var serviziSet = {};
-    contrattiAll.forEach(function(r) { if (r.tipocontratto) serviziSet[r.tipocontratto] = true; });
+    contrattiAll.forEach(function(r) {
+      Object.keys(r.servizi || {}).forEach(function(s) { serviziSet[s] = true; });
+    });
     
     contrattiSetProgress(90, 'Popolamento filtri…');
     contrattiPopulateFilters(serviziSet);
