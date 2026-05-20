@@ -34,87 +34,77 @@ async function contrattiLoad(force) {
   contrattiSetProgress(0, 'Connessione a Supabase…');
   
   try {
-    // Carica contratti attivi con paginazione
-    contrattiSetProgress(10, 'Caricamento contratti attivi…');
+    // STEP 1 — Contratti + Anagrafiche in parallelo
+    contrattiSetProgress(10, 'Caricamento dati…');
     contrattiSetStatus('contratti', 10, null);
-    var contratti = await contrattisFetchAll('contrattiservizio?datadisdetta=is.null');
-    
-    // Carica Anagrafiche
-    contrattiSetProgress(25, 'Caricamento Anagrafiche…');
-    contrattiSetStatus('anagrafiche', 25, null);
-    var anagrafiche = await contrattisFetchAll('Anagrafiche');
+    contrattiSetStatus('anagrafiche', 10, null);
 
-    // Costruisci anaMap subito
+    var results1 = await Promise.all([
+      contrattisFetchAll('contrattiservizio?datadisdetta=is.null'),
+      contrattisFetchAll('Anagrafiche')
+    ]);
+    var contratti  = results1[0];
+    var anagrafiche = results1[1];
+
+    contrattiSetProgress(40, 'Dati caricati, elaborazione…');
+    contrattiSetStatus('contratti', 100, 'done');
+    contrattiSetStatus('anagrafiche', 100, 'done');
+
+    // Costruisci anaMap
     var anaMap = {};
-    anagrafiche.forEach(function(a) {
-      anaMap[a.codiceanagrafica] = a;
-    });
-    
-    // Raccoglie le partite IVA delle imprese che hanno contratti
-    var pivaSet = {};
+    anagrafiche.forEach(function(a) { anaMap[a.codiceanagrafica] = a; });
+
+    // Ricava set di codici cliente e partite IVA con contratti
+    var codiciSet = {}, pivaSet = {};
     contratti.forEach(function(c) {
       var ana = anaMap[c.codicecliente];
-      if (ana && ana.partitaiva) pivaSet[ana.partitaiva] = true;
+      if (!ana) return;
+      codiciSet[ana.codiceanagrafica] = true;
+      if (ana.partitaiva) pivaSet[ana.partitaiva] = true;
     });
-    var pivaList = Object.keys(pivaSet);
+    var codiciList = Object.keys(codiciSet);
+    var pivaList   = Object.keys(pivaSet);
 
-    // Carica CCIAA solo per le partite IVA necessarie
-    contrattiSetProgress(45, 'Caricamento CCIAA…');
-    contrattiSetStatus('cciaa', 45, null);
-    var cciaaAll = [];
-    try {
-      if (pivaList.length > 0) {
-        var cciaaResp = await fetch(
-          SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&partita_iva=in.(' + pivaList.join(',') + ')',
-          { headers: H() }
-        );
-        if (cciaaResp.ok) cciaaAll = await cciaaResp.json();
-      }
-    } catch(e) { console.warn('CCIAA non disponibile:', e); }
+    // STEP 2 — CCIAA + Diretti in parallelo, entrambi filtrati
+    contrattiSetProgress(50, 'Caricamento CCIAA e Diretti…');
+    contrattiSetStatus('cciaa', 50, null);
+    contrattiSetStatus('diretti', 50, null);
+
+    var fetchCciaa = Promise.resolve([]);
+    if (pivaList.length > 0) {
+      fetchCciaa = fetch(
+        SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&partita_iva=in.(' + pivaList.join(',') + ')',
+        { headers: H() }
+      ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
+    }
+
+    var fetchDiretti = Promise.resolve([]);
+    if (codiciList.length > 0) {
+      fetchDiretti = fetch(
+        SB + '/rest/v1/diretti?select=codiceanagrafica,servizio&codiceanagrafica=in.(' + codiciList.join(',') + ')',
+        { headers: H() }
+      ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
+    }
+
+    var results2 = await Promise.all([fetchCciaa, fetchDiretti]);
+    var cciaaAll = results2[0];
+    var diretti  = results2[1];
+
     contrattiSetStatus('cciaa', 100, 'done');
-    // Mappa per partita_iva
-    var cciaaMap = {};
-    cciaaAll.forEach(function(cc) {
-      if (cc.partita_iva) cciaaMap[cc.partita_iva] = cc;
-    });
-    
-    // Carica Diretti
-    contrattiSetProgress(65, 'Caricamento Diretti…');
-    contrattiSetStatus('diretti', 65, null);
-    var diretti = await contrattisFetchAll('diretti');
-    
-    // Crea mappa diretti (anaMap già costruita sopra)
-    var direttiMap = {};
-    diretti.forEach(function(d) {
-      if (!direttiMap[d.codiceanagrafica]) {
-        direttiMap[d.codiceanagrafica] = { iscritto: false, inps: false };
-      }
-      if (d.servizio && d.servizio.indexOf('Iscritto') !== -1) {
-        direttiMap[d.codiceanagrafica].iscritto = true;
-      }
-      if (d.servizio && d.servizio.indexOf('INPS') !== -1) {
-        direttiMap[d.codiceanagrafica].inps = true;
-      }
-    });
-    
+    contrattiSetStatus('diretti', 100, 'done');
     contrattiSetProgress(80, 'Unificazione dati…');
     contrattiSetStatus('join', 80, null);
-    
-    // Crea array di imprese UNICHE con tutti i servizi
-    var impreseMap = {};
-    
-    // Raccoglie ISCRITTO e TESSERAMENTO INPS dalla tabella diretti
-    var iscritti = {};
-    var inps = {};
+
+    // Mappe CCIAA e Diretti
+    var cciaaMap = {};
+    cciaaAll.forEach(function(cc) { if (cc.partita_iva) cciaaMap[cc.partita_iva] = cc; });
+
+    var iscritti = {}, inps = {};
     diretti.forEach(function(d) {
       if (!d.servizio) return;
-      var servizio = String(d.servizio).trim().toUpperCase();
-      if (servizio === 'ISCRITTO') {
-        iscritti[d.codiceanagrafica] = true;
-      }
-      if (servizio === 'TESSERAMENTO INPS') {
-        inps[d.codiceanagrafica] = true;
-      }
+      var srv = String(d.servizio).trim().toUpperCase();
+      if (srv === 'ISCRITTO')          iscritti[d.codiceanagrafica] = true;
+      if (srv === 'TESSERAMENTO INPS') inps[d.codiceanagrafica]     = true;
     });
     
     contratti.forEach(function(c) {
