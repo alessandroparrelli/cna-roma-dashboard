@@ -117,8 +117,15 @@ async function contrattiLoad(force) {
           servizi: {}
         };
       }
-      // Aggiunge servizio a questa impresa
-      impreseMap[c.codicecliente].servizi[c.tipocontratto] = true;
+      // Aggiunge servizio — mantieni il contratto più recente per tipo
+      var dataC    = c.datastipulacontratto ? new Date(c.datastipulacontratto) : new Date(0);
+      var existing = impreseMap[c.codicecliente].servizi[c.tipocontratto];
+      if (!existing || dataC > new Date(existing.data || 0)) {
+        impreseMap[c.codicecliente].servizi[c.tipocontratto] = {
+          data:      c.datastipulacontratto || null,
+          consulente: c.nomeconsulente || ''
+        };
+      }
     });
     
     // Converte in array
@@ -235,14 +242,30 @@ function contrattiRender() {
     return acc;
   }, {})).sort().forEach(function(s) { servizi.push(s); });
   
-  // Aggiorna header con nomi servizi
+  // Aggiorna header — ricostruisce dinamicamente le colonne servizi (3 per servizio)
   var thead = G('contratti-table').querySelector('thead tr');
   if (thead) {
-    var th_cells = thead.querySelectorAll('th');
-    for (var i = 0; i < servizi.length; i++) {
-      var th = th_cells[11 + i];
-      if (th) th.textContent = servizi[i];
+    // Rimuovi tutto dopo la th INPS (indice 10) e prima di TOT (ultimo)
+    var thList = Array.from(thead.querySelectorAll('th'));
+    var totTh = thList[thList.length - 1];
+    for (var j = thList.length - 2; j >= 11; j--) {
+      thList[j].parentNode.removeChild(thList[j]);
     }
+    // Inserisci 3 th per ogni servizio prima di TOT
+    servizi.forEach(function(s) {
+      var th1 = document.createElement('th');
+      th1.textContent = s;
+      th1.style.cssText = 'text-align:center;border-left:2px solid #ddd';
+      var th2 = document.createElement('th');
+      th2.style.cssText = 'font-size:11px;color:#666;text-align:center';
+      th2.innerHTML = 'Data<br><small>' + s + '</small>';
+      var th3 = document.createElement('th');
+      th3.style.cssText = 'font-size:11px;color:#666';
+      th3.innerHTML = 'Consulente<br><small>' + s + '</small>';
+      totTh.parentNode.insertBefore(th1, totTh);
+      totTh.parentNode.insertBefore(th2, totTh);
+      totTh.parentNode.insertBefore(th3, totTh);
+    });
   }
 
   // Slice della pagina corrente
@@ -270,17 +293,22 @@ function contrattiRender() {
     
     var conteggio = 0;
     
-    var iscritto_mark = r.iscritto ? 'Attivo' : '';
-    var inps_mark = r.inps ? 'Attivo' : '';
-    html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.iscritto ? 'color:#fff;background:#10B981' : '') + '">' + iscritto_mark + '</td>');
-    html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.inps ? 'color:#fff;background:#10B981' : '') + '">' + inps_mark + '</td>');
+    html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.iscritto ? 'color:#fff;background:#10B981' : '') + '">' + (r.iscritto ? 'Attivo' : '') + '</td>');
+    html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.inps ? 'color:#fff;background:#10B981' : '') + '">' + (r.inps ? 'Attivo' : '') + '</td>');
     if (r.iscritto) conteggio++;
     if (r.inps) conteggio++;
     
     servizi.forEach(function(srv) {
-      var haServizio = r.servizi && r.servizi[srv];
-      html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (haServizio ? 'color:#fff;background:#10B981' : '') + '">' + (haServizio ? 'Attivo' : '') + '</td>');
-      if (haServizio) conteggio++;
+      var c = r.servizi && r.servizi[srv];
+      if (c) {
+        conteggio++;
+        var dataStr = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '-';
+        html.push('<td style="text-align:center;font-size:11px;font-weight:700;color:#fff;background:#10B981;border-left:2px solid #ddd">Attivo</td>');
+        html.push('<td style="text-align:center;font-size:12px;white-space:nowrap">' + dataStr + '</td>');
+        html.push('<td style="font-size:12px">' + (c.consulente || '-') + '</td>');
+      } else {
+        html.push('<td style="border-left:2px solid #ddd"></td><td></td><td></td>');
+      }
     });
     
     html.push('<td style="text-align:center;font-weight:bold;color:#005CA9;background:#F0F4FF;border-left:2px solid #005CA9">' + conteggio + '</td>');
