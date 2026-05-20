@@ -59,15 +59,11 @@ async function contrattiLoad(force) {
       return;
     }
 
-    // STEP 2 — Anagrafiche solo per i codici cliente con contratti
+    // STEP 2 — Anagrafiche: tutta la tabella ma solo i campi necessari (leggera)
     contrattiSetProgress(40, 'Caricamento anagrafiche…');
     contrattiSetStatus('anagrafiche', 40, null);
 
-    var anaResp = await fetch(
-      SB + '/rest/v1/Anagrafiche?select=codiceanagrafica,ragionesociale,partitaiva,comune,provincia,codiceateco&codiceanagrafica=in.(' + codiciClienteList.join(',') + ')',
-      { headers: H() }
-    );
-    var anagrafiche = anaResp.ok ? await anaResp.json() : [];
+    var anagrafiche = await contrattisFetchAll('Anagrafiche?select=codiceanagrafica,ragionesociale,partitaiva,comune,provincia,codiceateco');
     contrattiSetStatus('anagrafiche', 100, 'done');
 
     // Mappe
