@@ -448,10 +448,14 @@ function contrattiExportExcel() {
   // Riga 1: Titolo
   wsData.push(['Analisi contratti CNA']);
   
-  // Riga 2: Header
-  var headerRow = ['PARTITA IVA', 'RAGIONE SOCIALE', 'CODICE CLIENTE', 'COMUNE', 'PROVINCIA', 'MESTIERE', 'EMAIL', 'TELEFONO'];
-  headerRow = headerRow.concat(servizi);
-  headerRow.push('ISCRITTO', 'TESSERAMENTO INPS', 'NUMERO SERVIZI ACQUISTATI');
+  // Riga 2: Header — Iscritto e INPS prima, poi per ogni servizio: Servizio | Data | Consulente
+  var headerRow = ['PARTITA IVA', 'RAGIONE SOCIALE', 'CODICE CLIENTE', 'COMUNE', 'PROVINCIA', 'MESTIERE', 'EMAIL', 'TELEFONO', 'ISCRITTO', 'TESSERAMENTO INPS'];
+  servizi.forEach(function(s) {
+    headerRow.push(s);
+    headerRow.push('DATA STIPULA ' + s.toUpperCase());
+    headerRow.push('CONSULENTE ' + s.toUpperCase());
+  });
+  headerRow.push('NUMERO SERVIZI ACQUISTATI');
   wsData.push(headerRow);
   
   // Dati
@@ -461,34 +465,38 @@ function contrattiExportExcel() {
     var row = [r.partitaiva || '', r.ragionesociale || '', r.codicecliente || '', r.comune || '', r.provincia || '', r.mestiere || '', r.email || '', r.telefono || ''];
     
     var conteggio = 0;
+    row.push(r.iscritto ? 'Attivo' : '');
+    row.push(r.inps ? 'Attivo' : '');
+    if (r.iscritto) conteggio++;
+    if (r.inps) conteggio++;
+
     servizi.forEach(function(srv) {
-      var hasServizio = (r.servizi && r.servizi[srv]) ? true : false;
-      row.push(hasServizio ? 'X' : '');
-      if (hasServizio) conteggio++;
+      var c = r.servizi && r.servizi[srv];
+      if (c) {
+        conteggio++;
+        var dataStr = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '';
+        row.push('Attivo');
+        row.push(dataStr);
+        row.push(c.consulente || '');
+      } else {
+        row.push('', '', '');
+      }
     });
     
-    var hasIscritto = r.iscritto ? true : false;
-    var hasInps = r.inps ? true : false;
-    row.push(hasIscritto ? 'X' : '');
-    row.push(hasInps ? 'X' : '');
-    if (hasIscritto) conteggio++;
-    if (hasInps) conteggio++;
-    
     row.push(conteggio);
-    
     wsData.push(row);
   });
   
   var ws = XLSX.utils.aoa_to_sheet(wsData);
   
   // --- MERGE TITOLO ---
-  var colCount = 8 + servizi.length + 3;
+  var colCount = 10 + (servizi.length * 3) + 1;
   ws['!merges'] = [{s: {r: 0, c: 0}, e: {r: 0, c: colCount - 1}}];
   
-  // --- COLONNE LARGHEZZE (come file allegato) ---
-  var colWidths = [12.16, 60.83, 14.33, 19.33, 10.33, 70.83, 39.66, 19.66];
-  servizi.forEach(function() { colWidths.push(27); });
-  colWidths.push(15.33, 19.33, 22);
+  // --- COLONNE LARGHEZZE ---
+  var colWidths = [12.16, 60.83, 14.33, 19.33, 10.33, 70.83, 39.66, 19.66, 12, 18];
+  servizi.forEach(function() { colWidths.push(25, 14, 30); });
+  colWidths.push(22);
   ws['!cols'] = colWidths.map(function(w) { return {wch: w}; });
   
   // --- FORMATTAZIONE ---
