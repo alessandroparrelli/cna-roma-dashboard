@@ -44,10 +44,14 @@ async function contrattiLoad(force) {
     contrattiSetStatus('anagrafiche', 25, null);
     var anagrafiche = await contrattisFetchAll('Anagrafiche');
     
-    // Carica CCIAA
+    // Carica CCIAA — solo i campi necessari (leggero)
     contrattiSetProgress(45, 'Caricamento CCIAA…');
     contrattiSetStatus('cciaa', 45, null);
-    var cciaaAll = await contrattisFetchAll('cciaa');
+    var cciaaAll = [];
+    try {
+      var cciaaResp = await fetch(SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&limit=10000', { headers: H() });
+      if (cciaaResp.ok) cciaaAll = await cciaaResp.json();
+    } catch(e) { console.warn('CCIAA non disponibile:', e); }
     contrattiSetStatus('cciaa', 100, 'done');
     // Mappa per partita_iva
     var cciaaMap = {};
@@ -191,21 +195,27 @@ async function contrattiLoad(force) {
 }
 
 // Fetch con paginazione (come anaFetchAll)
-async function contrattisFetchAll(table) {
+async function contrattisFetchAll(table, extraParams) {
   var all = [], offset = 0, size = 1000;
+  // Separa nome tabella da eventuali filtri già presenti
+  var hasQuery = table.indexOf('?') !== -1;
+  var baseUrl = SB + '/rest/v1/' + table;
   while (true) {
-    contrattiSetStatus(table, all.length, 'loading');
-    var r = await fetch(SB + '/rest/v1/' + table + '?select=*&offset=' + offset + '&limit=' + size, { headers: H() });
+    var sep = hasQuery ? '&' : '?';
+    var url = baseUrl + sep + 'select=*&offset=' + offset + '&limit=' + size;
+    if (extraParams) url += '&' + extraParams;
+    contrattiSetStatus(table.split('?')[0], all.length, 'loading');
+    var r = await fetch(url, { headers: H() });
     if (!r.ok) throw new Error(table + ': HTTP ' + r.status);
     var rows = await r.json();
     if (!Array.isArray(rows) || rows.length === 0) {
-      contrattiSetStatus(table, all.length, 'done');
+      contrattiSetStatus(table.split('?')[0], all.length, 'done');
       break;
     }
     all = all.concat(rows);
     offset += size;
     if (rows.length < size) {
-      contrattiSetStatus(table, all.length, 'done');
+      contrattiSetStatus(table.split('?')[0], all.length, 'done');
       break;
     }
     await new Promise(function(res) { setTimeout(res, 150); });
