@@ -208,27 +208,28 @@ async function contrattiLoad(force) {
 }
 
 // Fetch con paginazione (come anaFetchAll)
-async function contrattisFetchAll(table, extraParams) {
+async function contrattisFetchAll(table) {
   var all = [], offset = 0, size = 1000;
   // Separa nome tabella da eventuali filtri già presenti
-  var hasQuery = table.indexOf('?') !== -1;
-  var baseUrl = SB + '/rest/v1/' + table;
+  var parts = table.split('?');
+  var tableName = parts[0];
+  var extraFilter = parts[1] || '';
+  var baseUrl = SB + '/rest/v1/' + tableName;
   while (true) {
-    var sep = hasQuery ? '&' : '?';
-    var url = baseUrl + sep + 'select=*&offset=' + offset + '&limit=' + size;
-    if (extraParams) url += '&' + extraParams;
-    contrattiSetStatus(table.split('?')[0], all.length, 'loading');
+    var url = baseUrl + '?select=*&offset=' + offset + '&limit=' + size;
+    if (extraFilter) url += '&' + extraFilter;
+    contrattiSetStatus(tableName, all.length, 'loading');
     var r = await fetch(url, { headers: H() });
-    if (!r.ok) throw new Error(table + ': HTTP ' + r.status);
+    if (!r.ok) throw new Error(tableName + ': HTTP ' + r.status);
     var rows = await r.json();
     if (!Array.isArray(rows) || rows.length === 0) {
-      contrattiSetStatus(table.split('?')[0], all.length, 'done');
+      contrattiSetStatus(tableName, all.length, 'done');
       break;
     }
     all = all.concat(rows);
     offset += size;
     if (rows.length < size) {
-      contrattiSetStatus(table.split('?')[0], all.length, 'done');
+      contrattiSetStatus(tableName, all.length, 'done');
       break;
     }
     await new Promise(function(res) { setTimeout(res, 150); });
