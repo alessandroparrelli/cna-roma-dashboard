@@ -197,19 +197,33 @@ async function contrattiLoad(force) {
 // Fetch con paginazione (come anaFetchAll)
 async function contrattisFetchAll(table) {
   var all = [], offset = 0, size = 1000;
+  var parts     = table.split('?');
+  var tableName = parts[0];
+  var filter    = parts[1] || '';
+  // Se il filtro ha già un select, usalo; altrimenti aggiungi select=*
+  var hasSelect = filter.indexOf('select=') === 0 || filter.indexOf('&select=') !== -1 || filter.indexOf('select=') !== -1;
+  var baseUrl   = SB + '/rest/v1/' + tableName;
+
   while (true) {
-    contrattiSetStatus(table, all.length, 'loading');
-    var r = await fetch(SB + '/rest/v1/' + table + '?select=*&offset=' + offset + '&limit=' + size, { headers: H() });
-    if (!r.ok) throw new Error(table + ': HTTP ' + r.status);
+    var url;
+    if (hasSelect) {
+      // Usa il select custom, aggiungi offset e limit come parametri aggiuntivi
+      url = baseUrl + '?' + filter + '&offset=' + offset + '&limit=' + size;
+    } else {
+      url = baseUrl + '?select=*' + (filter ? '&' + filter : '') + '&offset=' + offset + '&limit=' + size;
+    }
+    contrattiSetStatus(tableName, all.length, 'loading');
+    var r = await fetch(url, { headers: H() });
+    if (!r.ok) throw new Error(tableName + ': HTTP ' + r.status);
     var rows = await r.json();
     if (!Array.isArray(rows) || rows.length === 0) {
-      contrattiSetStatus(table, all.length, 'done');
+      contrattiSetStatus(tableName, all.length, 'done');
       break;
     }
     all = all.concat(rows);
     offset += size;
     if (rows.length < size) {
-      contrattiSetStatus(table, all.length, 'done');
+      contrattiSetStatus(tableName, all.length, 'done');
       break;
     }
     await new Promise(function(res) { setTimeout(res, 150); });
