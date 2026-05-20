@@ -123,18 +123,16 @@ async function contrattiLoad(force) {
           comune: ana.comune,
           provincia: ana.provincia,
           mestiere: ana.mestiere,
-          email: ana.email,
-          telefono: ana.telefono,
           iscritto: iscritti[ana.codiceanagrafica] || false,
           inps: inps[ana.codiceanagrafica] || false,
           tipoimpresa: tipoImp,
           addetti_sub: addSub,
           addetti_fam: addFam,
           totale_addetti: addSub + addFam,
-          servizi: {},          // { tipocontratto: { data, consulente } }
+          servizi: {}  // { tipocontratto: { data, consulente } }
         };
       }
-      // Aggiunge servizio a questa impresa (mantieni il contratto più recente per tipo)
+      // Per ogni tipo contratto mantieni il più recente
       var dataC = c.datastipulacontratto ? new Date(c.datastipulacontratto) : new Date(0);
       var existing = impreseMap[c.codicecliente].servizi[c.tipocontratto];
       if (!existing || dataC > new Date(existing.data || 0)) {
@@ -163,6 +161,10 @@ async function contrattiLoad(force) {
     
     contrattiFiltered = contrattiAll.slice();
     contrattiSelected.clear();
+    
+    // Raccoglie set servizi per filtro
+    var serviziSet = {};
+    contrattiAll.forEach(function(r) { if (r.tipocontratto) serviziSet[r.tipocontratto] = true; });
     
     contrattiSetProgress(90, 'Popolamento filtri…');
     contrattiPopulateFilters(serviziSet);
@@ -239,27 +241,26 @@ function contrattiRender() {
   
   contrattiFiltered = rows;
 
-  // Reset alla prima pagina quando cambia il filtro
   var totalPages = Math.max(1, Math.ceil(contrattiFiltered.length / contrattiPageSize));
   if (contrattiPage >= totalPages) contrattiPage = 0;
 
   var tb = G('contratti-tbody');
   if (!rows.length) {
-    tb.innerHTML = '<tr><td colspan="24" class="ana-empty">Nessun record trovato</td></tr>';
+    tb.innerHTML = '<tr><td colspan="20" class="ana-empty">Nessun record trovato</td></tr>';
     contrattiUpdateSelCount();
     var pag = G('contratti-pagination');
     if (pag) pag.style.display = 'none';
     return;
   }
   
-  // Lista servizi per le colonne
+  // Lista servizi ordinata (da tutti i record)
   var servizi = [];
   Object.keys(contrattiAll.reduce(function(acc, r) {
     Object.keys(r.servizi || {}).forEach(function(s) { acc[s] = true; });
     return acc;
   }, {})).sort().forEach(function(s) { servizi.push(s); });
   
-  // Ricostruisci header completo con le nuove colonne
+  // Header: colonne fisse + per ogni servizio [Servizio | Data Stipula | Consulente] + Iscritto + INPS + TOT
   var thead = G('contratti-table').querySelector('thead tr');
   if (thead) {
     var thHTML = '<th class="col-check"><input type="checkbox" id="contratti-selall"></th>';
@@ -269,27 +270,24 @@ function contrattiRender() {
     thHTML += '<th>Comune</th>';
     thHTML += '<th>Provincia</th>';
     thHTML += '<th>Mestiere</th>';
-    thHTML += '<th>Tipo</th>';
+    thHTML += '<th>Tipo Impresa</th>';
     thHTML += '<th style="text-align:center">Dip.<br>Sub.</th>';
     thHTML += '<th style="text-align:center">Dip.<br>Fam.</th>';
     thHTML += '<th style="text-align:center;background:#E8F0FE;border-left:2px solid #005CA9">Tot.<br>Dip.</th>';
     servizi.forEach(function(s) {
-      thHTML += '<th>' + s + '</th>';
+      thHTML += '<th style="text-align:center;border-left:1px solid #ddd">' + s + '</th>';
+      thHTML += '<th style="text-align:center;font-size:11px;color:#666">Data Stipula<br><em style="font-weight:400">' + s + '</em></th>';
+      thHTML += '<th style="font-size:11px;color:#666">Consulente<br><em style="font-weight:400">' + s + '</em></th>';
     });
     thHTML += '<th>Iscritto</th>';
     thHTML += '<th>INPS</th>';
     thHTML += '<th style="text-align:center;font-weight:700;color:#005CA9">TOT</th>';
-    thHTML += '<th>Data Stipula</th>';
-    thHTML += '<th>Consulente</th>';
     thead.innerHTML = thHTML;
-    // Ri-aggancia checkbox seleziona-tutti
     var newSelAll = thead.querySelector('#contratti-selall');
-    if (newSelAll) {
-      newSelAll.addEventListener('change', contrattiToggleAll);
-    }
+    if (newSelAll) newSelAll.addEventListener('change', contrattiToggleAll);
   }
 
-  // Slice della pagina corrente
+  // Slice pagina
   var start = contrattiPage * contrattiPageSize;
   var end   = Math.min(start + contrattiPageSize, contrattiFiltered.length);
   var pageRows = contrattiFiltered.slice(start, end);
@@ -301,50 +299,43 @@ function contrattiRender() {
     var sel = contrattiSelected.has(globalIdx) ? ' class="selected"' : '';
     var chk = contrattiSelected.has(globalIdx) ? ' checked' : '';
     
+    var tipoBg = r.tipoimpresa === 'Artigiana' ? '#FEE2E2' : r.tipoimpresa === 'Commerciante' ? '#FEF3C7' : r.tipoimpresa ? '#FFEDD5' : '';
+    var tipoCol = r.tipoimpresa === 'Artigiana' ? '#B91C1C' : r.tipoimpresa === 'Commerciante' ? '#92400E' : '#9A3412';
+
     html.push('<tr' + sel + ' data-idx="' + globalIdx + '">');
     html.push('<td class="col-check"><input type="checkbox" data-idx="' + globalIdx + '"' + chk + '></td>');
     html.push('<td>' + (r.partitaiva || '-') + '</td>');
-    html.push('<td>' + (r.ragionesociale || '-') + '</td>');
+    html.push('<td><strong>' + (r.ragionesociale || '-') + '</strong></td>');
     html.push('<td>' + (r.codicecliente || '-') + '</td>');
     html.push('<td>' + (r.comune || '-') + '</td>');
     html.push('<td>' + (r.provincia || '-') + '</td>');
     html.push('<td>' + (r.mestiere || '-') + '</td>');
-    // Tipo impresa
-    var tipoBg = r.tipoimpresa === 'Artigiana' ? '#FEE2E2' : r.tipoimpresa === 'Commerciante' ? '#FEF3C7' : r.tipoimpresa ? '#FFEDD5' : '';
-    var tipoCol = r.tipoimpresa === 'Artigiana' ? '#B91C1C' : r.tipoimpresa === 'Commerciante' ? '#92400E' : '#9A3412';
-    html.push('<td style="font-size:11px;font-weight:700;' + (r.tipoimpresa ? 'background:' + tipoBg + ';color:' + tipoCol + ';text-align:center' : 'color:#999;text-align:center') + '">' + (r.tipoimpresa || '-') + '</td>');
-    // Dipendenti
+    html.push('<td style="font-size:11px;font-weight:700;text-align:center;' + (r.tipoimpresa ? 'background:' + tipoBg + ';color:' + tipoCol : 'color:#999') + '">' + (r.tipoimpresa || '-') + '</td>');
     html.push('<td style="text-align:center">' + (r.addetti_sub > 0 ? r.addetti_sub : '-') + '</td>');
     html.push('<td style="text-align:center">' + (r.addetti_fam > 0 ? r.addetti_fam : '-') + '</td>');
     html.push('<td style="text-align:center;font-weight:700;color:#005CA9;background:#E8F0FE;border-left:2px solid #005CA9">' + (r.totale_addetti > 0 ? r.totale_addetti : '-') + '</td>');
     
     var conteggio = 0;
-    // Calcola data stipula più recente e consulente tra tutti i contratti dell'impresa
-    var dataMax = null, consulenteMax = '';
     servizi.forEach(function(srv) {
       var c = r.servizi && r.servizi[srv];
-      html.push('<td style="text-align:center;font-weight:bold;color:#005CA9">' + (c ? 'X' : '') + '</td>');
       if (c) {
         conteggio++;
-        if (c.data) {
-          var d = new Date(c.data);
-          if (!dataMax || d > dataMax) { dataMax = d; consulenteMax = c.consulente || ''; }
-        }
+        var dataStr = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '-';
+        html.push('<td style="text-align:center;font-weight:bold;color:#005CA9;border-left:1px solid #ddd">X</td>');
+        html.push('<td style="text-align:center;font-size:12px;white-space:nowrap">' + dataStr + '</td>');
+        html.push('<td style="font-size:12px">' + (c.consulente || '-') + '</td>');
+      } else {
+        html.push('<td style="text-align:center;color:#ddd;border-left:1px solid #ddd">–</td>');
+        html.push('<td></td>');
+        html.push('<td></td>');
       }
     });
     
-    var iscritto_mark = r.iscritto ? 'X' : '';
-    var inps_mark = r.inps ? 'X' : '';
-    html.push('<td style="text-align:center;font-weight:bold;color:#005CA9">' + iscritto_mark + '</td>');
-    html.push('<td style="text-align:center;font-weight:bold;color:#005CA9">' + inps_mark + '</td>');
+    html.push('<td style="text-align:center;font-weight:bold;color:#005CA9">' + (r.iscritto ? 'X' : '') + '</td>');
+    html.push('<td style="text-align:center;font-weight:bold;color:#005CA9">' + (r.inps ? 'X' : '') + '</td>');
     if (r.iscritto) conteggio++;
     if (r.inps) conteggio++;
-    
     html.push('<td style="text-align:center;font-weight:bold;color:#005CA9;background:#F0F4FF;border-left:2px solid #005CA9">' + conteggio + '</td>');
-    // Data stipula e consulente
-    var dataStr = dataMax ? dataMax.toLocaleDateString('it-IT') : '-';
-    html.push('<td style="font-size:12px;white-space:nowrap">' + dataStr + '</td>');
-    html.push('<td style="font-size:12px">' + (consulenteMax || '-') + '</td>');
     html.push('</tr>');
   }
   
@@ -352,7 +343,6 @@ function contrattiRender() {
   contrattiUpdateSelCount();
   G('contratti-count').textContent = contrattiFiltered.length + ' imprese';
 
-  // ── Paginazione ──
   contrattiRenderPagination(totalPages, start, end);
 }
 
@@ -481,10 +471,14 @@ function contrattiExportExcel() {
   // Riga 1: Titolo
   wsData.push(['Analisi contratti CNA']);
   
-  // Riga 2: Header
+  // Riga 2: Header — per ogni servizio: Servizio | Data Stipula Servizio | Consulente Servizio
   var headerRow = ['PARTITA IVA', 'RAGIONE SOCIALE', 'CODICE CLIENTE', 'COMUNE', 'PROVINCIA', 'MESTIERE', 'TIPO IMPRESA', 'DIP. SUBORDINATI', 'DIP. FAMILIARI', 'TOT. DIPENDENTI'];
-  headerRow = headerRow.concat(servizi);
-  headerRow.push('ISCRITTO', 'TESSERAMENTO INPS', 'NUMERO SERVIZI ACQUISTATI', 'DATA STIPULA', 'CONSULENTE');
+  servizi.forEach(function(s) {
+    headerRow.push(s);
+    headerRow.push('DATA STIPULA ' + s.toUpperCase());
+    headerRow.push('CONSULENTE ' + s.toUpperCase());
+  });
+  headerRow.push('ISCRITTO', 'TESSERAMENTO INPS', 'NUMERO SERVIZI ACQUISTATI');
   wsData.push(headerRow);
   
   // Dati
@@ -505,29 +499,26 @@ function contrattiExportExcel() {
     ];
     
     var conteggio = 0;
-    var dataMax = null, consulenteMax = '';
     servizi.forEach(function(srv) {
       var c = r.servizi && r.servizi[srv];
-      row.push(c ? 'X' : '');
       if (c) {
         conteggio++;
-        if (c.data) {
-          var d = new Date(c.data);
-          if (!dataMax || d > dataMax) { dataMax = d; consulenteMax = c.consulente || ''; }
-        }
+        var dataStr = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '';
+        row.push('X');
+        row.push(dataStr);
+        row.push(c.consulente || '');
+      } else {
+        row.push('');
+        row.push('');
+        row.push('');
       }
     });
     
-    var hasIscritto = r.iscritto ? true : false;
-    var hasInps = r.inps ? true : false;
-    row.push(hasIscritto ? 'X' : '');
-    row.push(hasInps ? 'X' : '');
-    if (hasIscritto) conteggio++;
-    if (hasInps) conteggio++;
-    
+    if (r.iscritto) conteggio++;
+    if (r.inps) conteggio++;
+    row.push(r.iscritto ? 'X' : '');
+    row.push(r.inps ? 'X' : '');
     row.push(conteggio);
-    row.push(dataMax ? dataMax.toLocaleDateString('it-IT') : '');
-    row.push(consulenteMax || '');
     
     wsData.push(row);
   });
@@ -535,14 +526,14 @@ function contrattiExportExcel() {
   var ws = XLSX.utils.aoa_to_sheet(wsData);
   
   // --- MERGE TITOLO ---
-  // 10 colonne base + servizi + 5 (iscritto, inps, tot, data, consulente)
-  var colCount = 10 + servizi.length + 5;
+  // 10 colonne base + (servizi × 3) + 3 (iscritto, inps, tot)
+  var colCount = 10 + (servizi.length * 3) + 3;
   ws['!merges'] = [{s: {r: 0, c: 0}, e: {r: 0, c: colCount - 1}}];
   
   // --- COLONNE LARGHEZZE ---
-  var colWidths = [12.16, 60.83, 14.33, 19.33, 10.33, 70.83, 16, 14, 14, 14];
-  servizi.forEach(function() { colWidths.push(27); });
-  colWidths.push(15.33, 19.33, 22, 14, 30);
+  var colWidths = [12.16, 50, 14, 16, 10, 40, 16, 14, 14, 14];
+  servizi.forEach(function() { colWidths.push(20, 14, 30); }); // X | Data | Consulente
+  colWidths.push(12, 18, 12);
   ws['!cols'] = colWidths.map(function(w) { return {wch: w}; });
   
   // --- FORMATTAZIONE ---
