@@ -95,6 +95,9 @@ async function contrattiLoad(force) {
     contrattiSetProgress(80, 'Unificazione dati…');
     contrattiSetStatus('join', 80, null);
 
+    // Crea array di imprese UNICHE con tutti i servizi
+    var impreseMap = {};
+
     // Mappe CCIAA e Diretti
     var cciaaMap = {};
     cciaaAll.forEach(function(cc) { if (cc.partita_iva) cciaaMap[cc.partita_iva] = cc; });
