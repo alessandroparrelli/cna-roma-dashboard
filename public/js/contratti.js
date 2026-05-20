@@ -44,13 +44,26 @@ async function contrattiLoad(force) {
     contrattiSetStatus('anagrafiche', 25, null);
     var anagrafiche = await contrattisFetchAll('Anagrafiche');
     
-    // Carica CCIAA — solo i campi necessari (leggero)
+    // Raccoglie le partite IVA delle imprese che hanno contratti
+    var pivaSet = {};
+    contratti.forEach(function(c) {
+      var ana = anaMap[c.codicecliente];
+      if (ana && ana.partitaiva) pivaSet[ana.partitaiva] = true;
+    });
+    var pivaList = Object.keys(pivaSet);
+
+    // Carica CCIAA solo per le partite IVA necessarie
     contrattiSetProgress(45, 'Caricamento CCIAA…');
     contrattiSetStatus('cciaa', 45, null);
     var cciaaAll = [];
     try {
-      var cciaaResp = await fetch(SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&limit=10000', { headers: H() });
-      if (cciaaResp.ok) cciaaAll = await cciaaResp.json();
+      if (pivaList.length > 0) {
+        var cciaaResp = await fetch(
+          SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&partita_iva=in.(' + pivaList.join(',') + ')',
+          { headers: H() }
+        );
+        if (cciaaResp.ok) cciaaAll = await cciaaResp.json();
+      }
     } catch(e) { console.warn('CCIAA non disponibile:', e); }
     contrattiSetStatus('cciaa', 100, 'done');
     // Mappa per partita_iva
