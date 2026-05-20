@@ -81,27 +81,16 @@ async function contrattiLoad(force) {
     var pivaList    = Object.keys(pivaSet);
     var codiciAnaList = Object.keys(codiciAnaSet);
 
-    // STEP 3 — CCIAA + Diretti + Codiciateco in parallelo, tutti filtrati
+    // STEP 3 — CCIAA + Diretti + Codiciateco in parallelo con paginazione
     contrattiSetProgress(55, 'Caricamento dati aggiuntivi…');
     contrattiSetStatus('cciaa', 55, null);
     contrattiSetStatus('diretti', 55, null);
 
-    var fetchCciaa = fetch(
-      SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&limit=10000',
-      { headers: H() }
-    ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
-
-    var fetchDiretti = fetch(
-      SB + '/rest/v1/diretti?select=codiceanagrafica,servizio&limit=10000',
-      { headers: H() }
-    ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
-
-    var fetchAteco = atecoList.length > 0
-      ? fetch(SB + '/rest/v1/codiciateco?select=codiceateco,mestiere&limit=1000', { headers: H() })
-          .then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
-      : Promise.resolve([]);
-
-    var results2 = await Promise.all([fetchCciaa, fetchDiretti, fetchAteco]);
+    var results2 = await Promise.all([
+      contrattisFetchAll('cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul'),
+      contrattisFetchAll('diretti?select=codiceanagrafica,servizio'),
+      contrattisFetchAll('codiciateco?select=codiceateco,mestiere')
+    ]);
     var cciaaAll = results2[0];
     var diretti  = results2[1];
     var atecoAll = results2[2];
@@ -111,19 +100,30 @@ async function contrattiLoad(force) {
     contrattiSetProgress(80, 'Unificazione dati…');
     contrattiSetStatus('join', 80, null);
 
+    // Debug: mostra valori unici di servizio in diretti
+    var serviziDiretti = {};
+    diretti.forEach(function(d) { if (d.servizio) serviziDiretti[String(d.servizio).trim()] = true; });
+    console.log('Valori servizio in diretti:', Object.keys(serviziDiretti).sort());
+    console.log('CCIAA count:', cciaaAll.length, 'sample:', cciaaAll[0]);
+    console.log('Diretti count:', diretti.length);
+
     // Mappe
     var cciaaMap = {};
-    cciaaAll.forEach(function(cc) { if (cc.partita_iva) cciaaMap[cc.partita_iva] = cc; });
+    cciaaAll.forEach(function(cc) {
+      if (cc.partita_iva) cciaaMap[String(cc.partita_iva).trim()] = cc;
+    });
 
     var atecoMap = {};
-    atecoAll.forEach(function(a) { if (a.codiceateco) atecoMap[String(a.codiceateco).trim()] = a.mestiere || ''; });
+    atecoAll.forEach(function(a) {
+      if (a.codiceateco) atecoMap[String(a.codiceateco).trim()] = a.mestiere || '';
+    });
 
     var iscritti = {}, inps = {};
     diretti.forEach(function(d) {
       if (!d.servizio) return;
       var srv = String(d.servizio).trim().toUpperCase();
-      if (srv === 'ISCRITTO')          iscritti[d.codiceanagrafica] = true;
-      if (srv === 'TESSERAMENTO INPS') inps[d.codiceanagrafica]     = true;
+      if (srv === 'ISCRITTO')          iscritti[String(d.codiceanagrafica).trim()] = true;
+      if (srv === 'TESSERAMENTO INPS') inps[String(d.codiceanagrafica).trim()]     = true;
     });
 
     // Build impreseMap
@@ -132,26 +132,28 @@ async function contrattiLoad(force) {
       var ana = anaMap[c.codicecliente];
       if (!ana) return;
 
-      var cciaa  = cciaaMap[ana.partitaiva] || null;
-      var addSub = cciaa ? (parseInt(cciaa.num_addetti_sub)      || 0) : 0;
-      var addFam = cciaa ? (parseInt(cciaa.num_addetti_fam_ul)   || 0) : 0;
+      var piva   = String(ana.partitaiva || '').trim();
+      var codAna = String(ana.codiceanagrafica || '').trim();
+      var cciaa  = cciaaMap[piva] || null;
+      var addSub = cciaa ? (parseInt(cciaa.num_addetti_sub)    || 0) : 0;
+      var addFam = cciaa ? (parseInt(cciaa.num_addetti_fam_ul) || 0) : 0;
       var tipoImp = '';
       if (cciaa && cciaa.art_com_tur) {
-        var tc = String(cciaa.art_com_tur).toUpperCase();
+        var tc = String(cciaa.art_com_tur).trim().toUpperCase();
         tipoImp = tc === 'A' ? 'Artigiana' : tc === 'C' ? 'Commerciante' : 'Varie';
       }
 
       if (!impreseMap[c.codicecliente]) {
         var mestiere = atecoMap[String(ana.codiceateco || '').trim()] || '';
         impreseMap[c.codicecliente] = {
-          partitaiva:     ana.partitaiva,
+          partitaiva:     piva,
           ragionesociale: ana.ragionesociale,
           codicecliente:  c.codicecliente,
           comune:         ana.comune,
           provincia:      ana.provincia,
           mestiere:       mestiere,
-          iscritto:       iscritti[ana.codiceanagrafica] || false,
-          inps:           inps[ana.codiceanagrafica]     || false,
+          iscritto:       iscritti[codAna] || false,
+          inps:           inps[codAna]     || false,
           tipoimpresa:    tipoImp,
           addetti_sub:    addSub,
           addetti_fam:    addFam,
@@ -218,9 +220,16 @@ async function contrattisFetchAll(table) {
   var tableName = parts[0];
   var extraFilter = parts[1] || '';
   var baseUrl = SB + '/rest/v1/' + tableName;
+  // Se extraFilter contiene già un select, non aggiungere select=*
+  var hasSelect = extraFilter.indexOf('select=') !== -1;
   while (true) {
-    var url = baseUrl + '?select=*&offset=' + offset + '&limit=' + size;
-    if (extraFilter) url += '&' + extraFilter;
+    var url;
+    if (hasSelect) {
+      url = baseUrl + '?' + extraFilter + '&offset=' + offset + '&limit=' + size;
+    } else {
+      url = baseUrl + '?select=*&offset=' + offset + '&limit=' + size;
+      if (extraFilter) url += '&' + extraFilter;
+    }
     contrattiSetStatus(tableName, all.length, 'loading');
     var r = await fetch(url, { headers: H() });
     if (!r.ok) throw new Error(tableName + ': HTTP ' + r.status);
