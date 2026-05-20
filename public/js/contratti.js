@@ -500,40 +500,55 @@ function contrattiExportExcel() {
   ws['!cols'] = colWidths.map(function(w) { return {wch: w}; });
   
   // --- FORMATTAZIONE ---
-  // Riga 1: TITOLO - Blu CNA, grande 22
+
+  // Riga 1: TITOLO
   ws['A1'].s = {
-    font: {bold: false, sz: 22, color: {theme: 0}},
+    font: {name: 'Calibri', bold: true, sz: 22, color: {rgb: 'FFFFFFFF'}},
     fill: {patternType: 'solid', fgColor: {rgb: 'FF005CA9'}},
     alignment: {horizontal: 'left', vertical: 'center'}
   };
-  
-  // Riga 2: HEADER - Blu CNA sfondo, tema colore, size 12
+
+  // Righe 1 e 2: intestazione blu CNA, Calibri 12 bold centrato
   for (var col = 0; col < colCount; col++) {
-    var cellRef = XLSX.utils.encode_col(col) + '2';
-    if (!ws[cellRef]) {
-      ws[cellRef] = {v: headerRow[col]};
+    // Riga 1 (titolo) — celle oltre A1 vanno comunque colorate per il merge visivo
+    var r1ref = XLSX.utils.encode_col(col) + '1';
+    if (!ws[r1ref]) ws[r1ref] = {v: ''};
+    if (r1ref !== 'A1') {
+      ws[r1ref].s = {
+        fill: {patternType: 'solid', fgColor: {rgb: 'FF005CA9'}},
+        font: {name: 'Calibri', sz: 12, color: {rgb: 'FFFFFFFF'}}
+      };
     }
-    ws[cellRef].s = {
-      font: {bold: false, sz: 12, color: {theme: 0}},
+
+    // Riga 2 (header colonne)
+    var r2ref = XLSX.utils.encode_col(col) + '2';
+    if (!ws[r2ref]) ws[r2ref] = {v: headerRow[col] || ''};
+    ws[r2ref].s = {
+      font: {name: 'Calibri', bold: true, sz: 12, color: {rgb: 'FFFFFFFF'}},
       fill: {patternType: 'solid', fgColor: {rgb: 'FF005CA9'}},
-      alignment: {horizontal: 'left', vertical: 'center', wrapText: false},
+      alignment: {horizontal: 'center', vertical: 'center', wrapText: true},
       border: {
-        left: {style: 'thin', color: {rgb: 'FF005CA9'}},
-        right: {style: 'thin', color: {rgb: 'FF005CA9'}},
-        top: {style: 'thin', color: {rgb: 'FF005CA9'}},
-        bottom: {style: 'thin', color: {rgb: 'FF005CA9'}}
+        left:   {style: 'thin', color: {rgb: 'FFFFFFFF'}},
+        right:  {style: 'thin', color: {rgb: 'FFFFFFFF'}},
+        top:    {style: 'thin', color: {rgb: 'FFFFFFFF'}},
+        bottom: {style: 'thin', color: {rgb: 'FFFFFFFF'}}
       }
     };
   }
-  
-  // Dati - nessuna formattazione (colori neutri)
+
+  // Righe dati: Calibri 11, righe alternate bianco / grigio chiarissimo
+  var colorePari   = 'FFF2F2F2'; // grigio molto chiaro
+  var coloreDispari = 'FFFFFFFF'; // bianco
   for (var dataRow = 3; dataRow <= wsData.length; dataRow++) {
+    var isGrigio = (dataRow % 2 === 0); // righe pari → grigio, dispari → bianco
+    var bgColor = isGrigio ? colorePari : coloreDispari;
     for (var dataCol = 0; dataCol < colCount; dataCol++) {
       var dataCellRef = XLSX.utils.encode_col(dataCol) + dataRow;
       if (!ws[dataCellRef]) ws[dataCellRef] = {v: ''};
       ws[dataCellRef].s = {
-        alignment: {horizontal: 'left', vertical: 'center'},
-        font: {sz: 11}
+        font: {name: 'Calibri', sz: 11},
+        fill: {patternType: 'solid', fgColor: {rgb: bgColor}},
+        alignment: {horizontal: 'left', vertical: 'center'}
       };
     }
   }
