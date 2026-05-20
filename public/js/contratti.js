@@ -86,18 +86,18 @@ async function contrattiLoad(force) {
     contrattiSetStatus('cciaa', 55, null);
     contrattiSetStatus('diretti', 55, null);
 
-    var fetchCciaa = pivaList.length > 0
-      ? fetch(SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&partita_iva=in.(' + pivaList.join(',') + ')', { headers: H() })
-          .then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
-      : Promise.resolve([]);
+    var fetchCciaa = fetch(
+      SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&limit=10000',
+      { headers: H() }
+    ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
 
-    var fetchDiretti = codiciAnaList.length > 0
-      ? fetch(SB + '/rest/v1/diretti?select=codiceanagrafica,servizio&codiceanagrafica=in.(' + codiciAnaList.join(',') + ')', { headers: H() })
-          .then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
-      : Promise.resolve([]);
+    var fetchDiretti = fetch(
+      SB + '/rest/v1/diretti?select=codiceanagrafica,servizio&limit=10000',
+      { headers: H() }
+    ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
 
     var fetchAteco = atecoList.length > 0
-      ? fetch(SB + '/rest/v1/codiciateco?select=codiceateco,mestiere&codiceateco=in.(' + atecoList.join(',') + ')', { headers: H() })
+      ? fetch(SB + '/rest/v1/codiciateco?select=codiceateco,mestiere&limit=1000', { headers: H() })
           .then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; })
       : Promise.resolve([]);
 
@@ -110,12 +110,6 @@ async function contrattiLoad(force) {
     contrattiSetStatus('diretti', 100, 'done');
     contrattiSetProgress(80, 'Unificazione dati…');
     contrattiSetStatus('join', 80, null);
-
-    // LOG DIAGNOSTICI — da rimuovere dopo verifica
-    console.log('=== CCIAA sample (primi 3):', cciaaAll.slice(0,3));
-    console.log('=== Diretti sample (primi 3):', diretti.slice(0,3));
-    console.log('=== Anagrafiche sample partitaiva:', anagrafiche.slice(0,3).map(function(a){return {cod: a.codiceanagrafica, piva: a.partitaiva};}));
-    console.log('=== Contratti sample codicecliente:', contratti.slice(0,3).map(function(c){return c.codicecliente;}));
 
     // Mappe
     var cciaaMap = {};
