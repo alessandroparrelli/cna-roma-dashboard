@@ -83,7 +83,7 @@ function atecoBuildUI(){
     document.head.appendChild(style);
   }
   
-  var h='<div>';
+  var h='<div class="tab-hero"><h2 class="tab-hero-title">Ateco</h2><p class="tab-hero-desc">Consultazione e gestione dei codici attività economica e relativi mestieri</p></div>';<div>';
 
   // FILTRI
   h+='<div id="ateco-filters-box" class="ateco-card" style="background:white;padding:16px 20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB">';
