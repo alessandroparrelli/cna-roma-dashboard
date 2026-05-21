@@ -83,7 +83,7 @@ function atecoBuildUI(){
     document.head.appendChild(style);
   }
   
-  var h='<div class="tab-hero"><h2 class="tab-hero-title">Ateco</h2><p class="tab-hero-desc">Consultazione e gestione dei codici attività economica e relativi mestieri</p></div>';<div>';
+  var h='<div class="tab-hero"><h2 class="tab-hero-title">Ateco</h2><p class="tab-hero-desc">Consultazione e gestione dei codici attività economica e relativi mestieri</p></div><div>';
 
   // FILTRI
   h+='<div id="ateco-filters-box" class="ateco-card" style="background:white;padding:16px 20px;border-radius:12px;margin-bottom:20px;box-shadow:0 4px 6px rgba(0,0,0,0.07);border-left:4px solid #0047AB">';
@@ -388,92 +388,52 @@ function renderTableCard(data,title,color,total,container){
   
   refresh();
   
-  // GRAFICO gradient area sotto la tabella
-  var chartWrap=document.createElement('div');
-  chartWrap.style.cssText='padding:0 16px 16px 16px';
-  var chartBox=document.createElement('div');
-  chartBox.className='ateco-chart-box';
-  chartBox.style.cssText='background:linear-gradient(135deg,'+color+','+color+'CC);border-radius:12px;padding:20px;position:relative';
-  
-  var chartTitle=document.createElement('div');
-  chartTitle.style.cssText='color:white;font-weight:700;font-size:13px;margin-bottom:12px;display:flex;align-items:center;gap:8px';
-  chartTitle.innerHTML='✦ Distribuzione per '+title.charAt(0)+title.slice(1).toLowerCase();
-  chartBox.appendChild(chartTitle);
-  
-  var canvasWrap=document.createElement('div');
-  canvasWrap.style.cssText='background:rgba(255,255,255,0.95);border-radius:8px;padding:16px';
-  var canvas=document.createElement('canvas');
-  canvas.style.cssText='width:100%;height:300px';
-  canvasWrap.appendChild(canvas);
-  chartBox.appendChild(canvasWrap);
-  chartWrap.appendChild(chartBox);
-  cardDiv.appendChild(chartWrap);
-  
-  container.appendChild(cardDiv);
-  
-  // Render gradient area chart
-  var top15=getSorted().slice(0,15);
-  var labels=top15.map(function(k){return k.length>20?k.substring(0,18)+'…':k;});
-  var values=top15.map(function(k){return data[k].tot;});
-  
-  var ctx=canvas.getContext('2d');
-  var gradient=ctx.createLinearGradient(0,0,0,300);
-  
-  // Colori gradient per ogni card
-  var rgbMatch=color.match(/^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
-  var cr=parseInt(rgbMatch[1],16),cg=parseInt(rgbMatch[2],16),cb=parseInt(rgbMatch[3],16);
-  gradient.addColorStop(0,'rgba('+cr+','+cg+','+cb+',0.4)');
-  gradient.addColorStop(0.5,'rgba('+cr+','+cg+','+cb+',0.2)');
-  gradient.addColorStop(1,'rgba('+cr+','+cg+','+cb+',0.02)');
-  
-  new Chart(canvas,{
-    type:'line',
-    data:{
-      labels:labels,
-      datasets:[{
-        label:'Totale',
-        data:values,
-        borderColor:color,
-        borderWidth:2,
-        backgroundColor:gradient,
-        fill:true,
-        tension:0.4,
-        pointRadius:5,
-        pointHoverRadius:7,
-        pointBackgroundColor:color,
-        pointBorderColor:'white',
-        pointBorderWidth:2,
-        pointHoverBackgroundColor:color
-      }]
-    },
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      plugins:{
-        filler:{propagate:true},
-        legend:{display:false},
-        tooltip:{
-          backgroundColor:'rgba(255,255,255,0.95)',
-          titleColor:'#333',
-          bodyColor:'#666',
-          borderColor:'#E5E7EB',
-          borderWidth:1,
-          padding:12
-        }
-      },
-      scales:{
-        x:{
-          grid:{display:false},
-          ticks:{color:'#64748B',font:{size:10},maxRotation:45,minRotation:45}
-        },
-        y:{
-          beginAtZero:true,
-          grid:{color:'rgba(15,23,42,0.06)'},
-          ticks:{color:'#64748B',font:{size:11}}
-        }
-      }
-    }
+  // CARD STATISTICHE: top 5 con barre inline al posto del grafico
+  var statsWrap = document.createElement('div');
+  statsWrap.style.cssText = 'padding:0 16px 20px 16px';
+
+  var statsCard = document.createElement('div');
+  statsCard.style.cssText = 'background:var(--surface2,#F8FAFC);border-radius:10px;padding:16px;border:1px solid var(--border,#E5E7EB)';
+
+  var statsTitle = document.createElement('div');
+  statsTitle.style.cssText = 'font-size:11px;font-weight:700;color:'+color+';text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:6px';
+  statsTitle.innerHTML = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="'+color+'" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> Top 5 per volume';
+  statsCard.appendChild(statsTitle);
+
+  var sorted = Object.keys(data).sort(function(a,b){ return data[b].tot - data[a].tot; }).slice(0,5);
+  var maxVal = sorted.length > 0 ? data[sorted[0]].tot : 1;
+
+  sorted.forEach(function(key, idx) {
+    var item = data[key];
+    var pct = Math.round((item.tot / maxVal) * 100);
+    var pctTot = total > 0 ? ((item.tot / total) * 100).toFixed(1) : '0';
+    var pctF = item.tot > 0 ? ((item.femmine / item.tot) * 100).toFixed(0) : '0';
+    var pctS = item.tot > 0 ? ((item.stranieri / item.tot) * 100).toFixed(0) : '0';
+
+    var row = document.createElement('div');
+    row.style.cssText = 'margin-bottom:12px';
+    row.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<span style="font-size:12px;font-weight:600;color:var(--text,#0F172A);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:8px">' +
+          '<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:'+color+';color:#fff;font-size:10px;font-weight:800;text-align:center;line-height:18px;margin-right:6px;flex-shrink:0">'+(idx+1)+'</span>' +
+          escapeHtml(key) +
+        '</span>' +
+        '<span style="font-size:12px;font-weight:700;color:'+color+';white-space:nowrap">' + item.tot.toLocaleString('it-IT') + '</span>' +
+      '</div>' +
+      '<div style="background:#E5E7EB;border-radius:999px;height:6px;overflow:hidden">' +
+        '<div style="width:'+pct+'%;height:100%;background:'+color+';border-radius:999px;transition:width .6s ease"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:12px;margin-top:4px">' +
+        '<span style="font-size:10px;color:var(--text-secondary,#64748B)">Sul totale: <strong>'+pctTot+'%</strong></span>' +
+        '<span style="font-size:10px;color:#EC4899">♀ <strong>'+pctF+'%</strong></span>' +
+        '<span style="font-size:10px;color:#10B981">Stranieri <strong>'+pctS+'%</strong></span>' +
+      '</div>';
+    statsCard.appendChild(row);
   });
+
+  statsWrap.appendChild(statsCard);
+  cardDiv.appendChild(statsWrap);
+  container.appendChild(cardDiv);
 }
 
 function escapeHtml(text){
