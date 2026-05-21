@@ -304,6 +304,7 @@ function consulentiRender() {
     tr.style.cssText = 'cursor:pointer;transition:background 0.15s;';
 
     tr.innerHTML =
+      '<td class="col-check" onclick="event.stopPropagation()"><input type="checkbox" class="consulenti-chk" data-nome="' + escHtml(c.nomeconsulente) + '" onchange="consulentiUpdateSelCount()"></td>' +
       '<td style="min-width:160px;max-width:220px">' +
         '<div style="display:flex;align-items:center;gap:8px">' +
           '<span class="consulenti-toggle-icon" style="font-size:11px;color:#005CA9;flex-shrink:0">▶</span>' +
@@ -347,7 +348,7 @@ function consulentiRender() {
     trExp.setAttribute('data-expand-for', c.nomeconsulente);
     trExp.style.display = 'none';
     var tdExp = document.createElement('td');
-    tdExp.colSpan = 7;
+    tdExp.colSpan = 8;
     tdExp.style.padding = '0';
     trExp.appendChild(tdExp);
     tbody.appendChild(trExp);
@@ -589,4 +590,100 @@ function consulentiExportExcel(nomeconsulente) {
 function escHtml(s) {
   if (!s) return '—';
   return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ---------- Selezione ----------
+function consulentiToggleAll(checked) {
+  document.querySelectorAll('.consulenti-chk').forEach(function(chk) { chk.checked = checked; });
+  consulentiUpdateSelCount();
+}
+
+function consulentiUpdateSelCount() {
+  var sel = document.querySelectorAll('.consulenti-chk:checked').length;
+  var tot = document.querySelectorAll('.consulenti-chk').length;
+  var btn = G('consulenti-btn-export');
+  if (btn) btn.textContent = sel > 0 ? 'Esporta ' + sel + ' selezionati' : 'Esporta tutti';
+  var selAll = G('consulenti-selall');
+  if (selAll) selAll.checked = sel > 0 && sel === tot;
+}
+
+// ---------- Export multi-consulente ----------
+function consulentiExportMulti() {
+  if (typeof XLSX === 'undefined') { toast('Libreria XLSX non disponibile', 'error'); return; }
+
+  // Determina quali consulenti esportare
+  var selChk = Array.from(document.querySelectorAll('.consulenti-chk:checked'));
+  var nomiSel = selChk.length > 0
+    ? selChk.map(function(chk) { return chk.getAttribute('data-nome'); })
+    : consulentiFiltered.map(function(c) { return c.nomeconsulente; });
+
+  if (nomiSel.length === 0) { toast('Nessun consulente disponibile', 'error'); return; }
+
+  var wb = XLSX.utils.book_new();
+
+  // Foglio riepilogo generale
+  var riepilogoGen = [['Consulente','Imprese','Contratti','% Totale','Associati','Non Assoc.','% Assoc.']];
+  nomiSel.forEach(function(nome) {
+    var c = consulentiAll.find(function(x) { return x.nomeconsulente === nome; });
+    if (!c) return;
+    var assocPct = c.numImprese > 0 ? ((c.nAssociati/c.numImprese)*100).toFixed(1)+'%' : '0%';
+    riepilogoGen.push([c.nomeconsulente, c.numImprese, c.numContratti, c.pctTotale+'%', c.nAssociati, c.nNonAssociati, assocPct]);
+  });
+  var wsGen = XLSX.utils.aoa_to_sheet(riepilogoGen);
+  wsGen['!cols'] = [{wch:28},{wch:10},{wch:12},{wch:10},{wch:10},{wch:12},{wch:10}];
+  // Stile header
+  for (var gc = 0; gc < 7; gc++) {
+    var gref = XLSX.utils.encode_cell({r:0,c:gc});
+    if (wsGen[gref]) wsGen[gref].s = {font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'005CA9'}},alignment:{horizontal:'center'}};
+  }
+  XLSX.utils.book_append_sheet(wb, wsGen, 'Riepilogo Generale');
+
+  // Un foglio per ogni consulente
+  nomiSel.forEach(function(nome) {
+    var consulente = consulentiAll.find(function(x) { return x.nomeconsulente === nome; });
+    if (!consulente) return;
+
+    var anaMap     = consulente._anaMap;
+    var direttiMap = consulente._direttiMap;
+
+    var rows = consulente._contratti.map(function(c) {
+      var ana = anaMap[c.codicecliente] || {};
+      var dArr = direttiMap[ana.codiceanagrafica] || [];
+      var isAssoc = dArr.some(function(d) {
+        return d.servizio && d.servizio.toLowerCase().indexOf('iscritto') !== -1 && !d.datadisdetta;
+      });
+      var serviziDiretti = dArr.filter(function(d){ return !d.datadisdetta; })
+                               .map(function(d){ return d.servizio||''; }).filter(Boolean).join(', ');
+      return {
+        'Consulente':        consulente.nomeconsulente,
+        'Codice Cliente':    c.codicecliente       || '',
+        'Ragione Sociale':   ana.ragionesociale     || '',
+        'Partita IVA':       ana.partitaiva         || '',
+        'Comune':            ana.comune             || '',
+        'Provincia':         ana.provincia          || '',
+        'Mestiere':          ana.mestiere           || '',
+        'Tipo Contratto':    c.tipocontratto        || '',
+        'Data Stipula':      c.datastipulacontratto || '',
+        'Sede Erogazione':   c.sedeerogazione       || '',
+        'Stato Associativo': isAssoc ? 'Associato' : 'Non Associato',
+        'Servizi Diretti':   serviziDiretti
+      };
+    });
+
+    var ws = XLSX.utils.json_to_sheet(rows);
+    ws['!cols'] = [{wch:22},{wch:14},{wch:30},{wch:14},{wch:18},{wch:10},{wch:22},{wch:24},{wch:14},{wch:20},{wch:16},{wch:30}];
+    var range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+    for (var cc = range.s.c; cc <= range.e.c; cc++) {
+      var ref = XLSX.utils.encode_cell({r:0,c:cc});
+      if (ws[ref]) ws[ref].s = {font:{bold:true,color:{rgb:'FFFFFF'}},fill:{fgColor:{rgb:'005CA9'}},alignment:{horizontal:'center'}};
+    }
+    // Nome foglio: max 31 caratteri, senza caratteri speciali
+    var sheetName = nome.replace(/[:\\/\?\*\[\]]/g,'').slice(0,31);
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  });
+
+  var ts = new Date().toISOString().slice(0,10);
+  var label = nomiSel.length === 1 ? nomiSel[0].replace(/[^a-zA-Z0-9\s]/g,'').replace(/\s+/g,'_').slice(0,20) : 'Multi_' + nomiSel.length;
+  XLSX.writeFile(wb, 'Consulenti_' + label + '_' + ts + '.xlsx');
+  toast('✓ Excel ' + nomiSel.length + ' consulenti scaricato', 'success');
 }

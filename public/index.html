@@ -924,8 +924,12 @@
           <button class="btn btn-sm" onclick="consulentiReset()">Reset</button>
           <button class="btn btn-sm btn-outline" onclick="consulentiLoad(true)">↻ Ricarica</button>
         </div>
-        <div style="margin-left:auto;font-size:12px;color:var(--text-secondary);align-self:center">
+        <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
           <span id="consulenti-count">—</span>
+          <button class="btn btn-sm btn-primary" id="consulenti-btn-export" onclick="consulentiExportMulti()" style="background:var(--grad-kpi3);box-shadow:0 2px 10px rgba(13,148,136,.25)">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Esporta selezionati
+          </button>
         </div>
       </div>
     </div>
@@ -935,6 +939,7 @@
       <table>
         <thead>
           <tr>
+            <th class="col-check"><input type="checkbox" id="consulenti-selall" onchange="consulentiToggleAll(this.checked)"></th>
             <th id="cth-nomeconsulente" class="sortable" onclick="consulentiSort('nomeconsulente')">Consulente <span id="csort-icon-nomeconsulente" class="csort-icon">↕</span></th>
             <th id="cth-numImprese" class="sortable" onclick="consulentiSort('numImprese')" style="text-align:center">Imprese<br><small>attive</small> <span id="csort-icon-numImprese" class="csort-icon">↕</span></th>
             <th id="cth-pctTotale" class="sortable" onclick="consulentiSort('pctTotale')" style="text-align:center">% Totale <span id="csort-icon-pctTotale" class="csort-icon">↕</span></th>
@@ -1049,7 +1054,7 @@
     <div style="margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <h3 style="margin:0 0 10px 0;font-size:14px;font-weight:700;color:#333">ERP CNA di Roma</h3>
       <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-        <div><strong>Versione:</strong> v97.15</div>
+        <div><strong>Versione:</strong> v97.16</div>
         <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
         <div><strong>Data rilascio:</strong> 21 May 2026</div>
         <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>
