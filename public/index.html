@@ -396,7 +396,7 @@
 <!-- TAB: ATECO - ANALISI UNIONI E MESTIERI -->
 <div class="page" id="tab-ateco">
   <div class="tab-hero"><h2 class="tab-hero-title">Ateco</h2><p class="tab-hero-desc">Consultazione e gestione dei codici attività economica e relativi mestieri</p></div>
-  <div style="padding:40px 20px;text-align:center;color:var(--text-secondary)">
+  <div id="ateco-placeholder" style="padding:40px 20px;text-align:center;color:var(--text-secondary)">
     <div style="font-size:24px;margin-bottom:20px">📊 ANALISI UNIONI E MESTIERI</div>
     <div style="font-size:14px;margin-bottom:40px">Caricamento dati in corso...</div>
   </div>
@@ -453,12 +453,6 @@
           Ricarica
         </button>
         <div style="flex:1"></div>
-        <div id="ana-export-wrapper">
-          <button class="btn btn-sm btn-primary" id="ana-btn-export" style="background:var(--grad-kpi3);box-shadow:0 2px 10px rgba(13,148,136,.25)">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-            Esporta selezionati
-          </button>
-        </div>
       </div>
     </div>
 
@@ -467,6 +461,13 @@
       <span id="ana-info-text">–</span>
       <span class="info-chip" id="ana-count">0 record</span>
       <span class="ana-sel-chip" id="ana-selcount" style="display:none">0 selezionati</span>
+      <div style="flex:1"></div>
+      <div id="ana-export-wrapper">
+        <button class="btn btn-sm btn-primary" id="ana-btn-export" style="background:var(--grad-kpi3);box-shadow:0 2px 10px rgba(13,148,136,.25)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Esporta selezionati
+        </button>
+      </div>
     </div>
 
     <div class="ana-data-card">
@@ -1045,7 +1046,7 @@
     <div style="margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <h3 style="margin:0 0 10px 0;font-size:14px;font-weight:700;color:#333">ERP CNA di Roma</h3>
       <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-        <div><strong>Versione:</strong> v97.12</div>
+        <div><strong>Versione:</strong> v97.13</div>
         <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
         <div><strong>Data rilascio:</strong> 21 May 2026</div>
         <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>

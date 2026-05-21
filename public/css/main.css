@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v97.12 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v97.13 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -1748,10 +1748,19 @@ body.dark-mode .app-footer-city {
 body.dark-mode .app-footer-copy {
   color: var(--text-tertiary);
 }
-@media (max-width: 600px) {
-  .app-footer-inner { flex-direction: column; align-items: flex-start; padding: 10px 16px; gap: 8px; }
-  .app-footer-right { width: 100%; }
-  .app-footer-copy  { font-size: 11px; }
+@media(max-width:768px){
+  .tab-hero{padding:20px 16px 0 16px;}
+  /* Filtri Archivio Imprese: 2 colonne su tablet */
+  #tab-anagrafiche .filters-bar{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px;}
+  #tab-anagrafiche .filter-group{min-width:0;width:100%;}
+  #tab-anagrafiche .filter-actions{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-start;}
+}
+@media(max-width:480px){
+  .tab-hero-title{font-size:22px;}
+  /* Filtri Archivio Imprese: 1 colonna su mobile stretto */
+  #tab-anagrafiche .filters-bar{grid-template-columns:1fr;}
+  #tab-anagrafiche .filter-actions{flex-direction:column;}
+  #tab-anagrafiche .filter-actions .btn{width:100%;justify-content:center;}
 }
 
 /* ── Hover effects globali — Serie Storica & Previsionale ── */
