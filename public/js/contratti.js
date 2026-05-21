@@ -523,8 +523,8 @@ function contrattiExportExcel() {
                r.tipoimpresa || '', r.addetti_sub || '', r.addetti_fam || '', r.totale_addetti || ''];
     
     var conteggio = 0;
-    row.push(r.iscritto ? 'Attivo' : '');
-    row.push(r.inps ? 'Attivo' : '');
+    row.push(r.iscritto ? 'Associato' : '');
+    row.push(r.inps ? 'Abbinato' : '');
     if (r.iscritto) conteggio++;
     if (r.inps) conteggio++;
 
