@@ -538,21 +538,17 @@ body.dark-mode .report-card{background:var(--surface);}
 .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 
 /* ════════════ TABLES ════════════ */
-table{width:100%;border-collapse:collapse;font-size:13px;}
+table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border-radius:10px;overflow:hidden;}
 thead tr{background:var(--surface2);}
 body.dark-mode thead tr{background:var(--surface3);}
 th{
   padding:14px 18px;text-align:left;font-size:11px;font-weight:700;
   color:var(--text-secondary);text-transform:uppercase;letter-spacing:.07em;
   white-space:nowrap;cursor:pointer;user-select:none;
-  border-bottom:1px solid var(--border);transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+  border-bottom:1px solid var(--border);
 }
 th:hover{
-  color:var(--primary);
-  background:rgba(0,92,169,.08);
-  transform:scale(1.02);
-  box-shadow:0 0 15px rgba(0,92,169,0.2), inset 0 0 10px rgba(0,92,169,0.1);
-  text-shadow:0 0 8px rgba(0,92,169,0.3);
+  color:var(--text-secondary);
 }
 th.sort-asc::after{content:' ↑';color:var(--primary);animation:pulseGlow 1.5s infinite;}
 th.sort-desc::after{content:' ↓';color:var(--primary);animation:pulseGlow 1.5s infinite;}
