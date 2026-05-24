@@ -25,11 +25,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1779611253"></script>
+<script src="js/report-generator.js?v=1779611507"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1779611253">
+<link rel="stylesheet" href="css/main.css?v=1779611507">
 </head>
 <body>
 
@@ -172,7 +172,7 @@
       <p class="hero-desc" style="font-weight:700;font-size:14px;color:var(--text);letter-spacing:-0.01em;line-height:1.35;max-width:680px;margin-top:6px">Il luogo dove analizzare l'andamento associativo della CNA di Roma, l'andamento dei contratti e la gestione dei consulenti. Monitora i dati associativi, le performance dei promotori, l'archivio imprese in tempo reale e la reportistica.</p>
     </div>
     <div class="home-hero-img-wrap">
-      <img src="modulo-adesione.png?v=2" alt="Modulo di adesione CNA" class="home-hero-modulo">
+      <img src="modulo-adesione.png?v=1779611507" alt="Modulo di adesione CNA" class="home-hero-modulo">
     </div>
   </div>
 
@@ -940,13 +940,14 @@
         <thead>
           <tr>
             <th class="col-check"><input type="checkbox" id="consulenti-selall" onchange="consulentiToggleAll(this.checked)"></th>
-            <th id="cth-nomeconsulente" class="sortable" onclick="consulentiSort('nomeconsulente')">Consulente <span id="csort-icon-nomeconsulente" class="csort-icon">↕</span></th>
-            <th id="cth-numImprese" class="sortable" onclick="consulentiSort('numImprese')" style="text-align:center">Imprese<br><small>attive</small> <span id="csort-icon-numImprese" class="csort-icon">↕</span></th>
-            <th id="cth-pctTotale" class="sortable" onclick="consulentiSort('pctTotale')" style="text-align:center">% Totale <span id="csort-icon-pctTotale" class="csort-icon">↕</span></th>
-            <th>Tipo Contratto</th>
-            <th id="cth-nAssociati" class="sortable" onclick="consulentiSort('nAssociati')" style="text-align:center">✓ Associati <span id="csort-icon-nAssociati" class="csort-icon">↕</span></th>
-            <th id="cth-nNonAssociati" class="sortable" onclick="consulentiSort('nNonAssociati')" style="text-align:center">✗ Non Assoc. <span id="csort-icon-nNonAssociati" class="csort-icon">↕</span></th>
-            <th style="text-align:center">Excel</th>
+            <th id="cth-nomeconsulente" class="sortable" onclick="consulentiSort('nomeconsulente')" style="vertical-align:top">Consulente <span id="csort-icon-nomeconsulente" class="csort-icon">↕</span></th>
+            <th id="cth-numImprese" class="sortable" onclick="consulentiSort('numImprese')" style="text-align:center;vertical-align:top">Imprese<br><small>attive</small> <span id="csort-icon-numImprese" class="csort-icon">↕</span></th>
+            <th id="cth-numContratti" class="sortable" onclick="consulentiSort('numContratti')" style="text-align:center;vertical-align:top">Contratti<br><small>attivi</small> <span id="csort-icon-numContratti" class="csort-icon">↕</span></th>
+            <th id="cth-pctTotale" class="sortable" onclick="consulentiSort('pctTotale')" style="text-align:center;vertical-align:top">% Totale <span id="csort-icon-pctTotale" class="csort-icon">↕</span></th>
+            <th style="vertical-align:top">Tipo Contratto</th>
+            <th id="cth-nAssociati" class="sortable" onclick="consulentiSort('nAssociati')" style="text-align:center;vertical-align:top">✓ Associati <span id="csort-icon-nAssociati" class="csort-icon">↕</span></th>
+            <th id="cth-nNonAssociati" class="sortable" onclick="consulentiSort('nNonAssociati')" style="text-align:center;vertical-align:top">✗ Non Assoc. <span id="csort-icon-nNonAssociati" class="csort-icon">↕</span></th>
+            <th style="text-align:center;vertical-align:top">Excel</th>
           </tr>
         </thead>
         <tbody id="consulenti-tbody"></tbody>
@@ -1290,19 +1291,19 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1779611253"></script>
-<script src="js/auth.js?v=1779611253"></script>
-<script src="js/dashboard.js?v=1779611253"></script>
-<script src="js/admin.js?v=1779611253"></script>
-<script src="js/anagrafiche.js?v=1779611253"></script>
-<script src="js/contratti.js?v=1779611253"></script>
-<script src="js/consulenti.js?v=1779611253"></script>
-<script src="js/import.js?v=1779611253"></script>
-<script src="js/scheda.js?v=1779611253"></script>
-<script src="js/mestieri.js?v=1779611253"></script>
-<script src="js/ateco.js?v=1779611253"></script>
-<script src="js/storica.js?v=1779611253"></script>
-<script src="js/reportistica.js?v=1779611253"></script>
+<script src="js/config.js?v=1779611507"></script>
+<script src="js/auth.js?v=1779611507"></script>
+<script src="js/dashboard.js?v=1779611507"></script>
+<script src="js/admin.js?v=1779611507"></script>
+<script src="js/anagrafiche.js?v=1779611507"></script>
+<script src="js/contratti.js?v=1779611507"></script>
+<script src="js/consulenti.js?v=1779611507"></script>
+<script src="js/import.js?v=1779611507"></script>
+<script src="js/scheda.js?v=1779611507"></script>
+<script src="js/mestieri.js?v=1779611507"></script>
+<script src="js/ateco.js?v=1779611507"></script>
+<script src="js/storica.js?v=1779611507"></script>
+<script src="js/reportistica.js?v=1779611507"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">

@@ -252,7 +252,7 @@ function consulentiSort(key) {
   });
 
   // Aggiorna icone
-  ['nomeconsulente','numImprese','pctTotale','nAssociati','nNonAssociati'].forEach(function(k) {
+  ['nomeconsulente','numImprese','numContratti','pctTotale','nAssociati','nNonAssociati'].forEach(function(k) {
     var th = document.getElementById('cth-' + k);
     var ic = document.getElementById('csort-icon-' + k);
     if (!th || !ic) return;
@@ -315,6 +315,10 @@ function consulentiRender() {
         '<div style="font-size:20px;font-weight:800;color:#1e293b;line-height:1">' + c.numImprese + '</div>' +
         '<div style="font-size:10px;color:#94a3b8;margin-top:1px">imprese</div>' +
       '</td>' +
+      '<td style="text-align:center;width:80px">' +
+        '<div style="font-size:20px;font-weight:800;color:#005CA9;line-height:1">' + c.numContratti + '</div>' +
+        '<div style="font-size:10px;color:#94a3b8;margin-top:1px">contratti</div>' +
+      '</td>' +
       '<td style="text-align:center;width:100px">' +
         '<div style="font-size:16px;font-weight:800;color:#005CA9">' + c.pctTotale + '<span style="font-size:11px;font-weight:500">%</span></div>' +
         '<div class="consulenti-pct-bar" style="margin:4px auto 0"><div class="consulenti-pct-fill" style="background:#005CA9;width:' + Math.min(parseFloat(c.pctTotale), 100) + '%"></div></div>' +
@@ -348,7 +352,7 @@ function consulentiRender() {
     trExp.setAttribute('data-expand-for', c.nomeconsulente);
     trExp.style.display = 'none';
     var tdExp = document.createElement('td');
-    tdExp.colSpan = 8;
+    tdExp.colSpan = 9;
     tdExp.style.padding = '0';
     trExp.appendChild(tdExp);
     tbody.appendChild(trExp);
