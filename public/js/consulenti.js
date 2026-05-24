@@ -279,13 +279,13 @@ function consulentiRender() {
     c._imprese.forEach(function(i) { totImprese.add(i); });
     totContratti += c.numContratti;
   });
-  G('consulenti-kpi-consulenti').textContent = consulentiAll.length;
-  G('consulenti-kpi-imprese').textContent    = totImprese.size;
-  G('consulenti-kpi-contratti').textContent  = totContratti;
-  G('consulenti-count').textContent          = consulentiFiltered.length + ' consulenti';
+  if(G('consulenti-kpi-consulenti')) G('consulenti-kpi-consulenti').textContent = consulentiAll.length;
+  if(G('consulenti-kpi-imprese'))    G('consulenti-kpi-imprese').textContent    = totImprese.size;
+  if(G('consulenti-kpi-contratti'))  G('consulenti-kpi-contratti').textContent  = totContratti;
+  G('consulenti-count').textContent = consulentiFiltered.length + ' consulenti';
 
   if (consulentiFiltered.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" class="ana-empty">Nessun consulente trovato</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" class="ana-empty">Nessun consulente trovato</td></tr>';
     return;
   }
 

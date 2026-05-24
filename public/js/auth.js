@@ -84,14 +84,6 @@ function loadUserPermissions() {
   console.log('🔐 updateUIPermissions() - calling...');
   updateUIPermissions();
   console.log('🔐 ==================== FINE CARICAMENTO PERMESSI ====================');
-  
-  // Avvia interval per controllare permessi ogni 2 secondi
-  if (!window.permissionsCheckInterval) {
-    console.log('🔐 Avvio interval controllo permessi...');
-    window.permissionsCheckInterval = setInterval(function() {
-      updateUIPermissions();
-    }, 2000);
-  }
 }
 
 // Salva permessi nel localStorage
