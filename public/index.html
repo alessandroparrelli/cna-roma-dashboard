@@ -25,11 +25,11 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1779611824"></script>
+<script src="js/report-generator.js?v=1779631901"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1779611824">
+<link rel="stylesheet" href="css/main.css?v=1779631901">
 </head>
 <body>
 
@@ -172,7 +172,7 @@
       <p class="hero-desc" style="font-weight:700;font-size:14px;color:var(--text);letter-spacing:-0.01em;line-height:1.35;max-width:680px;margin-top:6px">Il luogo dove analizzare l'andamento associativo della CNA di Roma, l'andamento dei contratti e la gestione dei consulenti. Monitora i dati associativi, le performance dei promotori, l'archivio imprese in tempo reale e la reportistica.</p>
     </div>
     <div class="home-hero-img-wrap">
-      <img src="modulo-adesione.png?v=1779611824" alt="Modulo di adesione CNA" class="home-hero-modulo">
+      <img src="modulo-adesione.png?v=1779631901" alt="Modulo di adesione CNA" class="home-hero-modulo">
     </div>
   </div>
 
@@ -1036,9 +1036,9 @@
     <div style="margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <h3 style="margin:0 0 10px 0;font-size:14px;font-weight:700;color:#333">ERP CNA di Roma</h3>
       <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-        <div><strong>Versione:</strong> v97.4</div>
+        <div><strong>Versione:</strong> v2026.05.18</div>
         <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
-        <div><strong>Data rilascio:</strong> 24 May 2026</div>
+        <div><strong>Data rilascio:</strong> 24 Maggio 2026</div>
         <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>
       </div>
     </div>
@@ -1046,177 +1046,140 @@
     <h4 style="margin:0 0 15px 0;font-size:13px;font-weight:700;color:#005CA9;text-transform:uppercase">📋 Cronologia Versioni</h4>
     
     <div style="font-size:11px;color:#444;line-height:1.8;max-height:420px;overflow-y:auto;border:1px solid #E5E7EB;border-radius:8px;padding:16px;background:#FAFBFF">
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.05.18 - 18 Maggio 2026 ✅ ATTUALE</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.05.18 &#8212; 18 Maggio 2026 &#10003; ATTUALE</div>
         <div style="color:#666;font-size:10px">
-          ✅ Rinominata app: "ERP CNA di Roma" (titolo, login, footer, modal info)<br>
-          ✅ Header: testo "ERP", font Black (900), 22px<br>
-          ✅ Hero: "Benvenuto nel sistema ERP della CNA di Roma"<br>
-          ✅ Favicon multi-size (16/32/48px) dal logo SVG ufficiale CNA<br>
-          ✅ Icone PWA: apple-touch-icon (180px), icon-192, icon-512<br>
-          ✅ manifest.json PWA con icone e colori CNA<br>
-          ✅ Content-Type corretti per icone in vercel.json
+          &#10003; App rinominata: "ERP CNA di Roma"<br>
+          &#10003; Header: font Black 900, 22px, hero titolo aggiornato<br>
+          &#10003; Favicon multi-size dal logo SVG ufficiale CNA<br>
+          &#10003; PWA: manifest.json, apple-touch-icon, icone 192/512px<br>
+          &#10003; Content-Type header per icone in vercel.json
         </div>
       </div>
-      
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.05.13 - 13 Maggio 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.05.13 &#8212; 13 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ Applicata crittografia dei dati e verifica vulnerabilità<br>
-          ✅ RLS (Row Level Security) attivato su tutte le 31 tabelle Supabase<br>
-          ✅ Login protetto tramite Edge Function server-side<br>
-          ✅ Rimossa esposizione diretta di cna_users al browser<br>
-          ✅ Rimossa scrittura anonima sui contratti (app Signature)<br>
-          ✅ Tabelle CRM e dati sensibili inaccessibili senza autenticazione<br>
-          ✅ Toggle filtri collassabili in tutte le tab<br>
-          ✅ Rimosso pulsante Genera Report PDF (temporaneo)
+          &#10003; RLS attivato su tutte le 31 tabelle Supabase<br>
+          &#10003; Login protetto tramite Edge Function server-side<br>
+          &#10003; Rimossa esposizione diretta cna_users al browser<br>
+          &#10003; Toggle filtri collassabili in tutte le tab<br>
+          &#10003; Rimosso pulsante Genera Report PDF (temporaneo)
         </div>
       </div>
-      
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.05.07.1 - 7 Maggio 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v97.4 Consulenti &#8212; Maggio 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ Ruoli granulari: Commerciale e Operatore<br>
-          ✅ Sistema permessi personalizzabili (carica, interroga, export)<br>
-          ✅ Pannello admin: Gestione Permessi per ogni ruolo<br>
-          ✅ Checkbox dinamici per selezionare/rimuovere permessi<br>
-          ✅ Salvataggio automatico dei permessi in localStorage<br>
-          ✅ Feedback istantaneo: "Permessi salvati"
+          &#10003; Tab Gestione Consulenti: colonne N.Imprese + N.Contratti separate<br>
+          &#10003; Header tabella allineato in alto e al centro<br>
+          &#10003; KPI cards rimosse, fix crash e loop updateUIPermissions<br>
+          &#10003; Tabelle: bordi tondi, hover header rimosso
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v97 - 23 Aprile 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v97.16 &#8212; Maggio 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ Excel identico al file allegato<br>
-          ✅ Riga 1: "Analisi contratti CNA" blu CNA, size 22<br>
-          ✅ Riga 2: Header con sfondo blu CNA (#005CA9), size 12<br>
-          ✅ Larghezze colonne esatte come reference file<br>
-          ✅ Freeze panes su righe 1-2 (visibili durante scorrimento)<br>
-          ✅ Dati puliti senza colori alternati
+          &#10003; Consulenti: checkbox selezione multipla<br>
+          &#10003; Export Excel multi-foglio: un foglio per ogni consulente selezionato
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v94 - 22 Aprile 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v97.14&#8211;v97.15 &#8212; Maggio 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ Excel con formattazione professionale<br>
-          ✅ Titolo grassetto, header colorato, righe alternate
+          &#10003; Tab Ateco: fix titolo, grafici rimossi, card Top5 con barre inline<br>
+          &#10003; Font Inter 900 Black per tutti i titoli tab
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v94 - 22 Aprile 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v97.11&#8211;v97.13 &#8212; Maggio 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ Excel export con colonna 25: NUMERO SERVIZI ACQUISTATI<br>
-          ✅ Conteggio automatico per ogni riga: servizi + ISCRITTO + INPS<br>
-          ✅ Output Excel completo con 25 colonne
+          &#10003; Titoli hero descrittivi in tutte le tab (Inter Bold)<br>
+          &#10003; Ateco: filtri responsive 2col/1col mobile<br>
+          &#10003; Excel: Iscritto=Associato, INPS=Abbinato
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v94 - 22 Aprile 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v97.8&#8211;v97.10 &#8212; Aprile/Maggio 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ Aggiunta colonna TOTALE SERVIZI nella tabella<br>
-          ✅ Conta automaticamente X per ogni impresa<br>
-          ✅ Include servizi base + ISCRITTO + TESSERAMENTO INPS<br>
-          ✅ Colonna evidenziata con background azzurro
+          &#10003; CCIAA: batch GET da 50 P.IVA alla volta (no timeout)<br>
+          &#10003; Fix HTTP 400: fetch CCIAA ottimizzata con POST filtrata<br>
+          &#10003; Fix URL doppio ? in contrattisFetchAll
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v94 - 22 Aprile 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v97.5&#8211;v97.7 &#8212; Aprile 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ ISCRITTO e TESSERAMENTO INPS corretti da diretti.servizio<br>
-          ✅ Join fix: usa codiceanagrafica di Anagrafiche<br>
-          ✅ Header dinamico con nomi servizi reali<br>
-          ✅ Esclude ISCRITTO/INPS dalle colonne servizi base
+          &#10003; Excel: Calibri 11, intestazioni blu CNA bold, righe alternate<br>
+          &#10003; Contratti: Tipo Impresa + Dipendenti CCIAA in tabella e Excel<br>
+          &#10003; Export: Data Stipula e Consulente per ogni servizio attivo
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #FF9800;border-radius:3px">
-        <div style="font-weight:700;color:#FF9800;font-size:11px;margin-bottom:3px">v94 - 22 Aprile 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v97.1&#8211;v97.4 &#8212; Aprile 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ File stabile con login funzionante<br>
-          ✅ Tab Contratti base da Supabase<br>
-          ✅ Caricamento con contrattisFetchAll() paginato
+          &#10003; Contratti: Iscritto/INPS in prima posizione, X sostituita con Attivo<br>
+          &#10003; Archivio Contratti: una riga per impresa con date e consulente<br>
+          &#10003; Fix restore contratti dopo refactoring CCIAA
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #F44336;border-radius:3px">
-        <div style="font-weight:700;color:#F44336;font-size:11px;margin-bottom:3px">v94 - 22 Aprile 2026 ❌ FALLITO</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v97 &#8212; 23 Aprile 2026</div>
         <div style="color:#666;font-size:10px">
-          ❌ Tentativo contare X per ogni impresa → Non salvato
+          &#10003; Refactoring completo: index.html da 5698 a 872 righe<br>
+          &#10003; CSS in main.css, JS in 8 moduli separati<br>
+          &#10003; Profilo utente con avatar base64, favicon CNA
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #F44336;border-radius:3px">
-        <div style="font-weight:700;color:#F44336;font-size:11px;margin-bottom:3px">v94a - 22 Aprile 2026 ❌ FALLITO</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #2026.05.07.1;border-radius:3px;border-left-color:#6366f1">
+        <div style="font-weight:700;color:#6366f1;font-size:11px;margin-bottom:3px">v2026.05.07.1 &#8212; 7 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
-          ❌ Tentativo aggiungere colonne tesseramento → Login rotto
+          &#10003; Ruoli granulari: Commerciale e Operatore<br>
+          &#10003; Sistema permessi personalizzabili (carica, interroga, export)<br>
+          &#10003; Pannello admin: Gestione Permessi con checkbox dinamici<br>
+          &#10003; Salvataggio permessi in localStorage con feedback istantaneo
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v72b - 19 Aprile 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #9CA3AF;border-radius:3px">
+        <div style="font-weight:700;color:#9CA3AF;font-size:11px;margin-bottom:3px">v96 &#8212; 22 Aprile 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ Gradient blu CNA (#005CA9) con transizioni<br>
-          ✅ Cronologia versioni ordinata e ben formattata<br>
-          ✅ UI stabile e coerente
+          &#10003; PDF export via html2canvas: screenshot scheda anagrafica<br>
+          &#10003; Logo CNA in alto a sinistra, tutto in 1 pagina A4<br>
+          &#10003; Fix login: event listeners in DOMContentLoaded<br>
+          &#10003; Fix variabili globali duplicate
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v72 - 19 Aprile 2026</div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #9CA3AF;border-radius:3px">
+        <div style="font-weight:700;color:#9CA3AF;font-size:11px;margin-bottom:3px">v95 &#8212; 22 Aprile 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ Grafico Trend importi con Chart.js<br>
-          ✅ Box promotori allineati a destra<br>
-          ✅ Redesign tab overview
+          &#10003; BOX Stato Attivit&agrave; e Tipo Impresa colorati<br>
+          &#10003; Sezione Dipendenti con 3 BOX (Sub, Fam, Tot)<br>
+          &#10003; Excel export con preservazione zeri
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v71 - 19 Aprile 2026</div>
+
+      <div style="margin-bottom:4px;padding:10px 12px;background:#fff;border-left:4px solid #D1D5DB;border-radius:3px">
+        <div style="font-weight:700;color:#9CA3AF;font-size:11px;margin-bottom:3px">v78&#8211;v94 &#8212; Aprile 2026</div>
         <div style="color:#666;font-size:10px">
-          ✅ Matrix dati con mesi (Jan-Dec)<br>
-          ✅ Sparkline contratti per ogni mese<br>
-          ✅ Analisi andamento dettagliata
+          &#10003; Prima versione stabile con login Supabase SHA-256<br>
+          &#10003; Dashboard tesseramento con grafici Chart.js<br>
+          &#10003; Archivio anagrafiche, filtri, import Excel/CSV massivo<br>
+          &#10003; Integrazione CCIAA, tab Contratti paginati
         </div>
       </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v70 - 19 Aprile 2026</div>
-        <div style="color:#666;font-size:10px">
-          ✅ Sparkline mesi reali da dati<br>
-          ✅ Interattività hover su elementi<br>
-          ✅ Visualizzazione trend mensile
-        </div>
-      </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v69 - 19 Aprile 2026</div>
-        <div style="color:#666;font-size:10px">
-          ✅ Canvas altezza aumentata per leggibilità<br>
-          ✅ Hover state grigio su elementi<br>
-          ✅ Miglioramento UX responsive
-        </div>
-      </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v68 - 19 Aprile 2026</div>
-        <div style="color:#666;font-size:10px">
-          ✅ Mesi fissi Gen-Dic sempre visibili<br>
-          ✅ Linee separatori per anno<br>
-          ✅ Struttura calendare coerente
-        </div>
-      </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v67 - 19 Aprile 2026</div>
-        <div style="color:#666;font-size:10px">
-          ✅ Box promotori larghezza 420px<br>
-          ✅ Grid responsiva per mobile<br>
-          ✅ Padding/margin ottimizzati
-        </div>
-      </div>
-      <div style="margin-bottom:12px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v72-v60 - 19 Aprile 2026</div>
-        <div style="color:#666;font-size:10px">Header viola + loghi + redesign tab</div>
-      </div>
+
     </div>
-  </div>
-</div>
-<!-- MODAL CAMBIO PASSWORD -->
-<div id="modal-pwd" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center;padding:20px">
-  <div style="background:white;border-radius:16px;padding:28px 28px 24px;width:100%;max-width:380px;box-shadow:var(--shadow-lg)">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-      <span style="font-size:15px;font-weight:700">Cambia Password</span>
-      <button onclick="closeModal()" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--gray-400);line-height:1">×</button>
     </div>
     <div style="font-size:13px;color:var(--gray-600);margin-bottom:16px">Utente: <b id="modal-user-name"></b></div>
     <div class="fgs">
@@ -1272,19 +1235,19 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1779611824"></script>
-<script src="js/auth.js?v=1779611824"></script>
-<script src="js/dashboard.js?v=1779611824"></script>
-<script src="js/admin.js?v=1779611824"></script>
-<script src="js/anagrafiche.js?v=1779611824"></script>
-<script src="js/contratti.js?v=1779611824"></script>
-<script src="js/consulenti.js?v=1779611824"></script>
-<script src="js/import.js?v=1779611824"></script>
-<script src="js/scheda.js?v=1779611824"></script>
-<script src="js/mestieri.js?v=1779611824"></script>
-<script src="js/ateco.js?v=1779611824"></script>
-<script src="js/storica.js?v=1779611824"></script>
-<script src="js/reportistica.js?v=1779611824"></script>
+<script src="js/config.js?v=1779631901"></script>
+<script src="js/auth.js?v=1779631901"></script>
+<script src="js/dashboard.js?v=1779631901"></script>
+<script src="js/admin.js?v=1779631901"></script>
+<script src="js/anagrafiche.js?v=1779631901"></script>
+<script src="js/contratti.js?v=1779631901"></script>
+<script src="js/consulenti.js?v=1779631901"></script>
+<script src="js/import.js?v=1779631901"></script>
+<script src="js/scheda.js?v=1779631901"></script>
+<script src="js/mestieri.js?v=1779631901"></script>
+<script src="js/ateco.js?v=1779631901"></script>
+<script src="js/storica.js?v=1779631901"></script>
+<script src="js/reportistica.js?v=1779631901"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">
