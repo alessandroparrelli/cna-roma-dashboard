@@ -542,7 +542,7 @@ table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px;border
 thead tr{background:var(--surface2);}
 body.dark-mode thead tr{background:var(--surface3);}
 th{
-  padding:14px 18px;text-align:left;font-size:11px;font-weight:700;
+  padding:14px 18px;text-align:center;font-size:11px;font-weight:700;
   color:var(--text-secondary);text-transform:uppercase;letter-spacing:.07em;
   white-space:nowrap;cursor:pointer;user-select:none;
   border-bottom:1px solid var(--border);vertical-align:top;

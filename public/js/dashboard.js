@@ -377,6 +377,16 @@ function renderPromoTrend(){
     }
   });
 
+  // Conteggio imprese uniche per promotore (partitaiva o codicecliente)
+  var impresePerPromo={};
+  promotori.forEach(function(p){ impresePerPromo[p]={}; });
+  data.forEach(function(r){
+    if(r.promotore && impresePerPromo[r.promotore]){
+      var key = r.partitaiva || r.codicecliente || '';
+      if(key) impresePerPromo[r.promotore][key] = 1;
+    }
+  });
+
   // Totale per anno (per % sul totale anno)
   var totAnno={};
   anni.forEach(function(a){totAnno[a]=promotori.reduce(function(s,p){return s+(matrix[p][a]?matrix[p][a].total:0);},0);});
@@ -457,7 +467,7 @@ function renderPromoTrend(){
   var ultimoAnno=anni[anni.length-1];
   var penultimoAnno=anni.length>1?anni[anni.length-2]:null;
 
-  var h='<thead><tr><th>Promotore</th><th>N. Contratti</th>';
+  var h='<thead><tr><th>Promotore</th><th>N. Imprese</th><th>N. Contratti</th>';
   anni.forEach(function(a){h+='<th>'+a+' (Nr.)</th><th>'+a+' % tot.</th>';});
   if(penultimoAnno)h+='<th>Δ '+penultimoAnno+'→'+ultimoAnno+'</th>';
   h+='</tr></thead><tbody>';
@@ -469,7 +479,8 @@ function renderPromoTrend(){
 
   sortedPromo.forEach(function(p){
     var totContratti=anni.reduce(function(s,a){return s+(matrix[p][a]?matrix[p][a].count:0);},0);
-    h+='<tr><td><b>'+p+'</b></td><td style="text-align:center;font-weight:600">'+totContratti+'</td>';
+    var totImprese=Object.keys(impresePerPromo[p]||{}).length;
+    h+='<tr><td><b>'+p+'</b></td><td style="text-align:center;font-weight:600">'+totImprese+'</td><td style="text-align:center;font-weight:600">'+totContratti+'</td>';
     anni.forEach(function(a){
       var val=matrix[p][a]?matrix[p][a].total:0;
       var cnt=matrix[p][a]?matrix[p][a].count:0;
@@ -500,7 +511,11 @@ function renderPromoTrend(){
 
   // Riga totale
   h+='<tr style="background:var(--gray-50)"><td><b>TOTALE</b></td>';
+  var allImpreseSet={};
+  promotori.forEach(function(p){Object.keys(impresePerPromo[p]||{}).forEach(function(k){allImpreseSet[k]=1;});});
+  var grandTotImprese=Object.keys(allImpreseSet).length;
   var grandTotContratti=promotori.reduce(function(s,p){return s+anni.reduce(function(s2,a){return s2+(matrix[p][a]?matrix[p][a].count:0);},0);},0);
+  h+='<td style="text-align:center;font-weight:700">'+grandTotImprese+'</td>';
   h+='<td style="text-align:center;font-weight:700">'+grandTotContratti+'</td>';
   anni.forEach(function(a){
     var tCnt=promotori.reduce(function(s,p){return s+(matrix[p][a]?matrix[p][a].count:0);},0);
