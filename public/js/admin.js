@@ -154,16 +154,16 @@ async function loadRuoli(){
       var roleBadge = '';
       var roleColor = '';
       
-      if(u.ruolo === 'admin') {
-        roleBadge = '👨‍💼 Admin';
-        roleColor = 'var(--blue)';
-      } else if(u.ruolo === 'supervisore') {
-        roleBadge = '👤 Supervisore';
-        roleColor = 'var(--accent2)';
-      } else {
-        roleBadge = '👁️ Utente';
-        roleColor = 'var(--green)';
-      }
+      var roleMap = {
+        'admin':       { label: '👨‍💼 Admin',       color: 'var(--blue)' },
+        'supervisore': { label: '👤 Supervisore',  color: 'var(--accent2)' },
+        'commerciale': { label: '💼 Commerciale',  color: '#FF8C00' },
+        'readonly':    { label: '🔒 Readonly',     color: '#9CA3AF' },
+        'utente':      { label: '👁️ Utente',       color: 'var(--green)' }
+      };
+      var roleInfo = roleMap[u.ruolo] || { label: '👁️ ' + (u.ruolo || 'Utente'), color: 'var(--green)' };
+      roleBadge = roleInfo.label;
+      roleColor = roleInfo.color;
       
       var statusBadge = u.attivo 
         ? '<span class="badge badge-on">● Attivo</span>'
@@ -175,19 +175,26 @@ async function loadRuoli(){
         '<td style="padding:10px"><span style="color:' + roleColor + ';font-weight:600">' + roleBadge + '</span></td>' +
         '<td style="padding:10px;text-align:center">' +
         '<select class="role-select" data-user-id="' + u.id + '" style="padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--surface);font-size:11px">' +
-        '<option value="admin"' + (u.ruolo === 'admin' ? ' selected' : '') + '>Admin</option>' +
+        '<option value="admin"'       + (u.ruolo === 'admin'       ? ' selected' : '') + '>Admin</option>' +
         '<option value="supervisore"' + (u.ruolo === 'supervisore' ? ' selected' : '') + '>Supervisore</option>' +
-        '<option value="utente"' + (u.ruolo === 'utente' ? ' selected' : '') + '>Utente</option>' +
+        '<option value="commerciale"' + (u.ruolo === 'commerciale' ? ' selected' : '') + '>Commerciale</option>' +
+        '<option value="readonly"'    + (u.ruolo === 'readonly'    ? ' selected' : '') + '>Readonly</option>' +
+        '<option value="utente"'      + (u.ruolo === 'utente'      ? ' selected' : '') + '>Utente</option>' +
         '</select>' +
         '</td></tr>';
     }).join('');
     
     // Attacca event listener ai select
+    // Salva il ruolo originale per evitare che un valore non-selezionato
+    // (es. 'commerciale' non era nelle option) triggeri un aggiornamento accidentale
     setTimeout(function() {
       document.querySelectorAll('.role-select').forEach(function(select) {
+        select.setAttribute('data-original-role', select.value);
         select.addEventListener('change', function() {
           var userId = this.getAttribute('data-user-id');
           var newRole = this.value;
+          var originalRole = this.getAttribute('data-original-role');
+          if(newRole === originalRole) return;
           updateUserRole(userId, newRole);
         });
       });
