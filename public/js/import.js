@@ -748,7 +748,7 @@ if(uploadAnagraficheDrop) {
   });
 }
 
-G('btn-crea-utente').addEventListener('click',createUser);
+var _btnCreaUtente = G('btn-crea-utente'); if(_btnCreaUtente) _btnCreaUtente.addEventListener('click',createUser);
 G('btn-clr-filters').addEventListener('click',function(){['f-anno','f-mese','f-tiporete','f-promotore','f-acuradi'].forEach(function(id){G(id).value='';});renderOverview();});
 G('btn-clr-pfilters').addEventListener('click',function(){['fp-anno','fp-mese-da','fp-mese-a','fp-tiporete'].forEach(function(id){G(id).value='';});renderPromoTrend();});
 ['f-anno','f-mese','f-tiporete','f-promotore','f-acuradi'].forEach(function(id){G(id).addEventListener('change',renderOverview);});
