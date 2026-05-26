@@ -835,17 +835,19 @@ G('btn-save-pwd').addEventListener('click', saveNewPwd);
 G('modal-confirm-pwd').addEventListener('keypress',function(e){if(e.key==='Enter')saveNewPwd();});
 G('modal-pwd').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
-// ADMIN INTERNAL TABS
-document.querySelectorAll('.admin-tab').forEach(function(btn){
-  btn.addEventListener('click',function(){
-    var tabId=this.getAttribute('data-atab');
-    document.querySelectorAll('.admin-tab').forEach(function(b){b.classList.remove('active');});
-    document.querySelectorAll('.atab-content').forEach(function(c){c.classList.remove('active');});
-    this.classList.add('active');
-    G(tabId).classList.add('active');
-    if(tabId==='atab-logs') loadLogs();
-    if(tabId==='atab-ruoli') loadRuoli();
-  });
+// ADMIN INTERNAL TABS — event delegation robusta su document
+document.addEventListener('click', function(e){
+  var btn = e.target.closest('.admin-tab-new');
+  if(!btn) return;
+  var tabId = btn.getAttribute('data-atab');
+  if(!tabId) return;
+  document.querySelectorAll('.admin-tab-new').forEach(function(b){b.classList.remove('active');});
+  document.querySelectorAll('.atab-content').forEach(function(c){c.classList.remove('active');});
+  btn.classList.add('active');
+  var tc = G(tabId);
+  if(tc) tc.classList.add('active');
+  if(tabId==='atab-logs') loadLogs();
+  if(tabId==='atab-ruoli') loadRuoli();
 });
 
 // LOG FILTERS
