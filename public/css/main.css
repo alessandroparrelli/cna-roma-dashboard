@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v97.4 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.06 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -1959,3 +1959,65 @@ body.dark-mode .app-footer-copy {
   box-shadow: var(--hover-shadow-md);
 }
 /* cache-bust 1778955503 */
+
+/* ═══════════════════════════════════════════
+   INCASSI TAB
+═══════════════════════════════════════════ */
+#tab-incassi .inc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) {
+  #tab-incassi .inc-kpi-grid { grid-template-columns: repeat(2,1fr); }
+}
+.inc-kpi-card {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  transition: var(--t);
+}
+.inc-kpi-card:hover { transform: var(--hover-lift-sm); box-shadow: var(--hover-shadow-md); }
+.inc-kpi-icon { font-size: 24px; min-width: 32px; text-align: center; }
+.inc-kpi-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; }
+.inc-kpi-value { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 2px; }
+.inc-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+@media (max-width: 900px) {
+  .inc-charts-grid { grid-template-columns: 1fr; }
+}
+.inc-chart-card {
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+.inc-chart-card h4 {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  letter-spacing: .4px;
+}
+.inc-chart-wrap { position: relative; height: 200px; }
+.badge-tipo {
+  display: inline-block;
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(0,92,169,.12);
+  color: var(--blue);
+  font-weight: 600;
+  font-family: monospace;
+}
+#inc-tbody tr { cursor: pointer; transition: background .12s; }
+#inc-tbody tr:hover { background: rgba(0,92,169,.06); }

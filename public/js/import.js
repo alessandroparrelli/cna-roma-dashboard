@@ -362,15 +362,96 @@ function updateImportPreview() {
 }
 
 function clearImportData() {
-  importData = { diretti: null, anagrafiche: null, contrattiservizio: null };
+  importData = { diretti: null, anagrafiche: null, contrattiservizio: null, incassi: null };
   G('diretti-status').style.display = 'none';
   G('anagrafiche-status').style.display = 'none';
   G('contrattiservizio-status').style.display = 'none';
+  var incSt = G('incassi-status'); if(incSt) incSt.style.display='none';
   G('import-preview').style.display = 'none';
   G('upload-diretti-input').value = '';
   G('upload-anagrafiche-input').value = '';
   G('upload-contrattiservizio-input').value = '';
+  var incInp = G('upload-incassi-input'); if(incInp) incInp.value='';
   toast('Dati cancellati', 'info');
+}
+
+// ====================================
+// INCASSI UPLOAD
+// ====================================
+function handleIncassiFile(e) {
+  var file = e.target.files && e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var data = new Uint8Array(ev.target.result);
+      var wb = XLSX.read(data, { type: 'array', cellDates: true });
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var rows = XLSX.utils.sheet_to_json(ws, { range: 1, defval: '', raw: false });
+
+      // Normalizza nomi colonne (rimuovi prefisso "A,1: " ecc.)
+      rows = rows.map(function(row) {
+        var out = {};
+        for (var k in row) {
+          var ck = k.replace(/^[A-Z]+,\d+:\s*/, '').trim();
+          out[ck] = row[k];
+        }
+        return out;
+      });
+
+      // Mappa verso colonne DB
+      var mapped = rows.filter(function(r){ return r['Codice Cliente'] || r['A,1: Codice Cliente']; }).map(function(r) {
+        var dataPag = r['Data Pagamento'] || r['E,5: Data Pagamento'] || '';
+        var dataDoc = r['Data doc'] || r['J,10: Data doc'] || '';
+        var avere = parseFloat(String(r['AVERE'] || r['F,6: AVERE'] || '0').replace(',','.')) || 0;
+        var dare  = parseFloat(String(r['DARE']  || r['G,7: DARE']  || '0').replace(',','.')) || 0;
+
+        // Converti date (possono essere stringhe DD/MM/YYYY o oggetti Date serializzati da XLSX)
+        function toIso(d) {
+          if (!d || d === '') return null;
+          if (typeof d === 'object' && d instanceof Date) {
+            return d.toISOString().substring(0,10);
+          }
+          var s = String(d).trim();
+          if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+          if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+            var p=s.split('/'); return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+          }
+          return null;
+        }
+
+        return {
+          codice_cliente:   String(r['Codice Cliente'] || '').trim(),
+          cliente:          String(r['Cliente'] || '').trim(),
+          sede:             String(r['Sede'] || '').trim(),
+          promotore:        String(r['Promotore'] || '').trim(),
+          data_pagamento:   toIso(dataPag),
+          avere:            avere,
+          dare:             dare,
+          partita_tipo_doc: String(r['Partita Tipo doc'] || '').trim(),
+          num_doc:          String(r['Num.doc.'] || '').trim(),
+          data_doc:         toIso(dataDoc),
+          documento:        String(r['Documento'] || '').trim().substring(0, 500),
+          importo_insoluto: parseFloat(String(r['Importo da pagare insoluto'] || '0').replace(',','.')) || null,
+          cassa:            String(r['Cassa'] || '').trim(),
+          sepa:             String(r['Sepa'] || '').trim(),
+          compensazione:    String(r['Compensazione'] || '').trim(),
+          tipo_doc:         String(r['tipo doc'] || '').trim(),
+          tipo_doc_az:      String(r['tipo doc az'] || '').trim()
+        };
+      }).filter(function(r){ return r.codice_cliente !== ''; });
+
+      importData.incassi = mapped;
+      var st = G('incassi-status');
+      if (st) { st.textContent = mapped.length + ' righe caricate'; st.style.display='block'; }
+      toast('INCASSI: ' + mapped.length + ' righe pronte', 'success');
+      updateImportPreview();
+      G('import-preview').style.display = 'block';
+    } catch(err) {
+      toast('Errore file incassi: ' + err.message, 'error');
+    }
+  };
+  reader.readAsArrayBuffer(file);
 }
 
 // ====================================
@@ -440,7 +521,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 async function importDataToSupabase() {
-  if (!importData.diretti && !importData.anagrafiche && !importData.contrattiservizio) {
+  if (!importData.diretti && !importData.anagrafiche && !importData.contrattiservizio && !importData.incassi) {
     toast('Carica almeno un file', 'warning');
     return;
   }
@@ -524,6 +605,21 @@ async function importDataToSupabase() {
       results.contrattiservizio = { righe: contrattiConverted.length, status: 'OK' };
       toast('✓ ' + contrattiConverted.length + ' record contrattiservizio caricati', 'success');
     }
+
+    // Carica incassi
+    if (importData.incassi && importData.incassi.length > 0) {
+      var incRows = importData.incassi;
+      console.log('INCASSI: Caricando ' + incRows.length + ' righe...');
+      for (var i = 0; i < incRows.length; i += BATCH_SIZE) {
+        var batch = incRows.slice(i, i + BATCH_SIZE);
+        await uploadBatch('incassi', batch, i);
+        G('btn-import-send').innerHTML = '⏳ INCASSI: ' + Math.min(i + BATCH_SIZE, incRows.length) + '/' + incRows.length;
+      }
+      results.incassi = { righe: incRows.length, status: 'OK' };
+      toast('✓ ' + incRows.length + ' record incassi caricati', 'success');
+      // Forza reload del tab incassi
+      incassiLoaded = false;
+    }
     
     // Mostra modale con risultati
     showImportResults(results);
@@ -564,6 +660,13 @@ function showImportResults(results) {
     html += '<div style="margin:15px 0;padding:10px;background:rgba(34,197,94,0.1);border-left:3px solid var(--green);border-radius:4px">';
     html += '<strong style="color:var(--green)">[OK] CONTRATTISERVIZIO</strong><br>';
     html += 'Righe caricate: <strong>' + results.contrattiservizio.righe + '</strong>';
+    html += '</div>';
+  }
+
+  if (results.incassi) {
+    html += '<div style="margin:15px 0;padding:10px;background:rgba(5,150,105,0.1);border-left:3px solid #059669;border-radius:4px">';
+    html += '<strong style="color:#059669">✓ INCASSI</strong><br>';
+    html += 'Righe caricate: <strong>' + results.incassi.righe + '</strong>';
     html += '</div>';
   }
   
@@ -788,6 +891,8 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
     if(tabId==='tab-consulenti' && !consulentiLoaded && !consulentiLoading){ consulentiLoad(); }
     // Lazy-load serie storica on first visit
     if(tabId==='tab-storica' && !storicaLoaded && !storicaLoading){ storicaInit(); }
+    // Lazy-load incassi on first visit
+    if(tabId==='tab-incassi' && !incassiLoaded && !incassiLoading){ incassiInit(); }
     // Rilancia animazione countUp al click su Andamento
     if(tabId==='tab-overview' && typeof renderOverview === 'function'){ renderOverview(); }
   });
