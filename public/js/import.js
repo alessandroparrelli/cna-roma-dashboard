@@ -385,70 +385,124 @@ function handleIncassiFile(e) {
   reader.onload = function(ev) {
     try {
       var data = new Uint8Array(ev.target.result);
+      // cellDates:true → XLSX converte i numeri seriali Excel in oggetti Date JS
       var wb = XLSX.read(data, { type: 'array', cellDates: true });
       var ws = wb.Sheets[wb.SheetNames[0]];
-      var rows = XLSX.utils.sheet_to_json(ws, { range: 1, defval: '', raw: false });
 
-      // Normalizza nomi colonne (rimuovi prefisso "A,1: " ecc.)
-      rows = rows.map(function(row) {
+      // Leggi con raw:true per ottenere Date objects (non stringhe formattate)
+      // range:0 → usa la prima riga come header (che contiene "A,1: Codice Cliente" ecc.)
+      var rows = XLSX.utils.sheet_to_json(ws, { range: 0, defval: null, raw: true });
+
+      if (!rows || rows.length === 0) {
+        toast('File vuoto o formato non riconosciuto', 'error');
+        return;
+      }
+
+      // Log per debug: mostra le chiavi della prima riga
+      console.log('[INCASSI] Colonne rilevate:', Object.keys(rows[0]));
+      console.log('[INCASSI] Prima riga raw:', rows[0]);
+
+      // Funzione per trovare il valore di una colonna cercando per nome pulito
+      // (gestisce sia "A,1: Codice Cliente" che "Codice Cliente")
+      function cleanKey(k) {
+        return String(k).replace(/^[A-Z]+,\d+:\s*/, '').trim().toLowerCase();
+      }
+
+      // Costruisce una mappa normalizzata per ogni riga
+      function normalize(row) {
         var out = {};
         for (var k in row) {
-          var ck = k.replace(/^[A-Z]+,\d+:\s*/, '').trim();
-          out[ck] = row[k];
+          out[cleanKey(k)] = row[k];
         }
         return out;
-      });
+      }
 
-      // Mappa verso colonne DB
-      var mapped = rows.filter(function(r){ return r['Codice Cliente'] || r['A,1: Codice Cliente']; }).map(function(r) {
-        var dataPag = r['Data Pagamento'] || r['E,5: Data Pagamento'] || '';
-        var dataDoc = r['Data doc'] || r['J,10: Data doc'] || '';
-        var avere = parseFloat(String(r['AVERE'] || r['F,6: AVERE'] || '0').replace(',','.')) || 0;
-        var dare  = parseFloat(String(r['DARE']  || r['G,7: DARE']  || '0').replace(',','.')) || 0;
-
-        // Converti date (possono essere stringhe DD/MM/YYYY o oggetti Date serializzati da XLSX)
-        function toIso(d) {
-          if (!d || d === '') return null;
-          if (typeof d === 'object' && d instanceof Date) {
-            return d.toISOString().substring(0,10);
-          }
-          var s = String(d).trim();
-          if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
-          if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
-            var p=s.split('/'); return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
-          }
-          return null;
+      // Converte qualsiasi valore data in stringa ISO YYYY-MM-DD
+      function toIso(d) {
+        if (!d) return null;
+        // Oggetto Date JS (da cellDates:true)
+        if (d instanceof Date) {
+          if (isNaN(d.getTime())) return null;
+          // Evita shift timezone: usa UTC
+          var y = d.getFullYear();
+          var m = String(d.getMonth() + 1).padStart(2, '0');
+          var g = String(d.getDate()).padStart(2, '0');
+          return y + '-' + m + '-' + g;
         }
+        var s = String(d).trim();
+        if (!s || s === '') return null;
+        // Già ISO: YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0, 10);
+        // DD/MM/YYYY
+        if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+          var p = s.split('/');
+          return p[2] + '-' + p[1].padStart(2,'0') + '-' + p[0].padStart(2,'0');
+        }
+        // MM/DD/YYYY (formato XLSX raw:false)
+        if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) {
+          var p = s.split('/');
+          // Euristico: se il secondo numero > 12 è il giorno → MM/DD
+          if (parseInt(p[1]) > 12) {
+            return p[2] + '-' + p[0].padStart(2,'0') + '-' + p[1].padStart(2,'0');
+          }
+        }
+        return null;
+      }
 
-        return {
-          codice_cliente:   String(r['Codice Cliente'] || '').trim(),
-          cliente:          String(r['Cliente'] || '').trim(),
-          sede:             String(r['Sede'] || '').trim(),
-          promotore:        String(r['Promotore'] || '').trim(),
-          data_pagamento:   toIso(dataPag),
+      function toNum(v) {
+        if (v === null || v === undefined || v === '') return 0;
+        if (typeof v === 'number') return v;
+        return parseFloat(String(v).replace(',', '.')) || 0;
+      }
+
+      var mapped = [];
+      for (var i = 0; i < rows.length; i++) {
+        var nr = normalize(rows[i]);
+        var codice = String(nr['codice cliente'] || '').trim();
+        if (!codice || codice === 'codice cliente') continue; // salta header ripetuto o riga vuota
+
+        var avere = toNum(nr['avere'] || nr['f,6: avere']);
+        var dare  = toNum(nr['dare']  || nr['g,7: dare']);
+        var dataPag = toIso(nr['data pagamento'] || nr['e,5: data pagamento']);
+        var dataDoc = toIso(nr['data doc']        || nr['j,10: data doc']);
+
+        mapped.push({
+          codice_cliente:   codice,
+          cliente:          String(nr['cliente'] || '').trim(),
+          sede:             String(nr['sede'] || '').trim(),
+          promotore:        String(nr['promotore'] || '').trim(),
+          data_pagamento:   dataPag,
           avere:            avere,
           dare:             dare,
-          partita_tipo_doc: String(r['Partita Tipo doc'] || '').trim(),
-          num_doc:          String(r['Num.doc.'] || '').trim(),
-          data_doc:         toIso(dataDoc),
-          documento:        String(r['Documento'] || '').trim().substring(0, 500),
-          importo_insoluto: parseFloat(String(r['Importo da pagare insoluto'] || '0').replace(',','.')) || null,
-          cassa:            String(r['Cassa'] || '').trim(),
-          sepa:             String(r['Sepa'] || '').trim(),
-          compensazione:    String(r['Compensazione'] || '').trim(),
-          tipo_doc:         String(r['tipo doc'] || '').trim(),
-          tipo_doc_az:      String(r['tipo doc az'] || '').trim()
-        };
-      }).filter(function(r){ return r.codice_cliente !== ''; });
+          partita_tipo_doc: String(nr['partita tipo doc'] || '').trim(),
+          num_doc:          String(nr['num.doc.'] || '').trim(),
+          data_doc:         dataDoc,
+          documento:        String(nr['documento'] || '').trim().substring(0, 500),
+          importo_insoluto: toNum(nr['importo da pagare insoluto']) || null,
+          cassa:            String(nr['cassa'] || '').trim(),
+          sepa:             String(nr['sepa'] || '').trim(),
+          compensazione:    String(nr['compensazione'] || '').trim(),
+          tipo_doc:         String(nr['tipo doc'] || '').trim(),
+          tipo_doc_az:      String(nr['tipo doc az'] || '').trim()
+        });
+      }
 
+      if (mapped.length === 0) {
+        toast('Nessuna riga valida trovata nel file. Controlla il formato.', 'error');
+        console.warn('[INCASSI] Nessuna riga mappata. Colonne trovate:', Object.keys(rows[0] || {}));
+        return;
+      }
+
+      console.log('[INCASSI] Esempio riga mappata:', mapped[0]);
       importData.incassi = mapped;
       var st = G('incassi-status');
-      if (st) { st.textContent = mapped.length + ' righe caricate'; st.style.display='block'; }
+      if (st) { st.textContent = mapped.length + ' righe caricate'; st.style.display = 'block'; }
       toast('INCASSI: ' + mapped.length + ' righe pronte', 'success');
       updateImportPreview();
       G('import-preview').style.display = 'block';
     } catch(err) {
       toast('Errore file incassi: ' + err.message, 'error');
+      console.error('[INCASSI] Errore handleIncassiFile:', err);
     }
   };
   reader.readAsArrayBuffer(file);
