@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.07 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.08 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -1963,60 +1963,152 @@ body.dark-mode .app-footer-copy {
 /* ═══════════════════════════════════════════
    INCASSI TAB
 ═══════════════════════════════════════════ */
-#tab-incassi .inc-kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+
+/* ── Wrapper generale con padding laterale ── */
+#tab-incassi .inc-section {
+  padding: 0 16px;
   margin-bottom: 20px;
 }
-@media (max-width: 1100px) {
-  #tab-incassi .inc-kpi-grid { grid-template-columns: repeat(4, 1fr); }
+
+/* ── KPI GRID: 4 col desktop, 2 col mobile ── */
+.inc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
 }
-@media (max-width: 800px) {
-  #tab-incassi .inc-kpi-grid { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 900px) {
+  .inc-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
 }
+
+/* ── KPI CARD: layout orizzontale compatto ── */
 .inc-kpi-card {
   background: var(--surface);
   border-radius: 10px;
-  padding: 14px 16px;
+  padding: 12px 14px;
   display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
   transition: var(--t);
+  min-width: 0;          /* permette il troncamento del testo */
+  overflow: hidden;
 }
 .inc-kpi-card:hover { transform: var(--hover-lift-sm); box-shadow: var(--hover-shadow-md); }
-.inc-kpi-icon { min-width: 36px; height: 36px; display:flex; align-items:center; justify-content:center; border-radius:8px; background:rgba(0,0,0,.04); }
-.inc-kpi-label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: .4px; }
-.inc-kpi-value { font-size: 18px; font-weight: 700; color: var(--text); margin-top: 2px; line-height:1.2; }
+
+.inc-kpi-icon {
+  flex-shrink: 0;
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px;
+  background: rgba(128,128,128,.08);
+}
+
+.inc-kpi-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.inc-kpi-label {
+  font-size: 10px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inc-kpi-value {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 2px;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inc-kpi-sub {
+  font-size: 10px;
+  color: var(--text-dim);
+  margin-top: 1px;
+  line-height: 1.3;
+}
+
+/* ── GRAFICI GRID: 2 col desktop, 1 col mobile ── */
+.inc-charts-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+@media (max-width: 900px) {
+  .inc-charts-grid { grid-template-columns: 1fr; }
+}
+.inc-charts-grid .inc-full { grid-column: 1 / -1; }
+
 .inc-chart-card {
   background: var(--surface);
   border-radius: 10px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
+  min-width: 0;
+}
+.inc-chart-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 10px;
+}
+.inc-chart-title h4 {
+  margin: 0;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  letter-spacing: .4px;
+  font-weight: 600;
 }
 .inc-chart-wrap { position: relative; height: 200px; }
+
+/* ── STATS GRID ── */
 .inc-stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px;
+  gap: 14px;
 }
-@media (max-width: 800px) {
+@media (max-width: 900px) {
   .inc-stats-grid { grid-template-columns: 1fr; }
 }
+.inc-stats-grid .inc-full { grid-column: 1 / -1; }
+
 .inc-stat-card {
   background: var(--surface);
   border-radius: 10px;
-  padding: 16px;
-  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.07);
   overflow: hidden;
+  min-width: 0;
 }
 .inc-stat-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
+  margin-bottom: 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: var(--text-sub);
+  font-weight: 600;
+  letter-spacing: .4px;
+}
+
+/* ── SEZIONE TITOLO ── */
+.inc-section-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
   margin-bottom: 12px;
-  font-size: 12px;
+  font-size: 11px;
   text-transform: uppercase;
   color: var(--text-sub);
   font-weight: 600;

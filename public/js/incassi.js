@@ -149,41 +149,44 @@ function incassiRenderKPI() {
   var totCassa  = cassaData.reduce(function(s,r){ return s+(r.avere||0); },0);
   var pctSepa   = totale > 0 ? (totSepa/totale*100).toFixed(1) : 0;
 
-  // Tasso crescita YoY (confronto stesso mese anno prec. se filtro mese attivo)
   var annoSel = (G('inc-f-anno')||{}).value || '';
   var meseSel = (G('inc-f-mese')||{}).value || '';
-  var trendHtml = '';
+
+  // Mese migliore nei dati filtrati
+  var byMese = {};
+  data.forEach(function(r){ var k=r.mese; byMese[k]=(byMese[k]||0)+(r.avere||0); });
+  var meseMigliore    = Object.entries(byMese).sort(function(a,b){return b[1]-a[1];})[0];
+  var meseMiglioreVal = meseMigliore ? MESI[parseInt(meseMigliore[0])] : '—';
+  var meseMiglioreImpo= meseMigliore ? '€ ' + fmtNum(meseMigliore[1]) : '';
+
+  // Media per pagamento
+  var mediaXPag = numPag > 0 ? totale / numPag : 0;
+
+  // Trend YoY
+  var trendSub = '';
   if (annoSel) {
     var filtroBase = function(r){ return r.anno==(parseInt(annoSel)-1) && (!meseSel || r.mese==parseInt(meseSel)); };
     var totPrevAnno = allIncassi.filter(filtroBase).reduce(function(s,r){return s+(r.avere||0);},0);
     if (totPrevAnno > 0) {
       var pctYoY = ((totale - totPrevAnno)/totPrevAnno*100).toFixed(1);
-      var col = pctYoY >= 0 ? 'var(--green)' : 'var(--red)';
-      var arr = pctYoY >= 0 ? '▲' : '▼';
-      trendHtml = '<div style="font-size:11px;color:'+col+';margin-top:3px">'+arr+' '+Math.abs(pctYoY)+'% vs '+(parseInt(annoSel)-1)+'</div>';
+      var colYoY = pctYoY >= 0 ? 'var(--green)' : 'var(--red)';
+      var arrYoY = pctYoY >= 0 ? '▲' : '▼';
+      trendSub = '<span style="color:'+colYoY+'">'+arrYoY+' '+Math.abs(pctYoY)+'% vs '+(parseInt(annoSel)-1)+'</span>';
     }
   }
 
-  // Mese migliore nei dati filtrati
-  var byMese = {};
-  data.forEach(function(r){ var k=r.mese; byMese[k]=(byMese[k]||0)+(r.avere||0); });
-  var meseMigliore = Object.entries(byMese).sort(function(a,b){return b[1]-a[1];})[0];
-  var meseMiglioreHtml = meseMigliore ? MESI[parseInt(meseMigliore[0])] + ' (€ ' + fmtNum(meseMigliore[1]) + ')' : '—';
-
-  // Media per pagamento
-  var mediaXPag = numPag > 0 ? totale / numPag : 0;
-
   var el = G('inc-kpi-container');
   if (!el) return;
+
   el.innerHTML =
-    kpiCard(ISVG.euro,     'Totale Incassato',    '€ ' + fmtNum(totale),        trendHtml,      'var(--blue)') +
-    kpiCard(ISVG.receipt,  'N° Pagamenti',        fmtInt(numPag),               '',             'var(--accent2)') +
-    kpiCard(ISVG.users,    'Clienti Unici',       fmtInt(clientiUnici),         '',             'var(--accent3)') +
-    kpiCard(ISVG.avg,      'Media / Cliente',     '€ ' + fmtNum(mediaXCliente), '',             'var(--green)') +
-    kpiCard(ISVG.sepa,     'Totale SEPA',         '€ ' + fmtNum(totSepa),       '<div style="font-size:11px;color:var(--text-dim);margin-top:3px">'+pctSepa+'% del totale</div>', '#0284C7') +
-    kpiCard(ISVG.cash,     'Totale Cassa',        '€ ' + fmtNum(totCassa),      '<div style="font-size:11px;color:var(--text-dim);margin-top:3px">'+(100-pctSepa)+'% del totale</div>', '#059669') +
-    kpiCard(ISVG.avg,      'Media / Pagamento',   '€ ' + fmtNum(mediaXPag),     '',             '#7C3AED') +
-    kpiCard(ISVG.calendar, 'Mese Migliore',       meseMiglioreHtml,             '',             '#D97706');
+    kpiCard(ISVG.euro,     'Totale Incassato',  '€ ' + fmtNum(totale),        trendSub,                                              'var(--blue)') +
+    kpiCard(ISVG.receipt,  'N° Pagamenti',      fmtInt(numPag),               '',                                                    'var(--accent2)') +
+    kpiCard(ISVG.users,    'Clienti Unici',     fmtInt(clientiUnici),         '',                                                    'var(--accent3)') +
+    kpiCard(ISVG.avg,      'Media / Cliente',   '€ ' + fmtNum(mediaXCliente), '',                                                    'var(--green)') +
+    kpiCard(ISVG.sepa,     'Totale SEPA',       '€ ' + fmtNum(totSepa),       pctSepa + '% del totale',                              '#0284C7') +
+    kpiCard(ISVG.cash,     'Totale Cassa',      '€ ' + fmtNum(totCassa),      (100 - parseFloat(pctSepa)).toFixed(1) + '% del tot.', '#059669') +
+    kpiCard(ISVG.avg,      'Media / Pagamento', '€ ' + fmtNum(mediaXPag),     '',                                                    '#7C3AED') +
+    kpiCard(ISVG.calendar, 'Mese Migliore',     meseMiglioreVal,              meseMiglioreImpo,                                      '#D97706');
 }
 
 function kpiCard(svgIcon, label, value, extra, color) {
@@ -191,8 +194,8 @@ function kpiCard(svgIcon, label, value, extra, color) {
     '<div class="inc-kpi-icon" style="color:' + color + '">' + svgIcon + '</div>' +
     '<div class="inc-kpi-body">' +
       '<div class="inc-kpi-label">' + label + '</div>' +
-      '<div class="inc-kpi-value">' + value + '</div>' +
-      (extra ? extra : '') +
+      '<div class="inc-kpi-value" title="' + value + '">' + value + '</div>' +
+      (extra ? '<div class="inc-kpi-sub">' + extra + '</div>' : '') +
     '</div>' +
   '</div>';
 }
@@ -285,7 +288,7 @@ function incassiRenderStats() {
       byAnno[r.anno].tot+=(r.avere||0); byAnno[r.anno].n++; byAnno[r.anno].clienti.add(r.codice_cliente);
     });
     var anniSorted = Object.entries(byAnno).sort(function(a,b){return b[0]-a[0];});
-    tableAnno = '<div class="inc-stat-card" style="grid-column:1/-1">' +
+    tableAnno = '<div class="inc-stat-card inc-full">' +
       '<div class="inc-stat-header">' + ISVG.calendar + '<span>Riepilogo Annuale</span></div>' +
       '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
         '<thead><tr style="background:var(--surface2)">' +
