@@ -947,6 +947,8 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
     if(tabId==='tab-storica' && !storicaLoaded && !storicaLoading){ storicaInit(); }
     // Lazy-load incassi on first visit
     if(tabId==='tab-incassi' && !incassiLoaded && !incassiLoading){ incassiInit(); }
+    // Assicura che il toggle filtri sia inizializzato anche su tab iniettati
+    setTimeout(reInitFiltersToggle, 100);
     // Rilancia animazione countUp al click su Andamento
     if(tabId==='tab-overview' && typeof renderOverview === 'function'){ renderOverview(); }
   });

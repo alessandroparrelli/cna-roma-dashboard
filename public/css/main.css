@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.10 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.11 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -1405,7 +1405,7 @@ canvas:hover {
 }
 .filters-bar .filters-body{
   overflow:hidden;
-  max-height:600px;
+  max-height:1200px;
   transition:max-height .35s cubic-bezier(0.4,0,0.2,1), opacity .25s ease, margin-top .25s ease;
   opacity:1;
   margin-top:14px;
@@ -1434,6 +1434,41 @@ canvas:hover {
   display:flex;align-items:center;gap:7px;text-transform:uppercase;letter-spacing:.06em;
 }
 body.dark-mode .btn-toggle-filters{background:rgba(0,92,169,.15);border-color:rgba(0,92,169,.3);}
+
+/* Mobile: filters-body scorribile se supera l'altezza viewport */
+@media (max-width:768px){
+  .filters-bar .filters-body{
+    max-height:none;          /* nessun cap fisso */
+    overflow-y:visible;
+    gap:10px;
+  }
+  .filters-bar.collapsed .filters-body{
+    max-height:0;
+    overflow:hidden;
+  }
+  /* ogni filter-group occupa tutta la larghezza su mobile stretto */
+  .filters-bar .filters-body .filter-group{
+    flex:1 1 100%;
+    max-width:none;
+  }
+  /* select e input full-width dentro il toggle */
+  .filters-bar .filters-body select,
+  .filters-bar .filters-body input[type="text"],
+  .filters-bar .filters-body input[type="search"]{
+    width:100%;
+    box-sizing:border-box;
+  }
+  /* azioni filtro full-width */
+  .filters-bar .filters-body .filter-actions{
+    width:100%;
+    justify-content:stretch;
+    gap:8px;
+  }
+  .filters-bar .filters-body .filter-actions .btn{
+    flex:1;
+    justify-content:center;
+  }
+}
 
 /* ════════════ HOME PAGE ════════════ */
 

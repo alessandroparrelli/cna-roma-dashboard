@@ -911,9 +911,9 @@
   </div>
 
   <!-- FILTRI -->
-  <div class="filters-bar" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:10px 16px;margin-bottom:16px">
-    <select id="inc-f-anno" onchange="incassiApply()" style="min-width:110px"><option value="">Tutti gli anni</option></select>
-    <select id="inc-f-mese" onchange="incassiApply()" style="min-width:120px">
+  <div class="filters-bar">
+    <div class="filter-group"><label>Anno</label><select id="inc-f-anno" onchange="incassiApply()"><option value="">Tutti gli anni</option></select></div>
+    <div class="filter-group"><label>Mese</label><select id="inc-f-mese" onchange="incassiApply()">
       <option value="">Tutti i mesi</option>
       <option value="1">Gennaio</option><option value="2">Febbraio</option>
       <option value="3">Marzo</option><option value="4">Aprile</option>
@@ -921,25 +921,27 @@
       <option value="7">Luglio</option><option value="8">Agosto</option>
       <option value="9">Settembre</option><option value="10">Ottobre</option>
       <option value="11">Novembre</option><option value="12">Dicembre</option>
-    </select>
-    <select id="inc-f-metodo" onchange="incassiApply()" style="min-width:140px">
+    </select></div>
+    <div class="filter-group"><label>Metodo</label><select id="inc-f-metodo" onchange="incassiApply()">
       <option value="">Tutti i metodi</option>
       <option value="SEPA">SEPA (RID)</option>
       <option value="Cassa">Cassa</option>
-    </select>
-    <input id="inc-f-search" type="text" placeholder="Cerca cliente / causale…" oninput="incassiApply()" style="flex:1;min-width:160px;max-width:280px">
-    <button class="btn btn-secondary btn-sm" onclick="incassiReset()">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-      Reset
-    </button>
-    <button class="btn btn-secondary btn-sm" onclick="incassiLoad(true)">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-      Aggiorna
-    </button>
-    <button class="btn btn-primary btn-sm" onclick="incassiExport()" style="margin-left:auto">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Export Excel
-    </button>
+    </select></div>
+    <div class="filter-group" style="flex:2;min-width:200px"><label>Cerca</label><input id="inc-f-search" type="text" placeholder="Cliente, causale, sede…" oninput="incassiApply()"></div>
+    <div class="filter-actions">
+      <button class="btn btn-secondary" onclick="incassiReset()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Reset
+      </button>
+      <button class="btn btn-secondary" onclick="incassiLoad(true)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+        Aggiorna
+      </button>
+      <button class="btn btn-primary" onclick="incassiExport()">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Excel
+      </button>
+    </div>
   </div>
 
   <!-- KPI 8 card, 4 per riga -->
@@ -1112,7 +1114,7 @@
     <div style="margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <h3 style="margin:0 0 10px 0;font-size:14px;font-weight:700;color:#333">ERP CNA di Roma</h3>
       <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-        <div><strong>Versione:</strong> v2026.10</div>
+        <div><strong>Versione:</strong> v2026.11</div>
         <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
         <div><strong>Data rilascio:</strong> 28 May 2026</div>
         <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>
