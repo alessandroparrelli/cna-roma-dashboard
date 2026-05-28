@@ -394,6 +394,120 @@ async function openAnagraficaModal(anaIdx) {
     console.error('Errore caricamento contratti servizio:', csErr);
   }
   
+  // SEZIONE: PAGAMENTI (dalla tabella incassi, join su codice cliente)
+  try {
+    var incResp = await fetch(
+      SB + '/rest/v1/incassi?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) +
+      '&select=*&order=data_pagamento.desc',
+      { headers: H() }
+    );
+    if (incResp.ok) {
+      var incassi = await incResp.json();
+      if (incassi && incassi.length > 0) {
+
+        // Calcola statistiche
+        var totInc     = incassi.reduce(function(s,r){ return s+(r.avere||0); }, 0);
+        var totSepaInc = incassi.filter(function(r){ return (r.tipo_doc_az||'').toUpperCase()==='RID'; })
+                                .reduce(function(s,r){ return s+(r.avere||0); }, 0);
+        var totCassaInc= totInc - totSepaInc;
+
+        // Raggruppa per anno
+        var byAnnoInc = {};
+        incassi.forEach(function(r){
+          var a = r.anno || '?';
+          if (!byAnnoInc[a]) byAnnoInc[a] = { tot:0, n:0 };
+          byAnnoInc[a].tot += (r.avere||0);
+          byAnnoInc[a].n++;
+        });
+
+        // Ultimo pagamento
+        var ultimoPag  = incassi[0];
+        var ultimaData = ultimoPag.data_pagamento
+          ? ultimoPag.data_pagamento.substring(0,10).split('-').reverse().join('/')
+          : '—';
+
+        html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
+        html += '<h3 style="color:#059669;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">';
+        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;margin-right:5px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+        html += 'Pagamenti (' + incassi.length + ')</h3>';
+
+        // KPI strip
+        html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
+
+        function incKpi(label, val, color) {
+          return '<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid ' + color + '">' +
+            '<div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">' + label + '</div>' +
+            '<div style="font-size:15px;font-weight:700;color:var(--text)">' + val + '</div>' +
+          '</div>';
+        }
+
+        html += incKpi('Totale incassato', '€ ' + (totInc).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}), '#059669');
+        html += incKpi('SEPA (RID)',        '€ ' + (totSepaInc).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}), '#0284C7');
+        html += incKpi('Cassa',             '€ ' + (totCassaInc).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}), '#F59E0B');
+        html += incKpi('Ultimo pagamento',  ultimaData, '#7C3AED');
+        html += '</div>';
+
+        // Tabella per anno
+        html += '<div style="margin-bottom:14px">';
+        html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text-sub);letter-spacing:.3px;margin-bottom:8px">Per anno</div>';
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">';
+        Object.entries(byAnnoInc).sort(function(a,b){return b[0]-a[0];}).forEach(function(e){
+          html += '<div style="background:var(--surface2);border-radius:8px;padding:9px 11px;text-align:center">' +
+            '<div style="font-size:10px;color:var(--text-dim);font-weight:600">' + e[0] + '</div>' +
+            '<div style="font-size:14px;font-weight:700;color:#059669;margin:3px 0">€ ' +
+              e[1].tot.toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0}) +
+            '</div>' +
+            '<div style="font-size:10px;color:var(--text-dim)">' + e[1].n + ' pag.</div>' +
+          '</div>';
+        });
+        html += '</div></div>';
+
+        // Ultimi 5 pagamenti
+        html += '<div>';
+        html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text-sub);letter-spacing:.3px;margin-bottom:8px">Ultimi pagamenti</div>';
+        html += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+        html += '<thead><tr style="background:var(--surface2)">' +
+          '<th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Data</th>' +
+          '<th style="padding:6px 8px;text-align:right;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Importo</th>' +
+          '<th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Metodo</th>' +
+          '<th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Sede</th>' +
+          '<th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Causale</th>' +
+        '</tr></thead><tbody>';
+        incassi.slice(0,5).forEach(function(r, i){
+          var d = r.data_pagamento ? r.data_pagamento.substring(0,10).split('-').reverse().join('/') : '—';
+          var metodo = (r.tipo_doc_az||'').toUpperCase()==='RID' ? 'SEPA' : 'Cassa';
+          var metodoColor = metodo === 'SEPA' ? '#0284C7' : '#059669';
+          var causale = (r.compensazione || r.documento || '').substring(0, 45);
+          var bg = i%2===0 ? '' : 'background:var(--surface2)';
+          html += '<tr style="border-bottom:1px solid var(--border);' + bg + '">' +
+            '<td style="padding:5px 8px;white-space:nowrap">' + d + '</td>' +
+            '<td style="padding:5px 8px;text-align:right;font-weight:700;color:#059669">€ ' +
+              (r.avere||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) +
+            '</td>' +
+            '<td style="padding:5px 8px"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:' +
+              metodoColor + '22;color:' + metodoColor + '">' + metodo + '</span></td>' +
+            '<td style="padding:5px 8px;font-size:11px;color:var(--text-dim)">' +
+              (r.cassa||'').replace('CASSA ','') +
+            '</td>' +
+            '<td style="padding:5px 8px;font-size:11px;color:var(--text-dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' +
+              (r.compensazione||r.documento||'').replace(/"/g,'') + '">' +
+              causale + (causale.length === 45 ? '…' : '') +
+            '</td>' +
+          '</tr>';
+        });
+        html += '</tbody></table>';
+        if (incassi.length > 5) {
+          html += '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-dim)">+ altri ' + (incassi.length - 5) + ' pagamenti</div>';
+        }
+        html += '</div>';
+
+        html += '</div>';
+      }
+    }
+  } catch(incErr) {
+    console.error('Errore caricamento pagamenti scheda:', incErr);
+  }
+
   // SEZIONE 5: MAPPA
   if (ana.indirizzo || ana.comune) {
     var mapAddress = (ana.indirizzo ? ana.indirizzo + ', ' : '') + 
