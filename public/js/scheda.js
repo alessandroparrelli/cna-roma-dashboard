@@ -390,8 +390,8 @@ async function openAnagraficaModal(anaIdx) {
         'Indietro' +
       '</button>' +
       '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:12px;min-width:0;overflow:hidden">' +
-        '<img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/refs/heads/main/Nuovo-logo-CNA-blu-bianco.png" ' +
-          'style="height:38px;width:auto;flex-shrink:0;object-fit:contain" alt="CNA" ' +
+        '<img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/main/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png" ' +
+          'style="height:48px;width:auto;flex-shrink:0;object-fit:contain" alt="CNA Roma" ' +
           'onerror="this.style.display=\'none\'">' +
         '<div style="width:1px;height:24px;background:#cbd5e1;flex-shrink:0"></div>' +
         '<span style="color:#1e293b;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
