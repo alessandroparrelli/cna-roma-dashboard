@@ -140,11 +140,10 @@ async function openAnagraficaModal(anaIdx) {
   var svgHand   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>';
 
   // ── Stato associativo ─────────────────────────────────────────────
-  // ISCRITTO viene da diretti (servizio='ISCRITTO') O da contrattiservizio (tipocontratto='ISCRITTO')
   var isIscritto = diretti.some(function(d){ return d.servizio === 'ISCRITTO'; }) ||
                    contratti.some(function(c){ return c.tipocontratto === 'ISCRITTO'; });
   var isInps = diretti.some(function(d){ return d.servizio === 'TESSERAMENTO INPS'; });
-  // Servizi contratto (escluso ISCRITTO che è associativo)
+  var iscrittoContratto = contratti.find(function(c){ return c.tipocontratto === 'ISCRITTO'; });
   var serviziContratto = contratti.filter(function(c){ return c.tipocontratto !== 'ISCRITTO'; });
 
   // ── Costruisci HTML ───────────────────────────────────────────────
@@ -154,23 +153,39 @@ async function openAnagraficaModal(anaIdx) {
   body += '<div class="scheda-section">';
   body += sectionTitle(svgPerson, 'Dati Anagrafici');
 
-  // Badge stato + tipo impresa
-  body += '<div class="scheda-status-row">';
+  // Badge stato + tipo impresa + iscritto — grandi e ben visibili
+  body += '<div class="scheda-status-row" style="margin-bottom:16px">';
+
   if (cciaa && cciaa.stato_attivita !== null && cciaa.stato_attivita !== undefined) {
     var statoInfo = traduciStatoAttivita(cciaa.stato_attivita);
-    body += '<span class="scheda-badge" style="background:' + statoInfo.color + '22;color:' + statoInfo.color + ';border:1px solid ' + statoInfo.color + '44">' +
-      '<svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="' + statoInfo.color + '"/></svg>' + statoInfo.testo + '</span>';
+    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:10px 18px;border-radius:10px;background:' + statoInfo.color + ';min-width:90px">' +
+      '<svg width="18" height="18" viewBox="0 0 8 8" style="margin-bottom:4px"><circle cx="4" cy="4" r="4" fill="white" opacity=".9"/></svg>' +
+      '<span style="font-size:11px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">' + statoInfo.testo + '</span>' +
+    '</div>';
   }
+
   if (cciaa && cciaa.art_com_tur) {
     var tipoInfo = traduciTipoImpresa(cciaa.art_com_tur);
-    body += '<span class="scheda-badge" style="background:' + tipoInfo.bgColor + '22;color:' + tipoInfo.bgColor + ';border:1px solid ' + tipoInfo.bgColor + '44">' + tipoInfo.testo + '</span>';
+    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:10px 18px;border-radius:10px;background:' + tipoInfo.bgColor + ';min-width:90px">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + tipoInfo.textColor + '" stroke-width="2.5" style="margin-bottom:4px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>' +
+      '<span style="font-size:11px;font-weight:800;color:' + tipoInfo.textColor + ';letter-spacing:.04em;text-transform:uppercase">' + tipoInfo.testo + '</span>' +
+    '</div>';
   }
+
   if (isIscritto) {
-    body += '<span class="scheda-badge" style="background:rgba(5,150,105,.12);color:#059669;border:1px solid rgba(5,150,105,.3)">✓ Iscritto CNA</span>';
+    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:10px 18px;border-radius:10px;background:#059669;min-width:90px">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="margin-bottom:4px"><polyline points="20 6 9 17 4 12"/></svg>' +
+      '<span style="font-size:11px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">Iscritto</span>' +
+    '</div>';
   }
+
   if (isInps) {
-    body += '<span class="scheda-badge" style="background:rgba(0,92,169,.1);color:var(--blue);border:1px solid rgba(0,92,169,.25)">Tesseramento INPS</span>';
+    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:10px 18px;border-radius:10px;background:var(--blue);min-width:90px">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="margin-bottom:4px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+      '<span style="font-size:11px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">Tess. INPS</span>' +
+    '</div>';
   }
+
   body += '</div>';
 
   // Titolare
@@ -225,41 +240,91 @@ async function openAnagraficaModal(anaIdx) {
   body += '<div class="scheda-section">';
   body += sectionTitle(svgHand, 'Tesseramento e Contratti');
 
-  // Tesseramento da diretti
-  var tesserDir = diretti.filter(function(d){
-    return d.servizio && d.servizio !== 'NON ASSOCIABILE' && d.servizio !== "CONTABILITA'";
-  });
-  if (tesserDir.length > 0) {
-    body += '<div style="margin-bottom:12px">';
-    body += '<div class="scheda-field-label" style="margin-bottom:6px">Tesseramento</div>';
-    body += '<div class="scheda-pills">';
-    tesserDir.forEach(function(d) {
-      var sub = d.datastipula ? ' · dal ' + fmtDate(d.datastipula) : '';
-      body += '<span class="scheda-pill active">' + d.servizio + sub + '</span>';
-    });
-    body += '</div></div>';
+  // ── Blocco TESSERAMENTO (iscritto + inps da diretti/contrattiservizio) ──
+  var hasTesseramento = isIscritto || isInps;
+  if (hasTesseramento) {
+    body += '<div style="margin-bottom:16px">';
+    body += '<div class="scheda-field-label" style="margin-bottom:8px">Tesseramento</div>';
+    body += '<div style="display:grid;gap:6px">';
+
+    // ISCRITTO — mostrato per primo, con dati completi
+    if (isIscritto) {
+      // Cerca il record iscritto: prima in diretti, poi in contrattiservizio
+      var iscDir = diretti.find(function(d){ return d.servizio === 'ISCRITTO'; });
+      var src = iscDir || iscrittoContratto; // uno dei due
+      body += '<div style="padding:10px 14px;background:rgba(5,150,105,.08);border-left:4px solid #059669;border-radius:8px">';
+      body += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:' + (src ? '8px' : '0') + '">';
+      body += '<span style="font-weight:700;font-size:13px;color:#059669">✓ ISCRITTO CNA</span>';
+      if (src) {
+        var dataIsc = iscDir ? fmtDate(iscDir.datastipula) : fmtDate(iscrittoContratto.datastipulacontratto);
+        if (dataIsc && dataIsc !== '—') body += '<span style="font-size:11px;color:var(--text-dim)">dal ' + dataIsc + '</span>';
+      }
+      body += '</div>';
+      // Dati aggiuntivi se da diretti
+      if (iscDir) {
+        body += '<div class="scheda-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px">';
+        if (iscDir.raggruppamento) body += '<div><div class="scheda-field-label">Raggruppamento</div><div class="scheda-field-value">' + iscDir.raggruppamento + '</div></div>';
+        if (iscDir.importo && iscDir.importo !== '0') body += '<div><div class="scheda-field-label">Importo</div><div class="scheda-field-value">€ ' + iscDir.importo + '</div></div>';
+        if (iscDir.acuradi) body += '<div><div class="scheda-field-label">A cura di</div><div class="scheda-field-value">' + iscDir.acuradi + '</div></div>';
+        body += '</div>';
+      } else if (iscrittoContratto) {
+        body += '<div class="scheda-grid" style="grid-template-columns:1fr 1fr;gap:8px">';
+        if (iscrittoContratto.nomeconsulente) body += '<div><div class="scheda-field-label">Consulente</div><div class="scheda-field-value">' + iscrittoContratto.nomeconsulente + '</div></div>';
+        if (iscrittoContratto.raggruppamento) body += '<div><div class="scheda-field-label">Raggruppamento</div><div class="scheda-field-value">' + iscrittoContratto.raggruppamento + '</div></div>';
+        body += '</div>';
+      }
+      body += '</div>';
+    }
+
+    // TESSERAMENTO INPS
+    if (isInps) {
+      var inpsDir = diretti.find(function(d){ return d.servizio === 'TESSERAMENTO INPS'; });
+      body += '<div style="padding:10px 14px;background:rgba(0,92,169,.07);border-left:4px solid var(--blue);border-radius:8px">';
+      body += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:' + (inpsDir ? '8px' : '0') + '">';
+      body += '<span style="font-weight:700;font-size:13px;color:var(--blue)">TESSERAMENTO INPS</span>';
+      if (inpsDir && inpsDir.datastipula) body += '<span style="font-size:11px;color:var(--text-dim)">dal ' + fmtDate(inpsDir.datastipula) + '</span>';
+      body += '</div>';
+      if (inpsDir) {
+        body += '<div class="scheda-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px">';
+        if (inpsDir.raggruppamento) body += '<div><div class="scheda-field-label">Raggruppamento</div><div class="scheda-field-value">' + inpsDir.raggruppamento + '</div></div>';
+        if (inpsDir.importo && inpsDir.importo !== '0') body += '<div><div class="scheda-field-label">Importo</div><div class="scheda-field-value">€ ' + inpsDir.importo + '</div></div>';
+        if (inpsDir.acuradi) body += '<div><div class="scheda-field-label">A cura di</div><div class="scheda-field-value">' + inpsDir.acuradi + '</div></div>';
+        body += '</div>';
+      }
+      body += '</div>';
+    }
+
+    body += '</div></div>'; // fine grid + blocco tesseramento
   }
 
-  // Contratti servizio (da contrattiservizio, incluso ISCRITTO se presente lì)
-  if (contratti.length > 0) {
+  // ── Contratti servizio (escluso ISCRITTO) ──
+  if (serviziContratto.length > 0) {
     body += '<div>';
-    body += '<div class="scheda-field-label" style="margin-bottom:8px">Contratti attivi (' + contratti.length + ')</div>';
-    body += '<div style="display:grid;gap:6px">';
-    contratti.forEach(function(c) {
-      var isIsc = c.tipocontratto === 'ISCRITTO';
-      body += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:8px;border-left:3px solid ' + (isIsc ? '#059669' : '#EA580C') + '">';
-      body += '<div style="display:flex;align-items:center;gap:8px">';
-      body += '<span class="scheda-pill ' + (isIsc ? 'active' : 'service') + '" style="margin:0">' + (c.tipocontratto||'—') + '</span>';
-      if (c.nomeconsulente) body += '<span style="font-size:12px;color:var(--text-dim)">' + c.nomeconsulente + '</span>';
-      body += '</div>';
+    body += '<div class="scheda-field-label" style="margin-bottom:8px">Contratti Servizio attivi (' + serviziContratto.length + ')</div>';
+    body += '<div style="display:grid;gap:8px">';
+    serviziContratto.forEach(function(c) {
+      body += '<div style="padding:10px 14px;background:var(--surface2);border-left:4px solid #EA580C;border-radius:8px">';
+      body += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:' + (c.nomeconsulente||c.raggruppamento||c.sedeerogazione ? '8px' : '0') + '">';
+      body += '<span style="font-weight:700;font-size:13px;color:#EA580C">' + (c.tipocontratto||'—') + '</span>';
       if (c.datastipulacontratto) body += '<span style="font-size:11px;color:var(--text-dim);white-space:nowrap">dal ' + fmtDate(c.datastipulacontratto) + '</span>';
+      body += '</div>';
+      // Dettagli contratto
+      var hasDet = c.nomeconsulente || c.raggruppamento || c.sedeerogazione;
+      if (hasDet) {
+        body += '<div class="scheda-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px">';
+        if (c.raggruppamento) body += '<div><div class="scheda-field-label">Raggruppamento</div><div class="scheda-field-value">' + c.raggruppamento + '</div></div>';
+        if (c.nomeconsulente) body += '<div><div class="scheda-field-label">Consulente</div><div class="scheda-field-value">' + c.nomeconsulente + '</div></div>';
+        if (c.sedeerogazione) body += '<div><div class="scheda-field-label">Sede Erogazione</div><div class="scheda-field-value">' + c.sedeerogazione + '</div></div>';
+        body += '</div>';
+      }
       body += '</div>';
     });
     body += '</div></div>';
-  } else {
+  } else if (!hasTesseramento) {
     body += '<div style="color:var(--text-dim);font-size:13px;font-style:italic">Nessun contratto attivo</div>';
   }
-  body += '</div>';
+
+  body += '</div>'; // fine sezione tesseramento+contratti
 
   // ── SEZIONE: PAGAMENTI ───────────────────────────────────────────
   body += '<div class="scheda-section">';
