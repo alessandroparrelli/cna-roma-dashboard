@@ -51,506 +51,313 @@ async function openAnagraficaModal(anaIdx) {
   currentAnaIdx = anaIdx;
   var ana = anaFiltered[anaIdx];
   if (!ana) return;
-  
-  // ⭐ CARICA CCIAA SUBITO
+
+  showLoad('Caricamento scheda…');
+
+  // ── Carica tutti i dati in parallelo ──────────────────────────────
+  var [cciaaRes, direttiRes, contrattiRes, incassiRes] = await Promise.allSettled([
+    // CCIAA
+    fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), { headers: H() }),
+    // Diretti (tesseramento)
+    fetch(SB + '/rest/v1/diretti?codiceanagrafica=eq.' + encodeURIComponent(ana.codiceanagrafica), { headers: H() }),
+    // Contratti servizio attivi
+    fetch(SB + '/rest/v1/contrattiservizio?codicecliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&datadisdetta=is.null&order=datastipulacontratto.desc', { headers: H() }),
+    // Incassi ultimi 2 anni
+    (function() {
+      var d = new Date(); d.setFullYear(d.getFullYear() - 2);
+      return fetch(SB + '/rest/v1/incassi?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&data_pagamento=gte.' + d.toISOString().substring(0,10) + '&select=*&order=data_pagamento.desc', { headers: H() });
+    })()
+  ]);
+
+  // Estrai dati
   currentCCIAAData = null;
   try {
-    console.log('⏳ Caricamento CCIAA per partita_iva:', ana.partitaiva);
-    var cciaaResp = await fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), {
-      headers: H()
-    });
-    if (cciaaResp.ok) {
-      var cciaaResults = await cciaaResp.json();
-      if (cciaaResults && cciaaResults.length > 0) {
-        currentCCIAAData = cciaaResults[0];
-        console.log('✅ CCIAA OK - Stato:', currentCCIAAData.stato_attivita, 'Sub:', currentCCIAAData.num_addetti_sub, 'Fam:', currentCCIAAData.num_addetti_fam_ul);
-      }
+    if (cciaaRes.status === 'fulfilled' && cciaaRes.value.ok) {
+      var cciaaArr = await cciaaRes.value.json();
+      if (cciaaArr && cciaaArr.length > 0) currentCCIAAData = cciaaArr[0];
     }
-  } catch(e) {
-    console.error('❌ Errore CCIAA:', e);
-  }
-  var cciaaData = currentCCIAAData;
-  
-  console.log('=== APERTURA SCHEDA ANAGRAFICA ===');
-  console.log('Codiceanagrafica:', ana.codiceanagrafica);
-  
-  // Query Supabase: carica i dati di questa anagrafica usando fetch (come nel resto dell'app)
-  try {
-    console.log('Caricamento dati per codiceanagrafica:', ana.codiceanagrafica);
-    
-    // Usa fetch come le altre funzioni sbGet/sbGetAll
-    var dirResp = await fetch(SB + '/rest/v1/diretti?codiceanagrafica=eq.' + encodeURIComponent(ana.codiceanagrafica), {
-      headers: H()
-    });
-    
-    if (!dirResp.ok) {
-      throw new Error('Errore HTTP ' + dirResp.status);
-    }
-    
-    var diretti = await dirResp.json();
-    console.log('Record diretti trovati:', diretti.length, diretti);
-    
-    // Raccoglie servizi unici, escludendo NON ASSOCIABILE e CONTABILITA'
-    var serviziUnique = [];
-    diretti.forEach(function(d) {
-      var svc = d.servizio ? d.servizio.trim() : '';
-      if (svc && svc !== 'NON ASSOCIABILE' && svc !== 'CONTABILITA\'' && serviziUnique.indexOf(svc) === -1) {
-        serviziUnique.push(svc);
-      }
-    });
-    console.log('Servizi unici:', serviziUnique);
-    
-    // Carica schema per pagina di Supabase
-    var html = '<div style="position:fixed;inset:0;background:rgba(0,0,0,0.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px" id="modal-scheda-bg">';
-    html += '<div style="background:var(--surface);border-radius:16px;width:100%;max-width:720px;max-height:85vh;overflow-y:auto;box-shadow:0 25px 60px rgba(0,0,0,0.25)">';
-    
-    // Header con gradient indigo
-    html += '<div style="background:linear-gradient(135deg,#005CA9,#003D7A);padding:22px 24px;border-radius:16px 16px 0 0;display:flex;align-items:center;justify-content:space-between">';
-    html += '<img src="https://customer31551.img.musvc2.net/static/31551/images/1/CNARoma%20NEGATIVO%20COLORE%20SOLO%20ROMA.png" alt="CNA" style="height:60px;width:auto">';
-    html += '<h2 style="margin:0;color:white;font-size:18px;font-weight:800;text-align:center;flex:1">' + (ana.ragionesociale || "Senza nome") + '</h2>';
-    html += '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" style="background:rgba(255,255,255,0.2);border:none;color:white;font-size:20px;cursor:pointer;width:32px;height:32px;display:flex;align-items:center;justify-content:center;margin-left:16px;border-radius:8px">×</button>';
-    html += '</div>';
-    
-    // Contenuto
-    html += '<div style="padding:25px">';
-    
-    // SEZIONE 1: DATI ANAGRAFICI
-    html += '<div style="margin-bottom:25px">';
-    
-    // Header con titolo + BOX Stato a destra
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:15px;gap:0">';
-    html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0;text-transform:uppercase;letter-spacing:0.5px">📋 Dati Anagrafici</h3>';
-    
-    // Contenitore BOX (allineati a destra, attaccati)
-    html += '<div style="display:flex;gap:0;align-items:center">';
-    
-    // BOX STATO ATTIVITÀ
-    if (cciaaData && cciaaData.stato_attivita !== null && cciaaData.stato_attivita !== undefined) {
-      var statoInfo = traduciStatoAttivita(cciaaData.stato_attivita);
-      html += '<div style="background:' + statoInfo.color + ';border-radius:6px 0 0 6px;padding:6px 12px;text-align:center;min-width:100px;flex-shrink:0">';
-      html += '<div style="font-size:9px;color:white;font-weight:600;text-transform:uppercase;letter-spacing:0.3px">Stato</div>';
-      html += '<div style="font-size:11px;font-weight:700;color:white">' + statoInfo.testo + '</div>';
-      html += '</div>';
-    }
-    
-    // BOX TIPO IMPRESA (attaccato a Stato, senza margin)
-    if (cciaaData && cciaaData.art_com_tur) {
-      var tipoInfo = traduciTipoImpresa(cciaaData.art_com_tur);
-      html += '<div style="background:' + tipoInfo.bgColor + ';border-radius:0 6px 6px 0;padding:6px 12px;text-align:center;min-width:110px;flex-shrink:0">';
-      html += '<div style="font-size:9px;color:' + tipoInfo.textColor + ';font-weight:600;text-transform:uppercase;letter-spacing:0.3px;opacity:0.9">Tipo</div>';
-      html += '<div style="font-size:11px;font-weight:700;color:' + tipoInfo.textColor + '">' + tipoInfo.testo + '</div>';
-      html += '</div>';
-    }
-    
-    html += '</div>';
-    html += '</div>';
-    
-    // Nome e Cognome Titolare - Box sfumata su intera riga
-    var nomeCompleto = '';
-    if (ana.nometitolare && ana.cognometitolare) {
-      nomeCompleto = ana.nometitolare + ' ' + ana.cognometitolare;
-    } else if (ana.nometitolare) {
-      nomeCompleto = ana.nometitolare;
-    } else if (ana.cognometitolare) {
-      nomeCompleto = ana.cognometitolare;
-    }
-    
-    if (nomeCompleto) {
-      html += '<div style="padding:12px 15px;background:rgba(0,92,169,0.08);border-left:3px solid rgba(0,92,169,0.3);border-radius:4px;margin-bottom:15px">';
-      html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:5px;text-transform:uppercase;letter-spacing:0.3px">Titolare</div>';
-      html += '<div style="color:#005CA9;font-weight:700;font-size:14px">' + nomeCompleto + '</div>';
-      html += '</div>';
-    }
-    
-    // SEZIONE DIPENDENTI E ADDETTI
-    if (currentCCIAAData && (currentCCIAAData.num_addetti_sub || currentCCIAAData.num_addetti_fam_ul)) {
-      html += '<div style="margin-bottom:25px;padding:15px;background:#F8F9FA;border-left:3px solid #005CA9;border-radius:4px">';
-      html += '<h3 style="color:#005CA9;font-size:13px;font-weight:700;margin:0 0 12px 0;text-transform:uppercase;letter-spacing:0.5px">👥 Addetti e Dipendenti</h3>';
-      
-      var addSub = parseInt(currentCCIAAData.num_addetti_sub) || 0;
-      var addFam = parseInt(currentCCIAAData.num_addetti_fam_ul) || 0;
-      var totale = addSub + addFam;
-      
-      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">';
-      
-      html += '<div style="background:white;border:1px solid #D1E0FF;border-radius:6px;padding:10px;text-align:center">';
-      html += '<div style="color:#666;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase">Subordinati</div>';
-      html += '<div style="color:#005CA9;font-size:16px;font-weight:700">' + addSub + '</div>';
-      html += '</div>';
-      
-      html += '<div style="background:white;border:1px solid #D1E0FF;border-radius:6px;padding:10px;text-align:center">';
-      html += '<div style="color:#666;font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase">Familiari</div>';
-      html += '<div style="color:#005CA9;font-size:16px;font-weight:700">' + addFam + '</div>';
-      html += '</div>';
-      
-      html += '<div style="background:#005CA9;border-radius:6px;padding:10px;text-align:center">';
-      html += '<div style="color:rgba(255,255,255,0.8);font-size:10px;font-weight:600;margin-bottom:5px;text-transform:uppercase">Totale</div>';
-      html += '<div style="color:white;font-size:16px;font-weight:700">' + totale + '</div>';
-      html += '</div>';
-      
-      html += '</div>';
-      html += '</div>';
-    }
-    
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;font-size:13px">';
-    
-    var fieldsAna = [
-      {label: 'Codice', value: ana.codiceanagrafica},
-      {label: 'Partita IVA', value: ana.partitaiva},
-      {label: 'Indirizzo', value: ana.indirizzo, wide: true},
-      {label: 'CAP', value: ana.cap},
-      {label: 'Comune', value: ana.comune},
-      {label: 'Provincia', value: ana.provincia},
-      {label: 'Email', value: ana.email, clickable: 'mailto'},
-      {label: 'Telefono', value: ana.telefono, clickable: 'tel'},
-      {label: 'Cellulare', value: ana.cellulare, clickable: 'tel'}
-    ];
-    
-    fieldsAna.forEach(function(f) {
-      if (f.value) {
-        var cellStyle = f.wide ? 'grid-column:1/-1' : '';
-        html += '<div style="' + cellStyle + '">';
-        html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px">' + f.label + '</div>';
-        if (f.clickable === 'tel') {
-          html += '<a href="tel:' + f.value + '" style="color:#005CA9;text-decoration:none;cursor:pointer;font-weight:500">📞 ' + f.value + '</a>';
-        } else if (f.clickable === 'mailto') {
-          html += '<a href="mailto:' + f.value + '" style="color:#005CA9;text-decoration:none;cursor:pointer;font-weight:500">📧 ' + f.value + '</a>';
-        } else {
-          html += '<div style="color:var(--text);font-weight:500">' + f.value + '</div>';
-        }
-        html += '</div>';
+  } catch(e) {}
 
-    
-      }
-    });
-    
-    html += '</div></div>';
-    
-    // SEZIONE 1.5: STATO ASSOCIATIVO (caricato dalla query)
-    html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
-    html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">🤝 Stato Associativo</h3>';
-    
-    if (serviziUnique.length > 0) {
-      html += '<div style="display:grid;grid-template-columns:1fr;gap:8px">';
-      serviziUnique.forEach(function(s) {
-        html += '<div style="padding:10px 15px;background:#f0f7ff;border-left:3px solid #005CA9;border-radius:4px">';
-        html += '<div style="color:#333;font-weight:600;font-size:13px">• ' + s + '</div>';
-        html += '</div>';
-      });
-      html += '</div>';
-    } else {
-      html += '<div style="padding:10px 15px;color:#666;font-size:13px;font-weight:500">Nessun servizio associato</div>';
+  var diretti = [];
+  try {
+    if (direttiRes.status === 'fulfilled' && direttiRes.value.ok) {
+      diretti = await direttiRes.value.json() || [];
     }
-    
-    html += '</div>';
-    
-  } catch(e) {
-    console.error('Errore caricamento scheda:', e);
-    alert('Errore nel caricamento dei dati');
-    return;
+  } catch(e) {}
+
+  var contratti = [];
+  try {
+    if (contrattiRes.status === 'fulfilled' && contrattiRes.value.ok) {
+      contratti = await contrattiRes.value.json() || [];
+    }
+  } catch(e) {}
+
+  var incassi = [];
+  try {
+    if (incassiRes.status === 'fulfilled' && incassiRes.value.ok) {
+      incassi = await incassiRes.value.json() || [];
+    }
+  } catch(e) {}
+
+  hideLoad();
+
+  var cciaa = currentCCIAAData;
+
+  // ── Helper render ─────────────────────────────────────────────────
+  function field(label, value, opts) {
+    if (!value && !opts) return '';
+    opts = opts || {};
+    var val = '';
+    if (opts.tel)   val = '<a href="tel:' + value + '">📞 ' + value + '</a>';
+    else if (opts.mail) val = '<a href="mailto:' + value + '">✉ ' + value + '</a>';
+    else val = String(value || '');
+    var wide = opts.wide ? 'grid-column:1/-1' : '';
+    return '<div class="scheda-field" style="' + wide + '">' +
+      '<div class="scheda-field-label">' + label + '</div>' +
+      '<div class="scheda-field-value">' + val + '</div>' +
+    '</div>';
   }
-  
-  // SEZIONE 2: DATI CATEGORIA PROFESSIONALE
+
+  function fmtDate(d) {
+    if (!d) return '—';
+    return String(d).substring(0,10).split('-').reverse().join('/');
+  }
+
+  function fmtEur(n) {
+    return '€ ' + Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+
+  function sectionTitle(svg, label) {
+    return '<div class="scheda-section-title">' + svg + '<span>' + label + '</span></div>';
+  }
+
+  var svgEuro   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+  var svgPerson = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+  var svgBrifc  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>';
+  var svgDoc    = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
+  var svgPin    = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+  var svgUsers  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
+  var svgHand   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>';
+
+  // ── Stato associativo ─────────────────────────────────────────────
+  // ISCRITTO viene da diretti (servizio='ISCRITTO') O da contrattiservizio (tipocontratto='ISCRITTO')
+  var isIscritto = diretti.some(function(d){ return d.servizio === 'ISCRITTO'; }) ||
+                   contratti.some(function(c){ return c.tipocontratto === 'ISCRITTO'; });
+  var isInps = diretti.some(function(d){ return d.servizio === 'TESSERAMENTO INPS'; });
+  // Servizi contratto (escluso ISCRITTO che è associativo)
+  var serviziContratto = contratti.filter(function(c){ return c.tipocontratto !== 'ISCRITTO'; });
+
+  // ── Costruisci HTML ───────────────────────────────────────────────
+  var body = '';
+
+  // ── SEZIONE: ANAGRAFICA ──────────────────────────────────────────
+  body += '<div class="scheda-section">';
+  body += sectionTitle(svgPerson, 'Dati Anagrafici');
+
+  // Badge stato + tipo impresa
+  body += '<div class="scheda-status-row">';
+  if (cciaa && cciaa.stato_attivita !== null && cciaa.stato_attivita !== undefined) {
+    var statoInfo = traduciStatoAttivita(cciaa.stato_attivita);
+    body += '<span class="scheda-badge" style="background:' + statoInfo.color + '22;color:' + statoInfo.color + ';border:1px solid ' + statoInfo.color + '44">' +
+      '<svg width="8" height="8" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4" fill="' + statoInfo.color + '"/></svg>' + statoInfo.testo + '</span>';
+  }
+  if (cciaa && cciaa.art_com_tur) {
+    var tipoInfo = traduciTipoImpresa(cciaa.art_com_tur);
+    body += '<span class="scheda-badge" style="background:' + tipoInfo.bgColor + '22;color:' + tipoInfo.bgColor + ';border:1px solid ' + tipoInfo.bgColor + '44">' + tipoInfo.testo + '</span>';
+  }
+  if (isIscritto) {
+    body += '<span class="scheda-badge" style="background:rgba(5,150,105,.12);color:#059669;border:1px solid rgba(5,150,105,.3)">✓ Iscritto CNA</span>';
+  }
+  if (isInps) {
+    body += '<span class="scheda-badge" style="background:rgba(0,92,169,.1);color:var(--blue);border:1px solid rgba(0,92,169,.25)">Tesseramento INPS</span>';
+  }
+  body += '</div>';
+
+  // Titolare
+  var nomeCompleto = [ana.nometitolare, ana.cognometitolare].filter(Boolean).join(' ');
+  if (nomeCompleto) {
+    body += '<div style="padding:10px 14px;background:rgba(0,92,169,.06);border-left:3px solid rgba(0,92,169,.3);border-radius:4px;margin-bottom:12px">';
+    body += '<div class="scheda-field-label">Titolare</div>';
+    body += '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + nomeCompleto + '</div>';
+    body += '</div>';
+  }
+
+  body += '<div class="scheda-grid">';
+  body += field('Codice', ana.codiceanagrafica);
+  body += field('Partita IVA', ana.partitaiva);
+  body += field('Indirizzo', ana.indirizzo, {wide:true});
+  body += field('CAP', ana.cap);
+  body += field('Comune', ana.comune);
+  body += field('Provincia', ana.provincia);
+  body += field('Email', ana.email, {mail:true});
+  body += field('Telefono', ana.telefono, {tel:true});
+  body += field('Cellulare', ana.cellulare, {tel:true});
+  body += '</div></div>';
+
+  // ── SEZIONE: ADDETTI ─────────────────────────────────────────────
+  if (cciaa && (cciaa.num_addetti_sub || cciaa.num_addetti_fam_ul)) {
+    var addSub = parseInt(cciaa.num_addetti_sub) || 0;
+    var addFam = parseInt(cciaa.num_addetti_fam_ul) || 0;
+    body += '<div class="scheda-section">';
+    body += sectionTitle(svgUsers, 'Addetti e Dipendenti');
+    body += '<div class="scheda-addetti">';
+    body += '<div class="scheda-addetti-card"><div class="scheda-addetti-val">' + addSub + '</div><div class="scheda-addetti-lbl">Subordinati</div></div>';
+    body += '<div class="scheda-addetti-card"><div class="scheda-addetti-val">' + addFam + '</div><div class="scheda-addetti-lbl">Familiari</div></div>';
+    body += '<div class="scheda-addetti-card tot"><div class="scheda-addetti-val">' + (addSub+addFam) + '</div><div class="scheda-addetti-lbl">Totale</div></div>';
+    body += '</div></div>';
+  }
+
+  // ── SEZIONE: CATEGORIA PROFESSIONALE ────────────────────────────
   if (ana.mestiere || ana.codicemestiere || ana.unione) {
-    html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
-    html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">🏢 Categoria Professionale</h3>';
-    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;font-size:13px">';
-    
-    var fieldsMest = [
-      {label: 'Mestiere', value: ana.mestiere},
-      {label: 'Codice Mestiere', value: ana.codicemestiere},
-      {label: 'Unione', value: ana.unione},
-      {label: 'Settore', value: ana.settore},
-      {label: 'Ateco 2025', value: ana['Ateco 2025'] || ana.codiceateco},
-      {label: 'Ateco 2007', value: ana['Ateco 2007']}
-    ];
-    
-    fieldsMest.forEach(function(f) {
-      if (f.value) {
-        html += '<div>';
-        html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px">' + f.label + '</div>';
-        html += '<div style="color:var(--text);font-weight:500">' + f.value + '</div>';
-        html += '</div>';
-      }
-    });
-    
-    html += '</div></div>';
+    body += '<div class="scheda-section">';
+    body += sectionTitle(svgBrifc, 'Categoria Professionale');
+    body += '<div class="scheda-grid">';
+    body += field('Mestiere', ana.mestiere, {wide:true});
+    body += field('Codice Mestiere', ana.codicemestiere);
+    body += field('Unione', ana.unione);
+    body += field('Settore', ana.settore);
+    body += field('Ateco 2025', ana['Ateco 2025'] || ana.codiceateco);
+    body += field('Ateco 2007', ana['Ateco 2007']);
+    body += '</div></div>';
   }
-  
-  // SEZIONE 3: ASSOCIAZIONI (forme associative - raggruppate per codice)
-  var tuttiDiretti = allDiretti.filter(function(d) {
-    return d.codiceanagrafica && ana.codiceanagrafica && 
-           d.codiceanagrafica.toString() === ana.codiceanagrafica.toString();
+
+  // ── SEZIONE: TESSERAMENTO + CONTRATTI ───────────────────────────
+  body += '<div class="scheda-section">';
+  body += sectionTitle(svgHand, 'Tesseramento e Contratti');
+
+  // Tesseramento da diretti
+  var tesserDir = diretti.filter(function(d){
+    return d.servizio && d.servizio !== 'NON ASSOCIABILE' && d.servizio !== "CONTABILITA'";
   });
-  
-  console.log('Ana codiceanagrafica:', ana.codiceanagrafica);
-  console.log('tuttiDiretti trovati:', tuttiDiretti.length);
-  console.log('tuttiDiretti:', tuttiDiretti);
-  
-  // Raccogli TUTTI i servizi unici (da tutti i record, senza filtro datadisdetta)
-  var allServizi = tuttiDiretti.map(function(d) { return d.servizio; })
-                               .filter(function(s) { return s && s.trim(); });
-  var serviziUnique = [];
-  allServizi.forEach(function(s) {
-    if (serviziUnique.indexOf(s) === -1) serviziUnique.push(s);
-  });
-  
-  console.log('serviziUnique:', serviziUnique);
-  
-    // SEZIONE 4: DATI CONTRATTO (caricato dalla query diretti)
-    if (diretti && diretti.length > 0) {
-      html += '<div style="margin-bottom:15px">';
-      html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">📝 Dati Contratto' + (diretti.length > 1 ? ' (' + diretti.length + ')' : '') + '</h3>';
-      
-      // Mostra TUTTI i contratti se ce ne sono più di uno
-      diretti.forEach(function(d, idx) {
-        if (idx > 0) {
-          html += '<hr style="border:none;border-top:1px solid #eee;margin:15px 0">';
-        }
-        
-        // Titolo contratto in box colorata (usa il servizio come titolo)
-        var titoloContratto = d.servizio || 'Contratto ' + (idx + 1);
-        html += '<div style="padding:10px 15px;background:linear-gradient(135deg,#005CA9,#003D7A);border-radius:8px;margin-bottom:12px">';
-        html += '<div style="color:white;font-weight:700;font-size:13px">' + titoloContratto + '</div>';
-        html += '</div>';
-        
-        // Dati essenziali: Data Stipula, Importo, Raggruppamento, Zona
-        html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;font-size:13px">';
-        
-        var fieldsDir = [
-          {label: 'Data Stipula', value: d.datastipula},
-          {label: 'Importo', value: d.importo},
-          {label: 'Raggruppamento', value: d.raggruppamento},
-          {label: 'Zona', value: d.zonacliente}
-        ];
-        
-        fieldsDir.forEach(function(f) {
-          if (f.value) {
-            html += '<div>';
-            html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px">' + f.label + '</div>';
-            html += '<div style="color:var(--text);font-weight:500">' + f.value + '</div>';
-            html += '</div>';
-          }
-        });
-        
-        html += '</div>';
-      });
-      
-      html += '</div>';
-    }
-  
-  // SEZIONE 4.5: CONTRATTI SERVIZIO (da tabella contrattiservizio)
-  // Carica contratti usando codicecliente come join key - SOLO quelli ATTIVI (datadisdetta IS NULL)
-  try {
-    var csResp = await fetch(SB + '/rest/v1/contrattiservizio?codicecliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&datadisdetta=is.null&order=datastipulacontratto.desc', {
-      headers: H()
+  if (tesserDir.length > 0) {
+    body += '<div style="margin-bottom:12px">';
+    body += '<div class="scheda-field-label" style="margin-bottom:6px">Tesseramento</div>';
+    body += '<div class="scheda-pills">';
+    tesserDir.forEach(function(d) {
+      var sub = d.datastipula ? ' · dal ' + fmtDate(d.datastipula) : '';
+      body += '<span class="scheda-pill active">' + d.servizio + sub + '</span>';
     });
-    
-    if (csResp.ok) {
-      var contratti = await csResp.json();
-      console.log('Contratti servizio ATTIVI trovati:', contratti.length, contratti);
-      
-      if (contratti && contratti.length > 0) {
-        html += '<div style="margin-bottom:25px">';
-        html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">📋 Contratti Servizio Attivi' + (contratti.length > 1 ? ' (' + contratti.length + ')' : '') + '</h3>';
-        
-        contratti.forEach(function(c, idx) {
-          if (idx > 0) {
-            html += '<hr style="border:none;border-top:1px solid #eee;margin:15px 0">';
-          }
-          
-          // Titolo con tipo contratto
-          var titoloCS = c.tipocontratto || 'Contratto Servizio ' + (idx + 1);
-          html += '<div style="padding:10px 15px;background:linear-gradient(135deg,#EA580C,#C2410C);border-radius:8px;margin-bottom:12px">';
-          html += '<div style="color:white;font-weight:700;font-size:13px">' + titoloCS + '</div>';
-          html += '</div>';
-          
-          // Dati: Data stipula, Nome consulente
-          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;font-size:13px">';
-          
-          var fieldsCS = [
-            {label: 'Data Stipula Contratto', value: c.datastipulacontratto},
-            {label: 'Nome Consulente', value: c.nomeconsulente},
-            {label: 'Raggruppamento', value: c.raggruppamento},
-            {label: 'Sede Erogazione', value: c.sedeerogazione}
-          ];
-          
-          fieldsCS.forEach(function(f) {
-            if (f.value) {
-              html += '<div>';
-              html += '<div style="color:var(--text-secondary);font-size:11px;font-weight:600;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.3px">' + f.label + '</div>';
-              html += '<div style="color:var(--text);font-weight:500">' + f.value + '</div>';
-              html += '</div>';
-            }
-          });
-          
-          html += '</div>';
-        });
-        
-        html += '</div>';
-      }
-    }
-  } catch(csErr) {
-    console.error('Errore caricamento contratti servizio:', csErr);
-  }
-  
-  // SEZIONE: PAGAMENTI (dalla tabella incassi, join su codice cliente)
-  try {
-    var dueAnniFA = new Date();
-    dueAnniFA.setFullYear(dueAnniFA.getFullYear() - 2);
-    var dueAnniFAStr = dueAnniFA.toISOString().substring(0, 10);
-    var incResp = await fetch(
-      SB + '/rest/v1/incassi?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) +
-      '&data_pagamento=gte.' + dueAnniFAStr +
-      '&select=*&order=data_pagamento.desc',
-      { headers: H() }
-    );
-    if (incResp.ok) {
-      var incassi = await incResp.json();
-
-      html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
-      html += '<h3 style="color:#059669;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">';
-      html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;margin-right:5px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-      html += 'Pagamenti' + (incassi && incassi.length > 0 ? ' (' + incassi.length + ')' : '') + '</h3>';
-
-      if (!incassi || incassi.length === 0) {
-        html += '<div style="padding:14px 16px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--border);color:var(--text-dim);font-size:13px;font-style:italic">';
-        html += 'Non risultano pagamenti negli ultimi due anni.';
-        html += '</div>';
-      } else {        var totInc     = incassi.reduce(function(s,r){ return s+(r.avere||0); }, 0);
-        var totSepaInc = incassi.filter(function(r){ return (r.tipo_doc_az||'').toUpperCase()==='RID'; })
-                                .reduce(function(s,r){ return s+(r.avere||0); }, 0);
-        var totCassaInc= totInc - totSepaInc;
-
-        // Raggruppa per anno
-        var byAnnoInc = {};
-        incassi.forEach(function(r){
-          var a = r.anno || '?';
-          if (!byAnnoInc[a]) byAnnoInc[a] = { tot:0, n:0 };
-          byAnnoInc[a].tot += (r.avere||0);
-          byAnnoInc[a].n++;
-        });
-
-        // Ultimo pagamento
-        var ultimoPag  = incassi[0];
-        var ultimaData = ultimoPag.data_pagamento
-          ? ultimoPag.data_pagamento.substring(0,10).split('-').reverse().join('/')
-          : '—';
-
-        html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
-        html += '<h3 style="color:#059669;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">';
-        html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;margin-right:5px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-        html += 'Pagamenti (' + incassi.length + ')</h3>';
-
-        // KPI strip
-        html += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
-
-        function incKpi(label, val, color) {
-          return '<div style="background:var(--surface2);border-radius:8px;padding:10px 12px;border-left:3px solid ' + color + '">' +
-            '<div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.3px;margin-bottom:4px">' + label + '</div>' +
-            '<div style="font-size:15px;font-weight:700;color:var(--text)">' + val + '</div>' +
-          '</div>';
-        }
-
-        html += incKpi('Totale incassato', '€ ' + (totInc).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}), '#059669');
-        html += incKpi('SEPA (RID)',        '€ ' + (totSepaInc).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}), '#0284C7');
-        html += incKpi('Cassa',             '€ ' + (totCassaInc).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}), '#F59E0B');
-        html += incKpi('Ultimo pagamento',  ultimaData, '#7C3AED');
-        html += '</div>';
-
-        // Tabella per anno
-        html += '<div style="margin-bottom:14px">';
-        html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text-sub);letter-spacing:.3px;margin-bottom:8px">Per anno</div>';
-        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px">';
-        Object.entries(byAnnoInc).sort(function(a,b){return b[0]-a[0];}).forEach(function(e){
-          html += '<div style="background:var(--surface2);border-radius:8px;padding:9px 11px;text-align:center">' +
-            '<div style="font-size:10px;color:var(--text-dim);font-weight:600">' + e[0] + '</div>' +
-            '<div style="font-size:14px;font-weight:700;color:#059669;margin:3px 0">€ ' +
-              e[1].tot.toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0}) +
-            '</div>' +
-            '<div style="font-size:10px;color:var(--text-dim)">' + e[1].n + ' pag.</div>' +
-          '</div>';
-        });
-        html += '</div></div>';
-
-        // Ultimi 5 pagamenti
-        html += '<div>';
-        html += '<div style="font-size:11px;font-weight:600;text-transform:uppercase;color:var(--text-sub);letter-spacing:.3px;margin-bottom:8px">Ultimi pagamenti</div>';
-        html += '<table style="width:100%;border-collapse:collapse;font-size:12px">';
-        html += '<thead><tr style="background:var(--surface2)">' +
-          '<th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Data</th>' +
-          '<th style="padding:6px 8px;text-align:right;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Importo</th>' +
-          '<th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Metodo</th>' +
-          '<th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Sede</th>' +
-          '<th style="padding:6px 8px;text-align:left;font-weight:600;color:var(--text-sub);font-size:10px;text-transform:uppercase">Causale</th>' +
-        '</tr></thead><tbody>';
-        incassi.slice(0,5).forEach(function(r, i){
-          var d = r.data_pagamento ? r.data_pagamento.substring(0,10).split('-').reverse().join('/') : '—';
-          var metodo = (r.tipo_doc_az||'').toUpperCase()==='RID' ? 'SEPA' : 'Cassa';
-          var metodoColor = metodo === 'SEPA' ? '#0284C7' : '#059669';
-          var causale = (r.compensazione || r.documento || '').substring(0, 45);
-          var bg = i%2===0 ? '' : 'background:var(--surface2)';
-          html += '<tr style="border-bottom:1px solid var(--border);' + bg + '">' +
-            '<td style="padding:5px 8px;white-space:nowrap">' + d + '</td>' +
-            '<td style="padding:5px 8px;text-align:right;font-weight:700;color:#059669">€ ' +
-              (r.avere||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) +
-            '</td>' +
-            '<td style="padding:5px 8px"><span style="font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;background:' +
-              metodoColor + '22;color:' + metodoColor + '">' + metodo + '</span></td>' +
-            '<td style="padding:5px 8px;font-size:11px;color:var(--text-dim)">' +
-              (r.cassa||'').replace('CASSA ','') +
-            '</td>' +
-            '<td style="padding:5px 8px;font-size:11px;color:var(--text-dim);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' +
-              (r.compensazione||r.documento||'').replace(/"/g,'') + '">' +
-              causale + (causale.length === 45 ? '…' : '') +
-            '</td>' +
-          '</tr>';
-        });
-        html += '</tbody></table>';
-        if (incassi.length > 5) {
-          html += '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-dim)">+ altri ' + (incassi.length - 5) + ' pagamenti</div>';
-        }
-        html += '</div>';
-
-        html += '</div>'; // fine else
-      } // fine else incassi.length > 0
-
-      html += '</div>'; // fine sezione pagamenti
-    }
-  } catch(incErr) {
-    console.error('Errore caricamento pagamenti scheda:', incErr);
+    body += '</div></div>';
   }
 
-  // SEZIONE 5: MAPPA
+  // Contratti servizio (da contrattiservizio, incluso ISCRITTO se presente lì)
+  if (contratti.length > 0) {
+    body += '<div>';
+    body += '<div class="scheda-field-label" style="margin-bottom:8px">Contratti attivi (' + contratti.length + ')</div>';
+    body += '<div style="display:grid;gap:6px">';
+    contratti.forEach(function(c) {
+      var isIsc = c.tipocontratto === 'ISCRITTO';
+      body += '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface2);border-radius:8px;border-left:3px solid ' + (isIsc ? '#059669' : '#EA580C') + '">';
+      body += '<div style="display:flex;align-items:center;gap:8px">';
+      body += '<span class="scheda-pill ' + (isIsc ? 'active' : 'service') + '" style="margin:0">' + (c.tipocontratto||'—') + '</span>';
+      if (c.nomeconsulente) body += '<span style="font-size:12px;color:var(--text-dim)">' + c.nomeconsulente + '</span>';
+      body += '</div>';
+      if (c.datastipulacontratto) body += '<span style="font-size:11px;color:var(--text-dim);white-space:nowrap">dal ' + fmtDate(c.datastipulacontratto) + '</span>';
+      body += '</div>';
+    });
+    body += '</div></div>';
+  } else {
+    body += '<div style="color:var(--text-dim);font-size:13px;font-style:italic">Nessun contratto attivo</div>';
+  }
+  body += '</div>';
+
+  // ── SEZIONE: PAGAMENTI ───────────────────────────────────────────
+  body += '<div class="scheda-section">';
+  body += sectionTitle(svgEuro, 'Pagamenti ultimi 2 anni');
+  if (incassi.length === 0) {
+    body += '<div style="color:var(--text-dim);font-size:13px;font-style:italic">Non risultano pagamenti negli ultimi due anni.</div>';
+  } else {
+    var totInc = incassi.reduce(function(s,r){ return s+(r.avere||0); }, 0);
+    var totSepa = incassi.filter(function(r){ return (r.tipo_doc_az||'').toUpperCase()==='RID'; }).reduce(function(s,r){ return s+(r.avere||0); }, 0);
+    var ultimaData = fmtDate(incassi[0].data_pagamento);
+
+    body += '<div class="scheda-pay-kpis">';
+    body += '<div class="scheda-pay-kpi" style="border-left-color:#059669"><div class="scheda-pay-kpi-lbl">Totale</div><div class="scheda-pay-kpi-val">' + fmtEur(totInc) + '</div></div>';
+    body += '<div class="scheda-pay-kpi" style="border-left-color:#0284C7"><div class="scheda-pay-kpi-lbl">SEPA</div><div class="scheda-pay-kpi-val">' + fmtEur(totSepa) + '</div></div>';
+    body += '<div class="scheda-pay-kpi" style="border-left-color:#F59E0B"><div class="scheda-pay-kpi-lbl">Cassa</div><div class="scheda-pay-kpi-val">' + fmtEur(totInc - totSepa) + '</div></div>';
+    body += '<div class="scheda-pay-kpi" style="border-left-color:#7C3AED"><div class="scheda-pay-kpi-lbl">Ultimo</div><div class="scheda-pay-kpi-val" style="font-size:12px">' + ultimaData + '</div></div>';
+    body += '</div>';
+
+    body += '<table class="scheda-pay-table"><thead><tr>';
+    body += '<th>Data</th><th style="text-align:right">Importo</th><th>Metodo</th><th>Sede</th><th>Causale</th>';
+    body += '</tr></thead><tbody>';
+    incassi.slice(0, 8).forEach(function(r, i) {
+      var metodo = (r.tipo_doc_az||'').toUpperCase()==='RID' ? 'SEPA' : 'Cassa';
+      var mc = metodo === 'SEPA' ? '#0284C7' : '#059669';
+      var causale = (r.compensazione || r.documento || '').substring(0,40);
+      body += '<tr>';
+      body += '<td style="white-space:nowrap">' + fmtDate(r.data_pagamento) + '</td>';
+      body += '<td style="text-align:right;font-weight:700;color:#059669">' + fmtEur(r.avere||0) + '</td>';
+      body += '<td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;background:' + mc + '18;color:' + mc + '">' + metodo + '</span></td>';
+      body += '<td style="font-size:11px;color:var(--text-dim)">' + (r.cassa||'').replace(/^CASSA /,'') + '</td>';
+      body += '<td style="font-size:11px;color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (r.compensazione||'').replace(/"/g,'') + '">' + causale + '</td>';
+      body += '</tr>';
+    });
+    body += '</tbody></table>';
+    if (incassi.length > 8) {
+      body += '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-dim)">+ altri ' + (incassi.length-8) + ' pagamenti</div>';
+    }
+  }
+  body += '</div>';
+
+  // ── SEZIONE: MAPPA ───────────────────────────────────────────────
   if (ana.indirizzo || ana.comune) {
-    var mapAddress = (ana.indirizzo ? ana.indirizzo + ', ' : '') + 
-                     (ana.cap ? ana.cap + ' ' : '') + 
-                     (ana.comune ? ana.comune : '') + 
-                     (ana.provincia ? ' (' + ana.provincia + ')' : '');
+    var mapAddress = [ana.indirizzo, ana.cap, ana.comune, ana.provincia ? '(' + ana.provincia + ')' : ''].filter(Boolean).join(' ');
     var mapUrl = 'https://maps.google.com/maps?q=' + encodeURIComponent(mapAddress);
-    
-    html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
-    html += '<h3 style="color:#005CA9;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">📍 Localizzazione</h3>';
-    html += '<iframe width="100%" height="250" style="border:1px solid #ddd;border-radius:6px;margin-bottom:10px" src="https://maps.google.com/maps?q=' + encodeURIComponent(mapAddress) + '&z=15&output=embed" allowfullscreen="" loading="lazy"></iframe>';
-    html += '<div style="font-size:12px;color:#666;line-height:1.6">';
-    html += '<div style="font-weight:600;color:#333;margin-bottom:5px">' + mapAddress + '</div>';
-    html += '<a href="' + mapUrl + '" target="_blank" style="color:#005CA9;text-decoration:none;font-weight:500">Apri in Google Maps →</a>';
-    html += '</div>';
-    html += '</div>';
+    body += '<div class="scheda-section">';
+    body += sectionTitle(svgPin, 'Localizzazione');
+    body += '<iframe width="100%" height="220" style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:block" src="https://maps.google.com/maps?q=' + encodeURIComponent(mapAddress) + '&z=15&output=embed" allowfullscreen loading="lazy"></iframe>';
+    body += '<div style="font-size:12px;color:var(--text-dim)">' + mapAddress + ' · <a href="' + mapUrl + '" target="_blank" style="color:var(--blue)">Apri in Maps →</a></div>';
+    body += '</div>';
   }
-  
-  // PULSANTI
-  html += '<div style="margin-top:25px;padding-top:15px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end">';
-  html += '<button onclick="exportAnaToExcel(' + anaIdx + ')" style="background:linear-gradient(135deg,#005CA9,#003D7A);color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;box-shadow:0 4px 12px rgba(0,92,169,0.3);margin-right:10px" onmouseover="this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.transform=\'translateY(0)\'">📥 Esporta Excel</button>';
-  html += '<button onclick="exportSchemaPDF()" style="background:linear-gradient(135deg,#EF4444,#DC2626);color:white;border:none;padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s;box-shadow:0 4px 12px rgba(239,68,68,0.3)" onmouseover="this.style.transform=\'translateY(-2px)\'" onmouseout="this.style.transform=\'translateY(0)\'">📄 Download PDF</button>';
-  html += '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" style="background:var(--surface2);color:var(--text-secondary);border:1px solid var(--border);padding:10px 18px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.2s" onmouseover="this.style.background=\'var(--surface3)\'" onmouseout="this.style.background=\'var(--surface2)\'">Chiudi</button>';
-  html += '</div>';
-  
-  html += '</div></div></div>';
-  
-  document.body.insertAdjacentHTML('beforeend', html);
-}
 
+  // ── Costruisci overlay fullscreen ─────────────────────────────────
+  var overlay = document.createElement('div');
+  overlay.className = 'scheda-overlay';
+  overlay.id = 'modal-scheda-bg';
+
+  overlay.innerHTML =
+    // Topbar
+    '<div class="scheda-topbar">' +
+      '<button class="scheda-topbar-back" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>' +
+        'Indietro' +
+      '</button>' +
+      '<div class="scheda-topbar-title">' + (ana.ragionesociale || '—') + '</div>' +
+      '<button class="scheda-topbar-close" onclick="document.getElementById(\'modal-scheda-bg\').remove()">×</button>' +
+    '</div>' +
+    // Corpo
+    '<div class="scheda-body">' + body + '</div>' +
+    // Footer
+    '<div class="scheda-footer">' +
+      '<button onclick="exportAnaToExcel(' + anaIdx + ')" class="btn btn-secondary btn-sm">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+        'Esporta Excel' +
+      '</button>' +
+      '<button onclick="exportSchemaPDF()" class="btn btn-secondary btn-sm">' +
+        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+        'PDF' +
+      '</button>' +
+      '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" class="btn btn-primary btn-sm">Chiudi</button>' +
+    '</div>';
+
+  document.body.appendChild(overlay);
+
+  // Blocca scroll del body quando la scheda è aperta
+  document.body.style.overflow = 'hidden';
+  overlay.addEventListener('remove', function() {
+    document.body.style.overflow = '';
+  });
+  // MutationObserver per ripristinare scroll alla chiusura
+  var mo = new MutationObserver(function(muts) {
+    muts.forEach(function(m) {
+      m.removedNodes.forEach(function(n) {
+        if (n === overlay) { document.body.style.overflow = ''; mo.disconnect(); }
+      });
+    });
+  });
+  mo.observe(document.body, { childList: true });
+}
 
 
 // ============================================
@@ -573,8 +380,8 @@ async function exportSchemaPDF() {
     return;
   }
   
-  // Il contenuto della scheda è il primo figlio div del modal
-  var cardElement = modalBg.querySelector('div');
+  // Il contenuto della scheda è .scheda-body
+  var cardElement = modalBg.querySelector('.scheda-body');
   if (!cardElement) {
     alert('Elemento scheda non trovato');
     return;
