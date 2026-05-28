@@ -384,21 +384,21 @@ async function openAnagraficaModal(anaIdx) {
 
   overlay.innerHTML =
     // Topbar con logo CNA + nome impresa
-    '<div class="scheda-topbar">' +
-      '<button class="scheda-topbar-back" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
+    '<div class="scheda-topbar" style="background:white;border-bottom:1px solid #e2e8f0">' +
+      '<button class="scheda-topbar-back" style="background:rgba(0,92,169,.08);color:#005CA9;border:1px solid rgba(0,92,169,.2)" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>' +
         'Indietro' +
       '</button>' +
-      '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0;overflow:hidden">' +
+      '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:12px;min-width:0;overflow:hidden">' +
         '<img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/refs/heads/main/Nuovo-logo-CNA-blu-bianco.png" ' +
-          'style="height:28px;width:auto;flex-shrink:0;object-fit:contain" alt="CNA" ' +
+          'style="height:38px;width:auto;flex-shrink:0;object-fit:contain" alt="CNA" ' +
           'onerror="this.style.display=\'none\'">' +
-        '<div style="width:1px;height:20px;background:rgba(255,255,255,.3);flex-shrink:0"></div>' +
-        '<span style="color:white;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+        '<div style="width:1px;height:24px;background:#cbd5e1;flex-shrink:0"></div>' +
+        '<span style="color:#1e293b;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
           (ana.ragionesociale || '—') +
         '</span>' +
       '</div>' +
-      '<button class="scheda-topbar-close" onclick="document.getElementById(\'modal-scheda-bg\').remove()">×</button>' +
+      '<button class="scheda-topbar-close" style="background:rgba(0,0,0,.06);color:#475569" onclick="document.getElementById(\'modal-scheda-bg\').remove()">×</button>' +
     '</div>' +
     // Corpo
     '<div class="scheda-body">' + body + '</div>' +

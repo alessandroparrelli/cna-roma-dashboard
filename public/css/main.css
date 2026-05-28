@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.14 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.15 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2168,34 +2168,43 @@ body.dark-mode .app-footer-copy {
 /* Topbar fissa */
 .scheda-topbar {
   flex-shrink: 0;
-  background: linear-gradient(135deg, #005CA9, #003D7A);
+  background: white;
+  border-bottom: 1px solid #e2e8f0;
   padding: 0 16px;
   height: 56px;
   display: flex;
   align-items: center;
   gap: 12px;
-  box-shadow: 0 2px 8px rgba(0,0,0,.2);
+  box-shadow: 0 1px 6px rgba(0,0,0,.08);
+}
+body.dark-mode .scheda-topbar {
+  background: #1e293b;
+  border-bottom-color: rgba(255,255,255,.08);
 }
 .scheda-topbar-back {
   display: flex; align-items: center; gap: 6px;
-  background: rgba(255,255,255,.15);
-  border: none; color: white; font-size: 13px; font-weight: 600;
+  background: rgba(0,92,169,.08);
+  border: 1px solid rgba(0,92,169,.2);
+  color: #005CA9; font-size: 13px; font-weight: 600;
   padding: 7px 14px; border-radius: 20px; cursor: pointer;
   transition: background .15s; white-space: nowrap; flex-shrink: 0;
 }
-.scheda-topbar-back:hover { background: rgba(255,255,255,.25); }
+.scheda-topbar-back:hover { background: rgba(0,92,169,.15); }
+body.dark-mode .scheda-topbar-back { color: #60a5fa; border-color: rgba(96,165,250,.3); background: rgba(96,165,250,.1); }
 .scheda-topbar-title {
-  flex: 1; color: white; font-size: 15px; font-weight: 700;
+  flex: 1; color: #1e293b; font-size: 15px; font-weight: 700;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   text-align: center;
 }
+body.dark-mode .scheda-topbar-title { color: white; }
 .scheda-topbar-close {
-  background: rgba(255,255,255,.15); border: none; color: white;
+  background: rgba(0,0,0,.06); border: none; color: #475569;
   width: 34px; height: 34px; border-radius: 50%; font-size: 18px;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
   transition: background .15s; flex-shrink: 0;
 }
-.scheda-topbar-close:hover { background: rgba(255,255,255,.3); }
+.scheda-topbar-close:hover { background: rgba(0,0,0,.12); }
+body.dark-mode .scheda-topbar-close { background: rgba(255,255,255,.08); color: #94a3b8; }
 
 /* Corpo scrollabile */
 .scheda-body {
