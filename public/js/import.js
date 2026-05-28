@@ -837,7 +837,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 G('file-input').addEventListener('change',function(e){handleFile(e.target.files[0],false);e.target.value='';});
 G('file-add').addEventListener('change',function(e){console.log('🔼 File-add click! File:',e.target.files[0]?.name);handleFile(e.target.files[0],true);e.target.value='';});
-G('btn-reset').addEventListener('click',async function(){
+async function resetTesseramentoDB(){
   if(!isAdmin())return;
   if(!confirm('Eliminare TUTTI i dati di tesseramento?\nOperazione irreversibile. I dati delle anagrafiche non saranno toccati.'))return;
   showLoad('Eliminazione…');
@@ -850,7 +850,8 @@ G('btn-reset').addEventListener('click',async function(){
     toast('Database tesseramento svuotato');
   }catch(e){toast('Errore: '+e.message,'error');}
   finally{hideLoad();}
-});
+}
+G('btn-reset').addEventListener('click',resetTesseramentoDB);
 G('btn-go-admin').addEventListener('click',showAdminPanel);
 G('btn-back').addEventListener('click',function(){if(allData.length)showDashboard();else{G('admin-panel').style.display='none';G('upload-zone').style.display='flex';}});
 // IMPORT EVENTS - Drag and Drop + Click

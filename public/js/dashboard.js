@@ -148,10 +148,46 @@ function rebuildFilters(){
   rSel('fp-mese-da',mesiOrdinati,function(v){return MESI[v]||v;},'Tutti');
   rSel('fp-mese-a',mesiOrdinati,function(v){return MESI[v]||v;},'Tutti');
   rSel('fp-tiporete',unique(allData,'tiporete').sort(),null,'Tutti');
+  popolaEliminaMesi();
 }
 function rSel(id,vals,lFn,all){var s=G(id),p=s.value;s.innerHTML='<option value="">'+all+'</option>';vals.forEach(function(v){var o=document.createElement('option');o.value=v;o.textContent=lFn?lFn(v):v;if(String(v)===p)o.selected=true;s.appendChild(o);});}
 
 // AGGREGATE
+// ── ELIMINAZIONE DATI PER MESE (tab Carica Dati) ──
+function popolaEliminaMesi(){
+  var selA=G('del-anno'); if(!selA) return;
+  var anni=unique(allData,'anno').filter(Boolean).map(Number).sort(function(a,b){return b-a;});
+  if(!anni.length) anni=[new Date().getFullYear()];
+  selA.innerHTML='';
+  anni.forEach(function(y){var o=document.createElement('option');o.value=y;o.textContent=y;selA.appendChild(o);});
+  var mesi=unique(allData,'mese').filter(Boolean).map(Number);
+  var maxM=mesi.length?Math.max.apply(null,mesi):(new Date().getMonth()+1);
+  ['del-mese-da','del-mese-a'].forEach(function(id){
+    var s=G(id); if(!s) return;
+    s.innerHTML='';
+    for(var m=1;m<=12;m++){var o=document.createElement('option');o.value=m;o.textContent=MESI[m];s.appendChild(o);}
+    s.value=maxM;
+  });
+}
+
+async function eliminaMesiTesseramento(){
+  if(!isAdmin()){toast('Non autorizzato','error');return;}
+  var anno=parseInt(G('del-anno').value), da=parseInt(G('del-mese-da').value), a=parseInt(G('del-mese-a').value);
+  if(!anno||!da||!a){toast('Seleziona anno e mesi','error');return;}
+  if(da>a){toast('"Da mese" non può essere maggiore di "A mese"','error');return;}
+  var label=(da===a)?MESI[da]:(MESI[da]+'–'+MESI[a]);
+  if(!confirm('Eliminare i dati di tesseramento di '+label+' '+anno+'?\nOperazione irreversibile.'))return;
+  showLoad('Eliminazione '+label+' '+anno+'…');
+  try{
+    await sbDel(TR+'?anno=eq.'+anno+'&mese=gte.'+da+'&mese=lte.'+a);
+    var data=await sbGetAll(TR);
+    allData=data.map(mapRow);
+    rebuildFilters(); renderOverview(); renderPromoTrend();
+    toast('✓ Eliminati i dati di '+label+' '+anno,'success');
+  }catch(e){toast('Errore: '+e.message,'error');}
+  finally{hideLoad();}
+}
+
 function agg(data,key){
   var m={};
   data.forEach(function(r){var k=r[key];if(!m[k])m[k]={label:k,count:0,total:0};m[k].count++;m[k].total+=r.importo;});
