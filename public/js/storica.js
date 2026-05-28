@@ -11,7 +11,7 @@ var STORICA_MESI_NOMI = ['','Gennaio','Febbraio','Marzo','Aprile','Maggio','Giug
   'Luglio/Ago','','Settembre','Ottobre','Novembre','Dicembre'];
 var MESI_ORD = [1,2,3,4,5,6,7,9,10,11,12];
 var STORICA_AUTO_DA_ANNO = 2026;
-var STORICA_AUTO_DA_MESE = 4;
+var STORICA_AUTO_DA_MESE = 5; // la serie auto-calcolata parte da maggio 2026; i mesi precedenti sono storici/manuali e non vengono toccati
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function storicaInit() {
@@ -656,26 +656,39 @@ function thSt() {
 // ── RICALCOLA 2026 ────────────────────────────────────────────────────────────
 async function storicaAggiornaDal2026() {
   if (!isAdmin()) return;
-  storicaSetStatus(true, 'Lettura contratti 2026 da Supabase…');
+  storicaSetStatus(true, 'Lettura contratti da Supabase…');
   try {
     var allContratti = await sbGetAll(TR);
     var countMap = {};
     allContratti.forEach(function(r) {
       var a=parseInt(r.anno), m=parseInt(r.mese);
+      if(isNaN(a)||isNaN(m)) return;                         // ignora record senza data valida
       if(a<STORICA_AUTO_DA_ANNO) return;
       if(a===STORICA_AUTO_DA_ANNO&&m<STORICA_AUTO_DA_MESE) return;
       var key=a+'_'+m;
       countMap[key]=(countMap[key]||0)+1;
     });
-    storicaSetStatus(true, 'Aggiornamento serie storica…');
     var upserts = Object.keys(countMap).map(function(key){
       var p=key.split('_');
       return {anno:parseInt(p[0]),mese:parseInt(p[1]),valore:countMap[key],auto_calcolato:true};
     });
-    if (!upserts.length) { storicaSetStatus(false); toast('Nessun contratto 2026 trovato','info'); return; }
-    await sbPost('serie_storica', upserts, {'Prefer':'resolution=merge-duplicates,return=minimal'});
+
+    storicaSetStatus(true, 'Aggiornamento serie storica…');
+    // 1) Azzera le righe AUTO nel range auto-calcolato (>= STORICA_AUTO_DA_MESE):
+    //    così i mesi rimasti senza contratti spariscono invece di restare con il vecchio valore.
+    //    I mesi storici/manuali (auto_calcolato=false) e i mesi precedenti NON vengono toccati.
+    var Y=STORICA_AUTO_DA_ANNO, M=STORICA_AUTO_DA_MESE;
+    await sbDel('serie_storica?auto_calcolato=eq.true&or=(anno.gt.'+Y+',and(anno.eq.'+Y+',mese.gte.'+M+'))');
+
+    // 2) Reinserisce i conteggi correnti (se ce ne sono).
+    if (upserts.length) {
+      await sbPost('serie_storica', upserts, {'Prefer':'resolution=merge-duplicates,return=minimal'});
+    }
+
     storicaSetStatus(false);
-    toast('✓ Aggiornati '+upserts.length+' mesi per il 2026','success');
+    toast(upserts.length
+      ? ('✓ Aggiornati '+upserts.length+' mesi auto-calcolati')
+      : 'Nessun contratto nel range: mesi auto-calcolati azzerati', 'success');
     storicaLoaded = false;
     await storicaLoad();
   } catch(e) {
