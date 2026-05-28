@@ -913,8 +913,17 @@
   <!-- FILTRI -->
   <div class="filters-bar">
     <div class="filter-group"><label>Anno</label><select id="inc-f-anno" onchange="incassiApply()"><option value="">Tutti gli anni</option></select></div>
-    <div class="filter-group"><label>Mese</label><select id="inc-f-mese" onchange="incassiApply()">
-      <option value="">Tutti i mesi</option>
+    <div class="filter-group"><label>Mese da</label><select id="inc-f-mese-da" onchange="incassiApply()">
+      <option value="">—</option>
+      <option value="1">Gennaio</option><option value="2">Febbraio</option>
+      <option value="3">Marzo</option><option value="4">Aprile</option>
+      <option value="5">Maggio</option><option value="6">Giugno</option>
+      <option value="7">Luglio</option><option value="8">Agosto</option>
+      <option value="9">Settembre</option><option value="10">Ottobre</option>
+      <option value="11">Novembre</option><option value="12">Dicembre</option>
+    </select></div>
+    <div class="filter-group"><label>Mese a</label><select id="inc-f-mese-a" onchange="incassiApply()">
+      <option value="">—</option>
       <option value="1">Gennaio</option><option value="2">Febbraio</option>
       <option value="3">Marzo</option><option value="4">Aprile</option>
       <option value="5">Maggio</option><option value="6">Giugno</option>
@@ -927,7 +936,6 @@
       <option value="SEPA">SEPA (RID)</option>
       <option value="Cassa">Cassa</option>
     </select></div>
-    <div class="filter-group" style="flex:2;min-width:200px"><label>Cerca</label><input id="inc-f-search" type="text" placeholder="Cliente, causale, sede…" oninput="incassiApply()"></div>
     <div class="filter-actions">
       <button class="btn btn-secondary" onclick="incassiReset()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -1114,7 +1122,7 @@
     <div style="margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <h3 style="margin:0 0 10px 0;font-size:14px;font-weight:700;color:#333">ERP CNA di Roma</h3>
       <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-        <div><strong>Versione:</strong> v2026.16</div>
+        <div><strong>Versione:</strong> v2026.17</div>
         <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
         <div><strong>Data rilascio:</strong> 28 May 2026</div>
         <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>

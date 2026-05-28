@@ -83,20 +83,25 @@ function incassiBuildFilters() {
 }
 
 function incassiApply() {
-  var anno   = (G('inc-f-anno')   || {}).value || '';
-  var mese   = (G('inc-f-mese')   || {}).value || '';
-  var metodo = (G('inc-f-metodo') || {}).value || '';
-  var search = ((G('inc-f-search') || {}).value || '').trim().toLowerCase();
+  var anno    = (G('inc-f-anno')     || {}).value || '';
+  var meseDa  = parseInt((G('inc-f-mese-da') || {}).value || '0') || 0;
+  var meseA   = parseInt((G('inc-f-mese-a')  || {}).value || '0') || 0;
+  var metodo  = (G('inc-f-metodo')   || {}).value || '';
 
   incassiFiltrati = allIncassi.filter(function(r) {
     if (anno   && String(r.anno) !== anno)  return false;
-    if (mese   && String(r.mese) !== mese)  return false;
-    if (metodo && incassiMetodo(r)  !== metodo) return false;
-    if (search) {
-      var hay = [r.codice_cliente, r.cliente, r.promotore, r.documento, r.compensazione, r.cassa]
-                  .join(' ').toLowerCase();
-      if (hay.indexOf(search) === -1) return false;
-    }
+    if (metodo && incassiMetodo(r) !== metodo) return false;
+    // Range mese: se solo Da, filtra >= Da; se solo A, filtra <= A; se entrambi, range
+    var m = parseInt(r.mese) || 0;
+    if (meseDa && meseA) {
+      if (meseDa <= meseA) {
+        if (m < meseDa || m > meseA) return false;
+      } else {
+        // range che attraversa fine anno (es. Ott → Mar)
+        if (m < meseDa && m > meseA) return false;
+      }
+    } else if (meseDa && m < meseDa) return false;
+    else if (meseA  && m > meseA)  return false;
     return true;
   });
 
@@ -104,7 +109,7 @@ function incassiApply() {
 }
 
 function incassiReset() {
-  ['inc-f-anno','inc-f-mese','inc-f-metodo','inc-f-search'].forEach(function(id) {
+  ['inc-f-anno','inc-f-mese-da','inc-f-mese-a','inc-f-metodo'].forEach(function(id) {
     var el = G(id); if (el) el.value = '';
   });
   incassiApply();
@@ -150,7 +155,8 @@ function incassiRenderKPI() {
   var pctSepa   = totale > 0 ? (totSepa/totale*100).toFixed(1) : 0;
 
   var annoSel = (G('inc-f-anno')||{}).value || '';
-  var meseSel = (G('inc-f-mese')||{}).value || '';
+  var meseDaSel = parseInt((G('inc-f-mese-da')||{}).value || '0') || 0;
+  var meseASel  = parseInt((G('inc-f-mese-a') ||{}).value || '0') || 0;
 
   // Mese migliore nei dati filtrati
   var byMese = {};
@@ -165,7 +171,14 @@ function incassiRenderKPI() {
   // Trend YoY
   var trendSub = '';
   if (annoSel) {
-    var filtroBase = function(r){ return r.anno==(parseInt(annoSel)-1) && (!meseSel || r.mese==parseInt(meseSel)); };
+    var filtroBase = function(r){
+      if (r.anno != (parseInt(annoSel)-1)) return false;
+      var m = parseInt(r.mese)||0;
+      if (meseDaSel && meseASel) { return meseDaSel<=meseASel ? (m>=meseDaSel && m<=meseASel) : (m>=meseDaSel || m<=meseASel); }
+      if (meseDaSel && m < meseDaSel) return false;
+      if (meseASel  && m > meseASel)  return false;
+      return true;
+    };
     var totPrevAnno = allIncassi.filter(filtroBase).reduce(function(s,r){return s+(r.avere||0);},0);
     if (totPrevAnno > 0) {
       var pctYoY = ((totale - totPrevAnno)/totPrevAnno*100).toFixed(1);
@@ -343,16 +356,27 @@ function incassiChartMensile() {
   if (!ctxEl) return;
 
   var annoSel = parseInt((G('inc-f-anno')||{}).value || new Date().getFullYear());
+  var meseDaC = parseInt((G('inc-f-mese-da')||{}).value || '0') || 0;
+  var meseAC  = parseInt((G('inc-f-mese-a') ||{}).value || '0') || 0;
 
   // Costruisci struttura fissa 12 mesi
   var meseMap = {};
   for (var m=1; m<=12; m++) meseMap[m] = 0;
 
-  // Usa TUTTI i dati dell'anno selezionato (ignora filtri mese/metodo per il grafico andamento)
+  // Usa TUTTI i dati dell'anno selezionato, applica solo filtro metodo e range mese
   var srcAnno = allIncassi.filter(function(r){ return r.anno == annoSel; });
-  // Ma applica il filtro metodo se attivo
   var metodoSel = (G('inc-f-metodo')||{}).value || '';
   if (metodoSel) srcAnno = srcAnno.filter(function(r){ return incassiMetodo(r)===metodoSel; });
+  // Applica range mese se impostato
+  if (meseDaC || meseAC) {
+    srcAnno = srcAnno.filter(function(r){
+      var m = parseInt(r.mese)||0;
+      if (meseDaC && meseAC) { return meseDaC<=meseAC ? (m>=meseDaC && m<=meseAC) : (m>=meseDaC || m<=meseAC); }
+      if (meseDaC && m < meseDaC) return false;
+      if (meseAC  && m > meseAC)  return false;
+      return true;
+    });
+  }
 
   srcAnno.forEach(function(r){
     var m = parseInt(r.mese);
@@ -423,10 +447,22 @@ function incassiChartMensileSepa() {
   if (!ctxEl) return;
 
   var annoSel = parseInt((G('inc-f-anno')||{}).value || new Date().getFullYear());
+  var meseDaC = parseInt((G('inc-f-mese-da')||{}).value || '0') || 0;
+  var meseAC  = parseInt((G('inc-f-mese-a') ||{}).value || '0') || 0;
   var sepaMap = {}, cassaMap = {};
   for (var m=1; m<=12; m++) { sepaMap[m]=0; cassaMap[m]=0; }
 
-  allIncassi.filter(function(r){ return r.anno==annoSel; }).forEach(function(r){
+  var src = allIncassi.filter(function(r){ return r.anno==annoSel; });
+  if (meseDaC || meseAC) {
+    src = src.filter(function(r){
+      var m = parseInt(r.mese)||0;
+      if (meseDaC && meseAC) { return meseDaC<=meseAC ? (m>=meseDaC && m<=meseAC) : (m>=meseDaC || m<=meseAC); }
+      if (meseDaC && m < meseDaC) return false;
+      if (meseAC  && m > meseAC)  return false;
+      return true;
+    });
+  }
+  src.forEach(function(r){
     var m = parseInt(r.mese);
     if (m<1||m>12) return;
     if (incassiMetodo(r)==='SEPA') sepaMap[m]+=(r.avere||0);
@@ -434,7 +470,7 @@ function incassiChartMensileSepa() {
   });
 
   var labels = MESI.slice(1);
-  var sepaVals  = []; var cassaVals = [];
+  var sepaVals=[]; var cassaVals=[];
   for (var i=1; i<=12; i++){ sepaVals.push(sepaMap[i]); cassaVals.push(cassaMap[i]); }
 
   if (incassiCharts.sepa) { try{ incassiCharts.sepa.destroy(); }catch(e){} }
@@ -443,8 +479,8 @@ function incassiChartMensileSepa() {
     data: {
       labels: labels,
       datasets: [
-        { label: 'SEPA',  data: sepaVals,  backgroundColor: 'rgba(2,132,199,0.8)',  borderRadius: 3 },
-        { label: 'Cassa', data: cassaVals, backgroundColor: 'rgba(5,150,105,0.8)', borderRadius: 3 }
+        { label: 'SEPA',  data: sepaVals,  backgroundColor: 'rgba(142,0,26,0.85)',  borderRadius: 3 },
+        { label: 'Cassa', data: cassaVals, backgroundColor: 'rgba(255,179,0,0.85)', borderRadius: 3 }
       ]
     },
     options: {
@@ -476,7 +512,7 @@ function incassiChartMetodo() {
     type: 'doughnut',
     data: {
       labels: ['SEPA (RID)', 'Cassa'],
-      datasets: [{ data:[totSepa, totCassa], backgroundColor:['#0284C7','#059669'], borderWidth:3 }]
+      datasets: [{ data:[totSepa, totCassa], backgroundColor:['rgb(142,0,26)','rgb(255,179,0)'], borderWidth:3 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
