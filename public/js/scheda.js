@@ -396,17 +396,28 @@ async function openAnagraficaModal(anaIdx) {
   
   // SEZIONE: PAGAMENTI (dalla tabella incassi, join su codice cliente)
   try {
+    var dueAnniFA = new Date();
+    dueAnniFA.setFullYear(dueAnniFA.getFullYear() - 2);
+    var dueAnniFAStr = dueAnniFA.toISOString().substring(0, 10);
     var incResp = await fetch(
       SB + '/rest/v1/incassi?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) +
+      '&data_pagamento=gte.' + dueAnniFAStr +
       '&select=*&order=data_pagamento.desc',
       { headers: H() }
     );
     if (incResp.ok) {
       var incassi = await incResp.json();
-      if (incassi && incassi.length > 0) {
 
-        // Calcola statistiche
-        var totInc     = incassi.reduce(function(s,r){ return s+(r.avere||0); }, 0);
+      html += '<div style="margin-bottom:25px;padding-bottom:25px;border-bottom:1px solid #eee">';
+      html += '<h3 style="color:#059669;font-size:14px;font-weight:700;margin:0 0 15px 0;text-transform:uppercase;letter-spacing:0.5px">';
+      html += '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="vertical-align:-2px;margin-right:5px"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+      html += 'Pagamenti' + (incassi && incassi.length > 0 ? ' (' + incassi.length + ')' : '') + '</h3>';
+
+      if (!incassi || incassi.length === 0) {
+        html += '<div style="padding:14px 16px;background:var(--surface2);border-radius:8px;border-left:3px solid var(--border);color:var(--text-dim);font-size:13px;font-style:italic">';
+        html += 'Non risultano pagamenti negli ultimi due anni.';
+        html += '</div>';
+      } else {        var totInc     = incassi.reduce(function(s,r){ return s+(r.avere||0); }, 0);
         var totSepaInc = incassi.filter(function(r){ return (r.tipo_doc_az||'').toUpperCase()==='RID'; })
                                 .reduce(function(s,r){ return s+(r.avere||0); }, 0);
         var totCassaInc= totInc - totSepaInc;
@@ -501,8 +512,10 @@ async function openAnagraficaModal(anaIdx) {
         }
         html += '</div>';
 
-        html += '</div>';
-      }
+        html += '</div>'; // fine else
+      } // fine else incassi.length > 0
+
+      html += '</div>'; // fine sezione pagamenti
     }
   } catch(incErr) {
     console.error('Errore caricamento pagamenti scheda:', incErr);
