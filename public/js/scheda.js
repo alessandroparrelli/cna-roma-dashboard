@@ -103,14 +103,14 @@ async function openAnagraficaModal(anaIdx) {
 
   var cciaa = currentCCIAAData;
 
-  // ── Helper render ─────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────
   function field(label, value, opts) {
     if (!value && !opts) return '';
     opts = opts || {};
     var val = '';
-    if (opts.tel)   val = '<a href="tel:' + value + '">📞 ' + value + '</a>';
-    else if (opts.mail) val = '<a href="mailto:' + value + '">✉ ' + value + '</a>';
-    else val = String(value || '');
+    if (opts.tel)        val = '<a href="tel:' + value + '" style="color:var(--blue)">📞 ' + value + '</a>';
+    else if (opts.mail)  val = '<a href="mailto:' + value + '" style="color:var(--blue)">✉ ' + value + '</a>';
+    else                 val = String(value || '');
     var wide = opts.wide ? 'grid-column:1/-1' : '';
     return '<div class="scheda-field" style="' + wide + '">' +
       '<div class="scheda-field-label">' + label + '</div>' +
@@ -124,20 +124,27 @@ async function openAnagraficaModal(anaIdx) {
   }
 
   function fmtEur(n) {
-    return '€ ' + Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return '€\u00a0' + Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
   }
 
-  function sectionTitle(svg, label) {
-    return '<div class="scheda-section-title">' + svg + '<span>' + label + '</span></div>';
+  // Header sezione colorato — bg pieno, testo e icona bianchi
+  function secHdr(bgColor, svgPath, label) {
+    return '<div style="display:flex;align-items:center;gap:8px;background:' + bgColor + ';margin:-16px -18px 14px -18px;padding:10px 18px;border-radius:12px 12px 0 0">' +
+      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + svgPath + '</svg>' +
+      '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:white">' + label + '</span>' +
+    '</div>';
   }
 
-  var svgEuro   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-  var svgPerson = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
-  var svgBrifc  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>';
-  var svgDoc    = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>';
-  var svgPin    = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
-  var svgUsers  = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
-  var svgHand   = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>';
+  // SVG paths per ogni sezione
+  var P = {
+    person:  '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    users:   '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+    briefc:  '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>',
+    hand:    '<path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/>',
+    euro:    '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
+    pin:     '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
+    doc:     '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'
+  };
 
   // ── Stato associativo ─────────────────────────────────────────────
   var isIscritto = diretti.some(function(d){ return d.servizio === 'ISCRITTO'; }) ||
@@ -146,54 +153,52 @@ async function openAnagraficaModal(anaIdx) {
   var iscrittoContratto = contratti.find(function(c){ return c.tipocontratto === 'ISCRITTO'; });
   var serviziContratto = contratti.filter(function(c){ return c.tipocontratto !== 'ISCRITTO'; });
 
-  // ── Costruisci HTML ───────────────────────────────────────────────
+  // ── HTML ──────────────────────────────────────────────────────────
   var body = '';
 
-  // ── SEZIONE: ANAGRAFICA ──────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
+  // SEZIONE 1 — DATI ANAGRAFICI  (header: blu CNA)
+  // ══════════════════════════════════════════════════════
   body += '<div class="scheda-section">';
-  body += sectionTitle(svgPerson, 'Dati Anagrafici');
+  body += secHdr('#005CA9', P.person, 'Dati Anagrafici');
 
-  // Badge stato + tipo impresa + iscritto — grandi e ben visibili
-  body += '<div class="scheda-status-row" style="margin-bottom:16px">';
+  // Badge stato + tipo impresa + iscritto
+  body += '<div class="scheda-status-row" style="margin-bottom:14px">';
 
   if (cciaa && cciaa.stato_attivita !== null && cciaa.stato_attivita !== undefined) {
     var statoInfo = traduciStatoAttivita(cciaa.stato_attivita);
-    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:10px 18px;border-radius:10px;background:' + statoInfo.color + ';min-width:90px">' +
-      '<svg width="18" height="18" viewBox="0 0 8 8" style="margin-bottom:4px"><circle cx="4" cy="4" r="4" fill="white" opacity=".9"/></svg>' +
-      '<span style="font-size:11px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">' + statoInfo.testo + '</span>' +
+    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:10px;background:' + statoInfo.color + ';min-width:80px">' +
+      '<svg width="16" height="16" viewBox="0 0 8 8" style="margin-bottom:3px"><circle cx="4" cy="4" r="4" fill="white" opacity=".9"/></svg>' +
+      '<span style="font-size:10px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">' + statoInfo.testo + '</span>' +
     '</div>';
   }
-
   if (cciaa && cciaa.art_com_tur) {
     var tipoInfo = traduciTipoImpresa(cciaa.art_com_tur);
-    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:10px 18px;border-radius:10px;background:' + tipoInfo.bgColor + ';min-width:90px">' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="' + tipoInfo.textColor + '" stroke-width="2.5" style="margin-bottom:4px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>' +
-      '<span style="font-size:11px;font-weight:800;color:' + tipoInfo.textColor + ';letter-spacing:.04em;text-transform:uppercase">' + tipoInfo.testo + '</span>' +
+    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:10px;background:' + tipoInfo.bgColor + ';min-width:80px">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + tipoInfo.textColor + '" stroke-width="2.5" style="margin-bottom:3px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>' +
+      '<span style="font-size:10px;font-weight:800;color:' + tipoInfo.textColor + ';letter-spacing:.04em;text-transform:uppercase">' + tipoInfo.testo + '</span>' +
     '</div>';
   }
-
   if (isIscritto) {
-    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:10px 18px;border-radius:10px;background:#059669;min-width:90px">' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="margin-bottom:4px"><polyline points="20 6 9 17 4 12"/></svg>' +
-      '<span style="font-size:11px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">Iscritto</span>' +
+    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:10px;background:#059669;min-width:80px">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="margin-bottom:3px"><polyline points="20 6 9 17 4 12"/></svg>' +
+      '<span style="font-size:10px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">Iscritto</span>' +
     '</div>';
   }
-
   if (isInps) {
-    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:10px 18px;border-radius:10px;background:var(--blue);min-width:90px">' +
-      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="margin-bottom:4px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
-      '<span style="font-size:11px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">Tess. INPS</span>' +
+    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:10px;background:#0284C7;min-width:80px">' +
+      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="margin-bottom:3px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
+      '<span style="font-size:10px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">INPS</span>' +
     '</div>';
   }
-
   body += '</div>';
 
   // Titolare
   var nomeCompleto = [ana.nometitolare, ana.cognometitolare].filter(Boolean).join(' ');
   if (nomeCompleto) {
-    body += '<div style="padding:10px 14px;background:rgba(0,92,169,.06);border-left:3px solid rgba(0,92,169,.3);border-radius:4px;margin-bottom:12px">';
+    body += '<div style="padding:9px 12px;background:rgba(0,92,169,.06);border-left:3px solid rgba(0,92,169,.3);border-radius:6px;margin-bottom:12px">';
     body += '<div class="scheda-field-label">Titolare</div>';
-    body += '<div style="font-size:14px;font-weight:700;color:var(--blue)">' + nomeCompleto + '</div>';
+    body += '<div style="font-size:14px;font-weight:700;color:#005CA9">' + nomeCompleto + '</div>';
     body += '</div>';
   }
 
@@ -209,12 +214,14 @@ async function openAnagraficaModal(anaIdx) {
   body += field('Cellulare', ana.cellulare, {tel:true});
   body += '</div></div>';
 
-  // ── SEZIONE: ADDETTI ─────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
+  // SEZIONE 2 — ADDETTI  (header: grigio ardesia)
+  // ══════════════════════════════════════════════════════
   if (cciaa && (cciaa.num_addetti_sub || cciaa.num_addetti_fam_ul)) {
     var addSub = parseInt(cciaa.num_addetti_sub) || 0;
     var addFam = parseInt(cciaa.num_addetti_fam_ul) || 0;
     body += '<div class="scheda-section">';
-    body += sectionTitle(svgUsers, 'Addetti e Dipendenti');
+    body += secHdr('#475569', P.users, 'Addetti e Dipendenti');
     body += '<div class="scheda-addetti">';
     body += '<div class="scheda-addetti-card"><div class="scheda-addetti-val">' + addSub + '</div><div class="scheda-addetti-lbl">Subordinati</div></div>';
     body += '<div class="scheda-addetti-card"><div class="scheda-addetti-val">' + addFam + '</div><div class="scheda-addetti-lbl">Familiari</div></div>';
@@ -222,10 +229,12 @@ async function openAnagraficaModal(anaIdx) {
     body += '</div></div>';
   }
 
-  // ── SEZIONE: CATEGORIA PROFESSIONALE ────────────────────────────
+  // ══════════════════════════════════════════════════════
+  // SEZIONE 3 — CATEGORIA PROFESSIONALE  (header: viola)
+  // ══════════════════════════════════════════════════════
   if (ana.mestiere || ana.codicemestiere || ana.unione) {
     body += '<div class="scheda-section">';
-    body += sectionTitle(svgBrifc, 'Categoria Professionale');
+    body += secHdr('#7C3AED', P.briefc, 'Categoria Professionale');
     body += '<div class="scheda-grid">';
     body += field('Mestiere', ana.mestiere, {wide:true});
     body += field('Codice Mestiere', ana.codicemestiere);
@@ -236,99 +245,91 @@ async function openAnagraficaModal(anaIdx) {
     body += '</div></div>';
   }
 
-  // ── SEZIONE: TESSERAMENTO + CONTRATTI ───────────────────────────
+  // ══════════════════════════════════════════════════════
+  // SEZIONE 4 — TESSERAMENTO + CONTRATTI  (header: arancio)
+  // ══════════════════════════════════════════════════════
   body += '<div class="scheda-section">';
-  body += sectionTitle(svgHand, 'Tesseramento e Contratti');
+  body += secHdr('#EA580C', P.hand, 'Tesseramento e Contratti');
 
-  // ── Blocco TESSERAMENTO (iscritto + inps da diretti/contrattiservizio) ──
-  var hasTesseramento = isIscritto || isInps;
-  if (hasTesseramento) {
-    body += '<div style="margin-bottom:16px">';
-    body += '<div class="scheda-field-label" style="margin-bottom:8px">Tesseramento</div>';
-    body += '<div style="display:grid;gap:6px">';
-
-    // ISCRITTO — mostrato per primo, con dati completi
-    if (isIscritto) {
-      // Cerca il record iscritto: prima in diretti, poi in contrattiservizio
-      var iscDir = diretti.find(function(d){ return d.servizio === 'ISCRITTO'; });
-      var src = iscDir || iscrittoContratto; // uno dei due
-      body += '<div style="padding:10px 14px;background:rgba(5,150,105,.08);border-left:4px solid #059669;border-radius:8px">';
-      body += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:' + (src ? '8px' : '0') + '">';
-      body += '<span style="font-weight:700;font-size:13px;color:#059669">✓ ISCRITTO CNA</span>';
-      if (src) {
-        var dataIsc = iscDir ? fmtDate(iscDir.datastipula) : fmtDate(iscrittoContratto.datastipulacontratto);
-        if (dataIsc && dataIsc !== '—') body += '<span style="font-size:11px;color:var(--text-dim)">dal ' + dataIsc + '</span>';
-      }
-      body += '</div>';
-      // Dati aggiuntivi se da diretti
-      if (iscDir) {
-        body += '<div class="scheda-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px">';
-        if (iscDir.raggruppamento) body += '<div><div class="scheda-field-label">Raggruppamento</div><div class="scheda-field-value">' + iscDir.raggruppamento + '</div></div>';
-        if (iscDir.importo && iscDir.importo !== '0') body += '<div><div class="scheda-field-label">Importo</div><div class="scheda-field-value">€ ' + iscDir.importo + '</div></div>';
-        if (iscDir.acuradi) body += '<div><div class="scheda-field-label">A cura di</div><div class="scheda-field-value">' + iscDir.acuradi + '</div></div>';
-        body += '</div>';
-      } else if (iscrittoContratto) {
-        body += '<div class="scheda-grid" style="grid-template-columns:1fr 1fr;gap:8px">';
-        if (iscrittoContratto.nomeconsulente) body += '<div><div class="scheda-field-label">Consulente</div><div class="scheda-field-value">' + iscrittoContratto.nomeconsulente + '</div></div>';
-        if (iscrittoContratto.raggruppamento) body += '<div><div class="scheda-field-label">Raggruppamento</div><div class="scheda-field-value">' + iscrittoContratto.raggruppamento + '</div></div>';
-        body += '</div>';
-      }
-      body += '</div>';
+  // Helper riga contratto/tesseramento
+  function contrattoRow(titolo, dataStipula, dettagli, accentColor) {
+    var hasDet = dettagli && (dettagli.raggruppamento || dettagli.importo || dettagli.consulente || dettagli.sede);
+    var html = '<div style="padding:10px 14px;background:var(--surface2);border-left:4px solid ' + accentColor + ';border-radius:8px;margin-bottom:8px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:' + (hasDet ? '8px' : '0') + '">';
+    html += '<span style="font-weight:700;font-size:13px;color:' + accentColor + '">' + titolo + '</span>';
+    if (dataStipula) html += '<span style="font-size:11px;color:var(--text-dim);white-space:nowrap">dal ' + dataStipula + '</span>';
+    html += '</div>';
+    if (hasDet) {
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">';
+      if (dettagli.raggruppamento) html += '<div><div class="scheda-field-label">Raggruppamento</div><div class="scheda-field-value">' + dettagli.raggruppamento + '</div></div>';
+      if (dettagli.importo)        html += '<div><div class="scheda-field-label">Importo</div><div class="scheda-field-value" style="color:#059669;font-weight:700">€ ' + dettagli.importo + '</div></div>';
+      if (dettagli.consulente)     html += '<div><div class="scheda-field-label">Consulente</div><div class="scheda-field-value">' + dettagli.consulente + '</div></div>';
+      if (dettagli.sede)           html += '<div><div class="scheda-field-label">Sede erogazione</div><div class="scheda-field-value">' + dettagli.sede + '</div></div>';
+      html += '</div>';
     }
-
-    // TESSERAMENTO INPS
-    if (isInps) {
-      var inpsDir = diretti.find(function(d){ return d.servizio === 'TESSERAMENTO INPS'; });
-      body += '<div style="padding:10px 14px;background:rgba(0,92,169,.07);border-left:4px solid var(--blue);border-radius:8px">';
-      body += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:' + (inpsDir ? '8px' : '0') + '">';
-      body += '<span style="font-weight:700;font-size:13px;color:var(--blue)">TESSERAMENTO INPS</span>';
-      if (inpsDir && inpsDir.datastipula) body += '<span style="font-size:11px;color:var(--text-dim)">dal ' + fmtDate(inpsDir.datastipula) + '</span>';
-      body += '</div>';
-      if (inpsDir) {
-        body += '<div class="scheda-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px">';
-        if (inpsDir.raggruppamento) body += '<div><div class="scheda-field-label">Raggruppamento</div><div class="scheda-field-value">' + inpsDir.raggruppamento + '</div></div>';
-        if (inpsDir.importo && inpsDir.importo !== '0') body += '<div><div class="scheda-field-label">Importo</div><div class="scheda-field-value">€ ' + inpsDir.importo + '</div></div>';
-        if (inpsDir.acuradi) body += '<div><div class="scheda-field-label">A cura di</div><div class="scheda-field-value">' + inpsDir.acuradi + '</div></div>';
-        body += '</div>';
-      }
-      body += '</div>';
-    }
-
-    body += '</div></div>'; // fine grid + blocco tesseramento
+    html += '</div>';
+    return html;
   }
 
-  // ── Contratti servizio (escluso ISCRITTO) ──
+  // ISCRITTO
+  if (isIscritto) {
+    var iscDir = diretti.find(function(d){ return d.servizio === 'ISCRITTO'; });
+    var dataIsc = iscDir ? fmtDate(iscDir.datastipula)
+                         : (iscrittoContratto ? fmtDate(iscrittoContratto.datastipulacontratto) : null);
+    var detIsc = {};
+    if (iscDir) {
+      if (iscDir.raggruppamento) detIsc.raggruppamento = iscDir.raggruppamento;
+      if (iscDir.importo && iscDir.importo !== '0') detIsc.importo = iscDir.importo;
+      if (iscDir.acuradi) detIsc.consulente = iscDir.acuradi;
+      if (iscDir.sedeerogazione) detIsc.sede = iscDir.sedeerogazione;
+    } else if (iscrittoContratto) {
+      if (iscrittoContratto.raggruppamento) detIsc.raggruppamento = iscrittoContratto.raggruppamento;
+      if (iscrittoContratto.nomeconsulente) detIsc.consulente = iscrittoContratto.nomeconsulente;
+      if (iscrittoContratto.sedeerogazione) detIsc.sede = iscrittoContratto.sedeerogazione;
+    }
+    body += contrattoRow('✓ ISCRITTO CNA', dataIsc, detIsc, '#059669');
+  }
+
+  // TESSERAMENTO INPS
+  if (isInps) {
+    var inpsDir = diretti.find(function(d){ return d.servizio === 'TESSERAMENTO INPS'; });
+    var detInps = {};
+    if (inpsDir) {
+      if (inpsDir.raggruppamento) detInps.raggruppamento = inpsDir.raggruppamento;
+      if (inpsDir.importo && inpsDir.importo !== '0') detInps.importo = inpsDir.importo;
+      if (inpsDir.acuradi) detInps.consulente = inpsDir.acuradi;
+      if (inpsDir.sedeerogazione) detInps.sede = inpsDir.sedeerogazione;
+    }
+    body += contrattoRow('TESSERAMENTO INPS', inpsDir ? fmtDate(inpsDir.datastipula) : null, detInps, '#0284C7');
+  }
+
+  // Contratti servizio
   if (serviziContratto.length > 0) {
-    body += '<div>';
-    body += '<div class="scheda-field-label" style="margin-bottom:8px">Contratti Servizio attivi (' + serviziContratto.length + ')</div>';
-    body += '<div style="display:grid;gap:8px">';
+    if (isIscritto || isInps) {
+      body += '<div class="scheda-field-label" style="margin:12px 0 8px">Contratti Servizio attivi (' + serviziContratto.length + ')</div>';
+    }
     serviziContratto.forEach(function(c) {
-      body += '<div style="padding:10px 14px;background:var(--surface2);border-left:4px solid #EA580C;border-radius:8px">';
-      body += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:' + (c.nomeconsulente||c.raggruppamento||c.sedeerogazione ? '8px' : '0') + '">';
-      body += '<span style="font-weight:700;font-size:13px;color:#EA580C">' + (c.tipocontratto||'—') + '</span>';
-      if (c.datastipulacontratto) body += '<span style="font-size:11px;color:var(--text-dim);white-space:nowrap">dal ' + fmtDate(c.datastipulacontratto) + '</span>';
-      body += '</div>';
-      // Dettagli contratto
-      var hasDet = c.nomeconsulente || c.raggruppamento || c.sedeerogazione;
-      if (hasDet) {
-        body += '<div class="scheda-grid" style="grid-template-columns:1fr 1fr 1fr;gap:8px">';
-        if (c.raggruppamento) body += '<div><div class="scheda-field-label">Raggruppamento</div><div class="scheda-field-value">' + c.raggruppamento + '</div></div>';
-        if (c.nomeconsulente) body += '<div><div class="scheda-field-label">Consulente</div><div class="scheda-field-value">' + c.nomeconsulente + '</div></div>';
-        if (c.sedeerogazione) body += '<div><div class="scheda-field-label">Sede Erogazione</div><div class="scheda-field-value">' + c.sedeerogazione + '</div></div>';
-        body += '</div>';
-      }
-      body += '</div>';
+      var det = {};
+      if (c.raggruppamento)    det.raggruppamento = c.raggruppamento;
+      if (c.importo && c.importo !== '0') det.importo = c.importo;
+      if (c.nomeconsulente)    det.consulente = c.nomeconsulente;
+      if (c.sedeerogazione)    det.sede = c.sedeerogazione;
+      body += contrattoRow(c.tipocontratto || '—', fmtDate(c.datastipulacontratto), det, '#EA580C');
     });
-    body += '</div></div>';
-  } else if (!hasTesseramento) {
+  }
+
+  if (!isIscritto && !isInps && serviziContratto.length === 0) {
     body += '<div style="color:var(--text-dim);font-size:13px;font-style:italic">Nessun contratto attivo</div>';
   }
 
-  body += '</div>'; // fine sezione tesseramento+contratti
+  body += '</div>'; // fine sezione contratti
 
-  // ── SEZIONE: PAGAMENTI ───────────────────────────────────────────
+  // ══════════════════════════════════════════════════════
+  // SEZIONE 5 — PAGAMENTI  (header: verde smeraldo)
+  // ══════════════════════════════════════════════════════
   body += '<div class="scheda-section">';
-  body += sectionTitle(svgEuro, 'Pagamenti ultimi 2 anni');
+  body += secHdr('#059669', P.euro, 'Pagamenti ultimi 2 anni');
+
   if (incassi.length === 0) {
     body += '<div style="color:var(--text-dim);font-size:13px;font-style:italic">Non risultano pagamenti negli ultimi due anni.</div>';
   } else {
@@ -346,7 +347,7 @@ async function openAnagraficaModal(anaIdx) {
     body += '<table class="scheda-pay-table"><thead><tr>';
     body += '<th>Data</th><th style="text-align:right">Importo</th><th>Metodo</th><th>Sede</th><th>Causale</th>';
     body += '</tr></thead><tbody>';
-    incassi.slice(0, 8).forEach(function(r, i) {
+    incassi.slice(0, 8).forEach(function(r) {
       var metodo = (r.tipo_doc_az||'').toUpperCase()==='RID' ? 'SEPA' : 'Cassa';
       var mc = metodo === 'SEPA' ? '#0284C7' : '#059669';
       var causale = (r.compensazione || r.documento || '').substring(0,40);
@@ -370,7 +371,7 @@ async function openAnagraficaModal(anaIdx) {
     var mapAddress = [ana.indirizzo, ana.cap, ana.comune, ana.provincia ? '(' + ana.provincia + ')' : ''].filter(Boolean).join(' ');
     var mapUrl = 'https://maps.google.com/maps?q=' + encodeURIComponent(mapAddress);
     body += '<div class="scheda-section">';
-    body += sectionTitle(svgPin, 'Localizzazione');
+    body += secHdr('#0F766E', P.pin, 'Localizzazione');
     body += '<iframe width="100%" height="220" style="border:1px solid var(--border);border-radius:8px;margin-bottom:8px;display:block" src="https://maps.google.com/maps?q=' + encodeURIComponent(mapAddress) + '&z=15&output=embed" allowfullscreen loading="lazy"></iframe>';
     body += '<div style="font-size:12px;color:var(--text-dim)">' + mapAddress + ' · <a href="' + mapUrl + '" target="_blank" style="color:var(--blue)">Apri in Maps →</a></div>';
     body += '</div>';
@@ -382,13 +383,21 @@ async function openAnagraficaModal(anaIdx) {
   overlay.id = 'modal-scheda-bg';
 
   overlay.innerHTML =
-    // Topbar
+    // Topbar con logo CNA + nome impresa
     '<div class="scheda-topbar">' +
       '<button class="scheda-topbar-back" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>' +
         'Indietro' +
       '</button>' +
-      '<div class="scheda-topbar-title">' + (ana.ragionesociale || '—') + '</div>' +
+      '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:10px;min-width:0;overflow:hidden">' +
+        '<img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/refs/heads/main/Nuovo-logo-CNA-blu-bianco.png" ' +
+          'style="height:28px;width:auto;flex-shrink:0;object-fit:contain" alt="CNA" ' +
+          'onerror="this.style.display=\'none\'">' +
+        '<div style="width:1px;height:20px;background:rgba(255,255,255,.3);flex-shrink:0"></div>' +
+        '<span style="color:white;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
+          (ana.ragionesociale || '—') +
+        '</span>' +
+      '</div>' +
       '<button class="scheda-topbar-close" onclick="document.getElementById(\'modal-scheda-bg\').remove()">×</button>' +
     '</div>' +
     // Corpo
