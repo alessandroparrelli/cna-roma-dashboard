@@ -108,6 +108,7 @@ async function anaLoad(force){
     
     anaFiltered = anaAll.slice();
     anaSelected.clear();
+    anaPage=0;
     anaSetProgress(95, 'Popolamento filtri…');
     anaPopulateFilters();
     anaRender();
@@ -209,6 +210,7 @@ function anaApply(){
   });
   anaSelected.clear();
   G('ana-selall').checked=false;
+  anaPage=0;
   anaRender();
 }
 
@@ -218,6 +220,7 @@ function anaReset(){
   anaFiltered = anaAll.slice();
   anaSelected.clear();
   G('ana-selall').checked=false;
+  anaPage=0;
   anaRender();
 }
 
@@ -298,16 +301,23 @@ function anaRender(){
   G('ana-count').textContent = total.toLocaleString('it-IT')+' record';
   G('ana-info-text').textContent = 'DB: '+anaAll.length.toLocaleString('it-IT')+' totali'+(total<anaAll.length?' · Filtrati: '+total.toLocaleString('it-IT'):'');
 
-  var rows = anaFiltered.slice(0, ANA_RENDER_LIMIT);
+  // ── Paginazione: 50 record per pagina ──
+  var totalPages = Math.max(1, Math.ceil(total / ANA_PAGE_SIZE));
+  if(anaPage > totalPages-1) anaPage = totalPages-1;
+  if(anaPage < 0) anaPage = 0;
+  var start = anaPage * ANA_PAGE_SIZE;
+  var end = Math.min(start + ANA_PAGE_SIZE, total);
+  var rows = anaFiltered.slice(start, end);
+
   var info=G('ana-limit-info');
-  if(total>ANA_RENDER_LIMIT){ info.textContent='Mostrati primi '+ANA_RENDER_LIMIT+' di '+total.toLocaleString('it-IT')+' · filtra per restringere'; }
-  else{ info.textContent=''; }
+  if(info){ info.textContent = total ? ('Pagina '+(anaPage+1)+' di '+totalPages+' · '+ANA_PAGE_SIZE+' per pagina') : ''; }
 
   var tb=G('ana-tbody');
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="27" class="ana-empty">Nessun record trovato</td></tr>'; anaUpdateSelCount(); return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="27" class="ana-empty">Nessun record trovato</td></tr>'; anaRenderPagination(totalPages, start, end); anaUpdateSelCount(); return; }
   var html=[];
-  for(var i=0;i<rows.length;i++){
-    var r=rows[i];
+  for(var j=0;j<rows.length;j++){
+    var r=rows[j];
+    var i=start+j; // indice ASSOLUTO in anaFiltered (necessario per selezione/export)
     var sel = anaSelected.has(i) ? ' class="selected"' : '';
     var chk = anaSelected.has(i) ? ' checked' : '';
     html.push(
@@ -343,7 +353,58 @@ function anaRender(){
     );
   }
   tb.innerHTML=html.join('');
+  anaRenderPagination(totalPages, start, end);
   anaUpdateSelCount();
+}
+
+function anaRenderPagination(totalPages, start, end){
+  var pag=G('ana-pagination'), info=G('ana-pag-info'), btns=G('ana-pag-buttons');
+  if(!pag||!info||!btns) return;
+  var total=anaFiltered.length;
+  pag.style.display = total>0 ? 'flex' : 'none';
+  info.textContent = total ? ('Mostrati '+(start+1)+'–'+end+' di '+total.toLocaleString('it-IT')+' imprese') : '';
+
+  // CSS bottoni condiviso con Archivio Contratti (iniettato una sola volta)
+  if(!document.getElementById('pag-style')){
+    var s=document.createElement('style'); s.id='pag-style';
+    s.textContent=[
+      '.pag-btn{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 8px;border:1px solid var(--border);border-radius:6px;background:#fff;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;}',
+      '.pag-btn:hover:not(:disabled){background:#EFF6FF;border-color:#005CA9;color:#005CA9;}',
+      '.pag-btn.active{background:#005CA9;border-color:#005CA9;color:#fff;}',
+      '.pag-btn:disabled{opacity:.35;cursor:default;}',
+      'body.dark-mode .pag-btn{background:var(--surface);color:var(--text);}',
+      'body.dark-mode .pag-btn:hover:not(:disabled){background:var(--surface2);}'
+    ].join('');
+    document.head.appendChild(s);
+  }
+
+  var cur=anaPage, html='';
+  html += '<button class="pag-btn" onclick="anaGoPage(0)" '+(cur===0?'disabled':'')+' title="Prima pagina">«</button>';
+  html += '<button class="pag-btn" onclick="anaGoPage('+(cur-1)+')" '+(cur===0?'disabled':'')+' title="Precedente">‹</button>';
+  var winStart=Math.max(0, Math.min(cur-3, totalPages-7));
+  var winEnd=Math.min(totalPages, winStart+7);
+  if(winStart>0){
+    html += '<button class="pag-btn" onclick="anaGoPage(0)">1</button>';
+    if(winStart>1) html += '<span style="padding:0 4px;color:var(--text-secondary);font-size:12px">…</span>';
+  }
+  for(var p=winStart;p<winEnd;p++){
+    html += '<button class="pag-btn'+(p===cur?' active':'')+'" onclick="anaGoPage('+p+')">'+(p+1)+'</button>';
+  }
+  if(winEnd<totalPages){
+    if(winEnd<totalPages-1) html += '<span style="padding:0 4px;color:var(--text-secondary);font-size:12px">…</span>';
+    html += '<button class="pag-btn" onclick="anaGoPage('+(totalPages-1)+')">'+totalPages+'</button>';
+  }
+  html += '<button class="pag-btn" onclick="anaGoPage('+(cur+1)+')" '+(cur>=totalPages-1?'disabled':'')+' title="Successiva">›</button>';
+  html += '<button class="pag-btn" onclick="anaGoPage('+(totalPages-1)+')" '+(cur>=totalPages-1?'disabled':'')+' title="Ultima pagina">»</button>';
+  btns.innerHTML=html;
+}
+
+function anaGoPage(p){
+  var totalPages=Math.max(1, Math.ceil(anaFiltered.length/ANA_PAGE_SIZE));
+  anaPage=Math.max(0, Math.min(p, totalPages-1));
+  anaRender();
+  var wrap=document.querySelector('#ana-table');
+  if(wrap){ var tw=wrap.closest('.ana-table-wrap'); if(tw){ tw.scrollTop=0; tw.scrollLeft=0; } }
 }
 
 function anaUpdateSelCount(){

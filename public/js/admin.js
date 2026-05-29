@@ -336,7 +336,9 @@ function parseUA(ua){
 // ══════════════════════════════════════════════
 var anaAll=[], anaFiltered=[], anaSelected=new Set(), anaLoaded=false, anaLoading=false;
 var allDiretti = []; // Caricati da anaLoad per le schede anagrafiche
-var ANA_RENDER_LIMIT=500; // rendering paginato client-side per performance
+var ANA_RENDER_LIMIT=500; // (legacy) cap massimo di sicurezza
+var ANA_PAGE_SIZE=50;     // record per pagina in Archivio Imprese
+var anaPage=0;            // pagina corrente (0-based)
 
 /* ════════════════════════════════════════════════════════════════
    GESTIONE PERMESSI GRANULARI - Salva e carica permessi per ogni ruolo
