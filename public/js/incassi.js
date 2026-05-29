@@ -217,8 +217,11 @@ function kpiCard(svgIcon, label, value, extra, color) {
 //  STATISTICHE AGGIUNTIVE (tabelle riepilogative)
 // ─────────────────────────────────────────────
 function incassiRenderStats() {
-  var el = G('inc-stats-container');
-  if (!el) return;
+  // Ora le card Per Metodo e Per Sede sono pre-esistenti nell'HTML con id specifici.
+  // La funzione inietta solo il contenuto (tabelle) nei body di ciascuna card.
+  var mBody = G('inc-metodo-body');
+  var sBody = G('inc-sede-body');
+  if (!mBody && !sBody) return;
 
   var data = incassiFiltrati;
 
@@ -328,16 +331,10 @@ function incassiRenderStats() {
         '</tbody></table></div>';
   }
 
-  el.innerHTML =
-    '<div class="inc-stat-card">' +
-      '<div class="inc-stat-header">' + ISVG.sepa + '<span>Per Metodo di Pagamento</span></div>' +
-      tableMetodo +
-    '</div>' +
-    '<div class="inc-stat-card">' +
-      '<div class="inc-stat-header">' + ISVG.receipt + '<span>Per Sede / Cassa</span></div>' +
-      tableSede +
-    '</div>' +
-    tableAnno;
+  if(mBody) mBody.innerHTML = tableMetodo;
+  if(sBody) sBody.innerHTML = tableSede;
+  var aWrap = G('inc-anno-wrapper');
+  if(aWrap) aWrap.innerHTML = tableAnno;
 }
 
 // ─────────────────────────────────────────────
