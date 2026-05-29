@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.23 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.24 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2350,3 +2350,74 @@ body.dark-mode .scheda-topbar-close { background: rgba(255,255,255,.08); color: 
   display: flex; gap: 8px; justify-content: flex-end;
   box-shadow: 0 -2px 8px rgba(0,0,0,.06);
 }
+
+/* ══════════════════════════════════════════════════════════════
+   FIX RESPONSIVE MOBILE — v2026.24
+   Blocca overflow orizzontale e ridimensionamento pagina su mobile.
+   (posizionato in fondo per avere precedenza nella cascata)
+══════════════════════════════════════════════════════════════ */
+
+/* 1 — Nessun overflow orizzontale a livello di pagina.
+   Si usa "clip" invece di "hidden" per NON rompere position:sticky
+   di header e tabs-bar. Impedisce il pan/zoom laterale su mobile. */
+html, body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+/* 2 — La barra tab dell'Admin (Gestione Utenti / Ruoli / Log)
+   aveva width:fit-content senza scroll: su mobile superava lo schermo
+   e allargava tutta la pagina. Ora scorre orizzontalmente al suo interno. */
+@media (max-width: 768px) {
+  .admin-tabs-new {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .admin-tabs-new::-webkit-scrollbar { display: none; }
+  .admin-tab-new { flex-shrink: 0; }
+}
+
+/* 3 — KPI Incassi: i valori in euro venivano troncati con "…".
+   Su schermi piccoli mostriamo l'importo completo (font ridotto +
+   wrap di sicurezza) così "€ 485.665,30" non viene mai tagliato. */
+@media (max-width: 560px) {
+  .inc-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .inc-kpi-card { padding: 11px 12px; gap: 8px; }
+  .inc-kpi-icon { width: 30px; height: 30px; }
+  .inc-kpi-label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.2;
+  }
+  .inc-kpi-value {
+    font-size: 14px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.18;
+    word-break: break-word;
+  }
+}
+@media (max-width: 360px) {
+  .inc-kpi-grid { grid-template-columns: 1fr; }
+  .inc-kpi-value { font-size: 15px; }
+}
+
+/* 4 — Tutte le tabelle restano contenute nel loro wrapper scrollabile,
+   mai oltre la larghezza della pagina. */
+.table-wrap, .ana-table-wrap, .trend-table-wrap { max-width: 100%; }
+
+/* 5 — Registro Accessi: su mobile nascondiamo la colonna
+   "Browser / Device" (la più larga) così Data/Ora, Utente, Email ed
+   Esito restano leggibili senza dover scorrere. */
+@media (max-width: 560px) {
+  #atab-logs table th:nth-child(5),
+  #atab-logs table td:nth-child(5) { display: none; }
+}
+
+/* 6 — Elementi multimediali non sforano mai il contenitore. */
+img, svg, canvas, video { max-width: 100%; }
