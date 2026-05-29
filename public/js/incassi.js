@@ -202,8 +202,23 @@ function incassiRenderKPI() {
     kpiCard(ISVG.calendar, 'Mese Migliore',     meseMiglioreVal,              meseMiglioreImpo,                                      '#D97706');
 }
 
+// Converte il colore della card KPI in rgba per il bagliore hover
+function colorToGlow(c){
+  var m={
+    'var(--blue)':    'rgba(0,92,169,.55)',
+    'var(--accent2)': 'rgba(6,182,212,.55)',
+    'var(--accent3)': 'rgba(139,92,246,.55)',
+    'var(--green)':   'rgba(16,185,129,.55)',
+    '#0284C7':        'rgba(2,132,199,.55)',
+    '#059669':        'rgba(5,150,105,.55)',
+    '#7C3AED':        'rgba(124,58,237,.55)',
+    '#D97706':        'rgba(217,119,6,.55)'
+  };
+  return m[c]||'rgba(0,92,169,.5)';
+}
+
 function kpiCard(svgIcon, label, value, extra, color) {
-  return '<div class="inc-kpi-card" style="border-top:3px solid ' + color + '">' +
+  return '<div class="inc-kpi-card" style="border-top:3px solid ' + color + ';--kpi-glow:' + colorToGlow(color) + '">' +
     '<div class="inc-kpi-icon" style="color:' + color + '">' + svgIcon + '</div>' +
     '<div class="inc-kpi-body">' +
       '<div class="inc-kpi-label">' + label + '</div>' +

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.22 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.23 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2149,6 +2149,30 @@ body.dark-mode .app-footer-copy {
   color: var(--text-sub);
   font-weight: 600;
   letter-spacing: .4px;
+}
+
+/* ── HOVER GLOW — Incassi ── */
+/* KPI cards: bagliore colorato dal proprio colore (--kpi-glow iniettato via JS) */
+#tab-incassi .inc-kpi-card {
+  transition: transform .28s cubic-bezier(.2,1,.35,1), box-shadow .28s cubic-bezier(.2,1,.35,1);
+}
+#tab-incassi .inc-kpi-card:hover {
+  transform: translateY(-7px) scale(1.04);
+  box-shadow:
+    0 0 28px   var(--kpi-glow, rgba(0,92,169,.5)),
+    0 18px 44px -6px var(--kpi-glow, rgba(0,92,169,.5)),
+    0  3px  8px rgba(0,0,0,.1);
+}
+/* Chart & stat card: bagliore colorato (--card-glow impostato inline sull'elemento) */
+.inc-chart-card {
+  transition: transform .28s cubic-bezier(.2,1,.35,1), box-shadow .28s cubic-bezier(.2,1,.35,1);
+}
+.inc-chart-card:hover {
+  transform: translateY(-7px) scale(1.018);
+  box-shadow:
+    0 0 28px   var(--card-glow, rgba(0,92,169,.5)),
+    0 18px 44px -6px var(--card-glow, rgba(0,92,169,.5)),
+    0  3px  8px rgba(0,0,0,.1);
 }
 
 /* ═══════════════════════════════════════════
