@@ -1,6 +1,19 @@
 # 📋 CHANGELOG - CNA Roma Dashboard
 
-## v78 - 20 Aprile 2026 ✅ ATTUALE
+## v2026.29 - 30 Maggio 2026 ✅ ATTUALE
+
+### 💡 Guida contestuale per tab (Livello 1)
+
+- ✅ Nuovo modulo `assistant.js` + `assistant.css` (additivo, auto-contenuto)
+- ✅ Pannello "Guida sezione" che mostra, per ogni tab, **Cosa puoi fare qui** e **Spunti dai dati**
+- ✅ Si aggiorna automaticamente al cambio tab e rispetta i permessi (`canAccessTab`)
+- ✅ Bottone flottante per aprire/chiudere + opzione "Apri da sola" (preferenza salvata)
+- ✅ Copre tutte le 12 tab, dark mode e layout mobile (bottom-sheet)
+- ⏳ Predisposto per il Livello 2 (assistente AI dinamico)
+
+---
+
+## v78 - 20 Aprile 2026
 
 ### 🏗️ Refactoring COMPLETO + Netlify Serverless
 

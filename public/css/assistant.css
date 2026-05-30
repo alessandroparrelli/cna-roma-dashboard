@@ -1,0 +1,136 @@
+/* ════════════════════════════════════════════════════════════
+   GUIDA CONTESTUALE — Assistente per tab (Livello 1, statico)
+   Modulo additivo: usa i token di main.css, niente override globali.
+   ════════════════════════════════════════════════════════════ */
+
+/* Bottone flottante per aprire/chiudere la guida */
+#asst-fab{
+  position:fixed; right:22px; bottom:22px; z-index:9000;
+  width:54px; height:54px; border:none; cursor:pointer;
+  border-radius:var(--radius-pill);
+  background:var(--grad-primary);
+  color:#fff;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 10px 28px rgba(0,92,169,.38);
+  transition:var(--transition);
+}
+#asst-fab:hover{ transform:translateY(-2px) scale(1.04); box-shadow:0 16px 36px rgba(0,92,169,.46); }
+#asst-fab:active{ transform:scale(.96); }
+#asst-fab svg{ width:24px; height:24px; }
+#asst-fab .asst-fab-dot{
+  position:absolute; top:9px; right:9px; width:9px; height:9px;
+  background:var(--warning); border-radius:50%;
+  box-shadow:0 0 0 2px var(--surface);
+  display:none;
+}
+#asst-fab.has-tip .asst-fab-dot{ display:block; }
+
+/* Pannello guida */
+#asst-panel{
+  position:fixed; right:22px; bottom:88px; z-index:9001;
+  width:370px; max-width:calc(100vw - 32px);
+  max-height:min(620px, calc(100vh - 130px));
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-xl);
+  box-shadow:var(--shadow-xl);
+  display:flex; flex-direction:column;
+  overflow:hidden;
+  transform-origin:bottom right;
+  opacity:0; transform:translateY(12px) scale(.98); pointer-events:none;
+  transition:opacity .22s ease, transform .22s cubic-bezier(0.4,0,0.2,1);
+}
+#asst-panel.open{ opacity:1; transform:translateY(0) scale(1); pointer-events:auto; }
+
+/* Header */
+.asst-head{
+  display:flex; align-items:center; gap:11px;
+  padding:15px 16px;
+  background:var(--grad-primary);
+  color:#fff;
+  flex-shrink:0;
+}
+.asst-head-icon{
+  width:34px; height:34px; border-radius:var(--radius-sm);
+  background:rgba(255,255,255,.18);
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.asst-head-icon svg{ width:18px; height:18px; }
+.asst-head-txt{ flex:1; min-width:0; }
+.asst-head-kicker{ font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; opacity:.78; }
+.asst-head-title{ font-size:15px; font-weight:800; font-family:var(--font-display); line-height:1.2; }
+.asst-close{
+  width:30px; height:30px; border:none; cursor:pointer; flex-shrink:0;
+  background:rgba(255,255,255,.16); color:#fff;
+  border-radius:var(--radius-sm);
+  display:flex; align-items:center; justify-content:center;
+  transition:var(--transition);
+}
+.asst-close:hover{ background:rgba(255,255,255,.3); }
+.asst-close svg{ width:16px; height:16px; }
+
+/* Body scrollabile */
+.asst-body{
+  padding:16px; overflow-y:auto; flex:1;
+  display:flex; flex-direction:column; gap:16px;
+}
+.asst-intro{
+  font-size:13px; line-height:1.55; color:var(--text-secondary);
+  font-weight:500;
+}
+
+/* Sezione (Cosa puoi fare / Spunti) */
+.asst-sec-head{
+  display:flex; align-items:center; gap:8px;
+  font-size:11px; font-weight:800; letter-spacing:.05em; text-transform:uppercase;
+  color:var(--text-tertiary);
+  margin-bottom:9px;
+}
+.asst-sec-head .asst-sec-ico{
+  width:22px; height:22px; border-radius:6px;
+  display:flex; align-items:center; justify-content:center; flex-shrink:0;
+}
+.asst-sec-head .asst-sec-ico svg{ width:13px; height:13px; }
+.asst-sec-do .asst-sec-ico{ background:var(--primary-glow); color:var(--primary); }
+.asst-sec-read .asst-sec-ico{ background:rgba(245,158,11,.16); color:var(--warning); }
+
+.asst-list{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+.asst-list li{
+  position:relative; padding:9px 12px 9px 30px;
+  font-size:12.5px; line-height:1.5; font-weight:500;
+  color:var(--text); background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+}
+.asst-list li::before{
+  content:''; position:absolute; left:12px; top:14px;
+  width:6px; height:6px; border-radius:50%;
+}
+.asst-sec-do .asst-list li::before{ background:var(--primary); }
+.asst-sec-read .asst-list li::before{ background:var(--warning); }
+.asst-list li b{ font-weight:800; color:var(--text); }
+
+/* Footer */
+.asst-foot{
+  padding:10px 16px; flex-shrink:0;
+  border-top:1px solid var(--border);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+  background:var(--surface2);
+}
+.asst-foot-label{ font-size:11px; color:var(--text-tertiary); font-weight:600; }
+.asst-foot-toggle{
+  display:flex; align-items:center; gap:7px;
+  font-size:11.5px; font-weight:700; color:var(--text-secondary);
+  cursor:pointer; user-select:none;
+}
+.asst-foot-toggle input{ accent-color:var(--primary); width:15px; height:15px; cursor:pointer; }
+
+/* Mobile: bottom-sheet a tutta larghezza */
+@media (max-width:560px){
+  #asst-panel{
+    right:0; left:0; bottom:0; width:100%;
+    max-width:100%; max-height:78vh;
+    border-radius:var(--radius-xl) var(--radius-xl) 0 0;
+  }
+  #asst-fab{ right:16px; bottom:16px; }
+}
