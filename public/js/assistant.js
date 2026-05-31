@@ -213,11 +213,11 @@
 
   // La tabs-bar viene resa visibile dopo il login. Aspetta che compaia.
   function waitForApp(){
-    var wrap = document.getElementById('tabs-bar-wrap');
+    var wrap = document.getElementById('sidebar');
     var visible = wrap && wrap.style.display !== 'none' && document.querySelectorAll('.tab-btn[data-tab]').length > 0;
     if(visible){ init(); return; }
     var obs = new MutationObserver(function(){
-      var w = document.getElementById('tabs-bar-wrap');
+      var w = document.getElementById('sidebar');
       if(w && w.style.display !== 'none' && document.querySelectorAll('.tab-btn[data-tab]').length > 0){
         obs.disconnect();
         init();
