@@ -1053,11 +1053,12 @@ function repPagRaggruppamenti(data, anno, mese, soloMese, nPag) {
   var periodoLabel = soloMese ? MESI[mese] + ' ' + anno : 'Anno ' + anno;
   var titolo = 'Raggruppamenti e Zone · ' + periodoLabel;
 
-  // ── Filtra record per periodo ──
+  // ── Filtra record per periodo (identico a logica ATECO) ──
+  // mese: solo quel mese; anno: tutti i mesi dell'anno (non YTD)
   var rec = data.filter(function(r) {
-    var a = parseInt(r.anno), m = parseInt(r.mese);
-    if (a !== anno) return false;
-    return soloMese ? m === mese : true;
+    if (parseInt(r.anno) !== anno) return false;
+    if (soloMese) return parseInt(r.mese) === mese;
+    return true; // tutto l'anno
   });
 
   var tot = rec.length;
