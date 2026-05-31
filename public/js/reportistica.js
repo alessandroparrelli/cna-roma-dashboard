@@ -115,6 +115,12 @@ function repBuildAllPages(data, anno, mese, storicaData) {
   // Ateco anno: 4 pagine
   var atecoAnno = repPagAtecoSplit(data, anno, mese, false);
   var allPages = basePages.concat(atecoMese).concat(atecoAnno);
+  // Raggruppamenti: pagine 15 (mese) e 16 (anno) — calcolate dopo il concat
+  var pRaggMese = String(allPages.length + 1);
+  var pRaggAnno = String(allPages.length + 2);
+  allPages = allPages
+    .concat([repPagRaggruppamenti(data, anno, mese, true,  pRaggMese)])
+    .concat([repPagRaggruppamenti(data, anno, mese, false, pRaggAnno)]);
   var totale = allPages.length;
   REP_TOTAL_PAGES = totale;
   // Sostituisce il placeholder __TOTPAG__ con il numero reale in tutti i footer
@@ -1040,4 +1046,147 @@ function repPagAtecoSplit(data, anno, mese, soloMese) {
     repPage(repHeader(prefisso+'Mestiere', anno, mese), atecoTblFull(byMestiere, 'Mestiere', '#DC2626'), repFooter(String(pBase+1))),
     repPage(repHeader(prefisso+'Settore',  anno, mese), atecoTblFull(bySettore,  'Settore',  '#F59E0B'), repFooter(String(pBase+2))),
   ];
+}
+
+// ── PAGINE RAGGRUPPAMENTI E ZONE ─────────────────────────────────────────────
+function repPagRaggruppamenti(data, anno, mese, soloMese, nPag) {
+  var periodoLabel = soloMese ? MESI[mese] + ' ' + anno : 'Anno ' + anno;
+  var titolo = 'Raggruppamenti e Zone · ' + periodoLabel;
+
+  // ── Filtra record per periodo ──
+  var rec = data.filter(function(r) {
+    var a = parseInt(r.anno), m = parseInt(r.mese);
+    if (a !== anno) return false;
+    return soloMese ? m === mese : true;
+  });
+
+  var tot = rec.length;
+
+  // ── Arricchisce ogni record con i flag (come in raggruppamenti.js) ──
+  var ANNO_CUR = anno;
+  rec.forEach(function(r) {
+    // Zona
+    r._zona = String(r.zonacliente || r.zona || '').trim() || 'N/D';
+
+    // Sesso
+    var sx = String(r.sesso || '').trim().toUpperCase();
+    r._isDonna = (sx === 'F' || sx === 'FEMMINA');
+
+    // CF Titolare → straniero e giovane
+    var cf = String(r.cftitolare || '').trim().toUpperCase();
+    r._isStraniero = (cf.length >= 12 && cf.charAt(11) === 'Z');
+    r._isGiovane = false;
+    if (cf.length === 16) {
+      var a2 = cf.substring(6, 8);
+      if (/^\d{2}$/.test(a2)) {
+        var y2 = parseInt(a2);
+        var annoNasc = y2 <= (ANNO_CUR - 2000) ? 2000 + y2 : 1900 + y2;
+        r._isGiovane = (ANNO_CUR - annoNasc) <= 40;
+      }
+    }
+
+    // ATECO
+    var ateco = String(r.codiceateco || r.ateco || '').replace(/\./g,'').replace(/\s/g,'');
+    r._isCommercio = ateco.startsWith('46') || ateco.startsWith('47');
+    r._isTurismo   = ateco.startsWith('55') || ateco.startsWith('56') || ateco.startsWith('79');
+    r._isCinema    = ateco.startsWith('591') || ateco.startsWith('592');
+    // Nazionalità da campo diretto se CF non disponibile
+    if (!r._isStraniero && r.nazionalita) {
+      r._isStraniero = String(r.nazionalita).toLowerCase().includes('straniero');
+    }
+    // Sesso da campo diretto
+    if (!r._isDonna && r.sesso) {
+      var s2 = String(r.sesso).trim().toLowerCase();
+      r._isDonna = s2 === 'f' || s2 === 'femmina';
+    }
+  });
+
+  // ── Aggregazione 6 categorie ──
+  var cats = {
+    commercio: { tot:0, donne:0, stranieri:0 },
+    turismo:   { tot:0, donne:0, stranieri:0 },
+    cinema:    { tot:0, donne:0, stranieri:0 },
+    donne:     { tot:0, stranieri:0, giovani:0 },
+    stranieri: { tot:0, donne:0, giovani:0 },
+    giovani:   { tot:0, donne:0, stranieri:0 }
+  };
+
+  rec.forEach(function(r) {
+    if (r._isCommercio) {
+      cats.commercio.tot++;
+      if (r._isDonna)     cats.commercio.donne++;
+      if (r._isStraniero) cats.commercio.stranieri++;
+    }
+    if (r._isTurismo) {
+      cats.turismo.tot++;
+      if (r._isDonna)     cats.turismo.donne++;
+      if (r._isStraniero) cats.turismo.stranieri++;
+    }
+    if (r._isCinema) {
+      cats.cinema.tot++;
+      if (r._isDonna)     cats.cinema.donne++;
+      if (r._isStraniero) cats.cinema.stranieri++;
+    }
+    if (r._isDonna) {
+      cats.donne.tot++;
+      if (r._isStraniero) cats.donne.stranieri++;
+      if (r._isGiovane)   cats.donne.giovani++;
+    }
+    if (r._isStraniero) {
+      cats.stranieri.tot++;
+      if (r._isDonna)   cats.stranieri.donne++;
+      if (r._isGiovane) cats.stranieri.giovani++;
+    }
+    if (r._isGiovane) {
+      cats.giovani.tot++;
+      if (r._isDonna)     cats.giovani.donne++;
+      if (r._isStraniero) cats.giovani.stranieri++;
+    }
+  });
+
+  // ── Funzione card ──
+  function card(label, icon, color, n, donne, stranieri, extraLabel, extraVal, extraColor) {
+    var pct     = tot > 0 ? (n / tot * 100).toFixed(1) : '0';
+    var pctD    = n > 0 ? (donne / n * 100).toFixed(0) : '0';
+    var pctS    = n > 0 ? (stranieri / n * 100).toFixed(0) : '0';
+    var pctEx   = n > 0 && extraVal !== undefined ? (extraVal / n * 100).toFixed(0) : null;
+    return '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
+      +'<div style="background:'+color+';padding:10px 14px;display:flex;align-items:center;gap:8px">'
+      +'<div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
+      +icon+'</div>'
+      +'<span style="font-size:13px;font-weight:700;color:white">'+label+'</span>'
+      +'</div>'
+      +'<div style="padding:14px 16px">'
+      // Numero grande
+      +'<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:38px;font-weight:800;color:#0f172a;line-height:1;letter-spacing:-0.5px">'+n+'</div>'
+      +'<div style="font-size:11px;color:#64748b;font-weight:600;margin-top:3px;margin-bottom:12px">'+pct+'% dei nuovi associati</div>'
+      // Pill Donne + Stranieri
+      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
+      +'<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(236,72,153,0.1);color:#be185d">♀ '+donne+' ('+pctD+'%)</span>'
+      +'<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(16,185,129,0.1);color:#065f46">🌍 '+stranieri+' ('+pctS+'%)</span>'
+      +(extraLabel && extraVal !== undefined ? '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(59,130,246,0.1);color:#1e40af">'+extraLabel+' '+extraVal+' ('+pctEx+'%)</span>' : '')
+      +'</div>'
+      +'</div></div>';
+  }
+
+  var icoCommercio = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>';
+  var icoTurismo   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
+  var icoCinema    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>';
+  var icoDonne     = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M12 12v8M9 18h6"/></svg>';
+  var icoStranieri = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>';
+  var icoGiovani   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>';
+
+  var body = tot === 0
+    ? '<div style="padding:60px;text-align:center;color:#94a3b8">Nessun dato per questo periodo</div>'
+    : '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">'
+        +card('Commercio',        icoCommercio, '#F59E0B', cats.commercio.tot, cats.commercio.donne, cats.commercio.stranieri)
+        +card('Turismo',          icoTurismo,   '#3B82F6', cats.turismo.tot,   cats.turismo.donne,   cats.turismo.stranieri)
+        +card('Cinema e Audiovisivo', icoCinema,'#8B5CF6', cats.cinema.tot,    cats.cinema.donne,    cats.cinema.stranieri)
+        +card('Donne',            icoDonne,     '#EC4899', cats.donne.tot,     cats.donne.stranieri, cats.donne.giovani,     '⚡ Giovani', cats.donne.giovani, '#1d4ed8')
+        +card('Stranieri',        icoStranieri, '#10B981', cats.stranieri.tot, cats.stranieri.donne, cats.stranieri.giovani, '⚡ Giovani', cats.stranieri.giovani, '#1d4ed8')
+        +card('Giovani ≤40',      icoGiovani,   '#6366F1', cats.giovani.tot,   cats.giovani.donne,   cats.giovani.stranieri)
+      +'</div>';
+
+  // Il numero di pagina verrà sostituito da __TOTPAG__ in repBuildAllPages
+  return repPage(repHeader(titolo, anno, mese), body, repFooter(nPag || '__'));
 }
