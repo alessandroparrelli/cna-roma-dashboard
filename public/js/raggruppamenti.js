@@ -92,7 +92,8 @@ async function raggLoad(force) {
     var anaMap = {};
     (anagrafiche || []).forEach(function(a) {
       var k = String(a.codiceanagrafica || '').trim().toUpperCase();
-      if (k && !anaMap[k]) anaMap[k] = a;
+      // Salta righe di intestazione spazzatura (es. codiceanagrafica = "0")
+      if (k && k !== '0' && !anaMap[k]) anaMap[k] = a;
     });
 
     // ── Mappa codiceanagrafica → zona cliente (primo record diretti) ───────────
@@ -115,19 +116,6 @@ async function raggLoad(force) {
 
     var ANNO = new Date().getFullYear();
 
-    // Debug: verifica join
-    var dbgAnaSample = anagrafiche[0] || {};
-    console.log('🔍 Campi Anagrafiche (primo record):', Object.keys(dbgAnaSample));
-    console.log('🔍 Esempio codiceanagrafica:', dbgAnaSample.codiceanagrafica, '| codiceateco:', dbgAnaSample.codiceateco, '| sesso:', dbgAnaSample.sesso, '| cftitolare:', dbgAnaSample.cftitolare);
-    console.log('🔍 Campi diretti (primo record):', Object.keys(diretti[0] || {}));
-    console.log('🔍 Esempio zonacliente:', (diretti[0] || {}).zonacliente);
-    var dbgTessSample = tess[0] || {};
-    console.log('🔍 Campi tess (primo record):', Object.keys(dbgTessSample));
-    console.log('🔍 Esempio codicecliente:', dbgTessSample.codicecliente, '| anno:', dbgTessSample.anno);
-    console.log('🔍 anaMap size:', Object.keys(anaMap).length, '| zonaMap size:', Object.keys(zonaMap).length);
-    var ccSample = String(dbgTessSample.codicecliente || '').trim().toUpperCase();
-    console.log('🔍 Match test:', ccSample, '→ anaMap hit:', !!anaMap[ccSample], '→ zonaMap hit:', !!zonaMap[ccSample]);
-
     // ── Enrich ogni record tesseramento ──────────────────────────────────────
     (tess || []).forEach(function(tr) {
       var cc  = String(tr.codicecliente || '').trim().toUpperCase();
@@ -140,8 +128,12 @@ async function raggLoad(force) {
         if (ds) { var m = ds.match(/(\d{4})/); if (m) tr._anno = parseInt(m[1], 10); }
       }
 
-      // Zona: da diretti.zonacliente, nome esatto come nel DB
-      tr._zona = (cc && zonaMap[cc]) ? zonaMap[cc] : 'N/D';
+      // Zona: da diretti.zonacliente (priorità) oppure Anagrafiche.zoncliente
+      var zonaStr = (cc && zonaMap[cc]) ? zonaMap[cc] : '';
+      if (!zonaStr && ana) {
+        zonaStr = String(ana.zoncliente || '').trim();
+      }
+      tr._zona = zonaStr || 'N/D';
 
       // Sesso da Anagrafiche
       var sessoRaw = ana ? String(ana.sesso || '').trim().toUpperCase() : '';
@@ -185,22 +177,6 @@ async function raggLoad(force) {
     });
 
     raggData = tess || [];
-
-    // Debug post-enrich
-    var nDonne = raggData.filter(function(r){ return r._isDonna; }).length;
-    var nStr   = raggData.filter(function(r){ return r._isStraniero; }).length;
-    var nComm  = raggData.filter(function(r){ return r._isCommercio; }).length;
-    var nGiov  = raggData.filter(function(r){ return r._isGiovane; }).length;
-    var nZona  = raggData.filter(function(r){ return r._zona && r._zona !== 'N/D'; }).length;
-    console.log('📊 Post-enrich — Totale:', raggData.length,
-      '| Donne:', nDonne, '| Stranieri:', nStr,
-      '| Commercio:', nComm, '| Giovani:', nGiov,
-      '| Con zona:', nZona);
-    // Sample ateco
-    var atecoSamples = raggData.slice(0,10).map(function(r){ return r._ateco || '(vuoto)'; });
-    console.log('🔍 Campione ATECO (primi 10):', atecoSamples);
-    var zonaSamples = raggData.slice(0,5).map(function(r){ return r._zona; });
-    console.log('🔍 Campione zone (primi 5):', zonaSamples);
 
     // Raccoglie anni disponibili (ordinati desc) per il filtro
     var anniSet = {};
