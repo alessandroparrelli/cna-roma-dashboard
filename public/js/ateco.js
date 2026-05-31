@@ -2,6 +2,68 @@ console.log('✅ ateco.js CARICATO v2');
 
 var atecoLoaded=false, atecoLoading=false, atecoData=[], atecoFiltered=[];
 
+// Fetch paginato senza ordinamento (Anagrafiche/codiciateco non hanno created_at affidabile)
+async function atecoFetchAll(table){
+  var all=[], offset=0, size=1000;
+  while(true){
+    var r=await fetch(SB+'/rest/v1/'+table+'?select=*&offset='+offset+'&limit='+size,{headers:H()});
+    if(!r.ok) throw new Error(table+': HTTP '+r.status);
+    var rows=await r.json();
+    if(!Array.isArray(rows)||rows.length===0) break;
+    all=all.concat(rows);
+    offset+=size;
+    if(rows.length<size) break;
+  }
+  return all;
+}
+
+// Ricava Unione/Mestiere/Settore (+ sesso/nazionalità) per ogni record tesseramento
+// tramite join: partitaiva -> Anagrafiche.codiceateco -> codiciateco.
+// I valori derivati sovrascrivono le colonne (quasi sempre vuote) su tesseramento_records.
+function atecoEnrich(records, anagrafiche, codici){
+  // Mappa partita IVA -> anagrafica (prima occorrenza vince)
+  var anaMap={};
+  (anagrafiche||[]).forEach(function(a){
+    var k=String(a.partitaiva||'').trim();
+    if(k && !anaMap[k]) anaMap[k]=a;
+  });
+  // Mappa codiceateco (TRIM) -> codiciateco (prima occorrenza vince)
+  var codMap={};
+  (codici||[]).forEach(function(c){
+    var k=String(c.codiceateco||'').trim();
+    if(k && !codMap[k]) codMap[k]=c;
+  });
+
+  var matched=0;
+  (records||[]).forEach(function(tr){
+    var piva=String(tr.partitaiva||'').trim();
+    var ana=piva?anaMap[piva]:null;
+    if(!ana) return;
+
+    var code=String(ana.codiceateco||'').trim();
+    var cod=code?codMap[code]:null;
+    if(cod){
+      matched++;
+      // Deriva dalla codiciateco; fallback al valore già presente sul record
+      tr.unione   = (cod.unione   && String(cod.unione).trim())   || tr.unione   || null;
+      tr.mestiere = (cod.mestiere && String(cod.mestiere).trim()) || tr.mestiere || null;
+      tr.settore  = (cod.settore  && String(cod.settore).trim())  || tr.settore  || null;
+    }
+
+    // Sesso da Anagrafiche (M/F)
+    var sx=String(ana.sesso||'').trim().toUpperCase();
+    if(sx==='F') tr.sesso='Femmina';
+    else if(sx==='M') tr.sesso='Maschio';
+
+    // Nazionalità: CF titolare con 12° carattere 'Z' = Straniero
+    var cf=String(ana.cftitolare||'').trim();
+    if(cf.length>=12){
+      tr.nazionalita=(cf.charAt(11).toUpperCase()==='Z')?'Straniero':'Italiano';
+    }
+  });
+  console.log('🔗 Join codiciateco: '+matched+'/'+(records?records.length:0)+' record arricchiti');
+}
+
 async function atecoLoad(force){
   console.log('🔄 🔄 🔄 ATECO LOAD CHIAMATO 🔄 🔄 🔄');
   if(atecoLoading) return;
@@ -15,7 +77,14 @@ async function atecoLoad(force){
   try{
     G('ateco-msg').textContent='Caricamento tesseramento_records…';
     var data=await sbGetAll('tesseramento_records');
-    
+
+    // Unione, Mestiere e Settore NON sono affidabili su tesseramento_records
+    // (colonne quasi sempre vuote). Vanno ricavati via join su codiciateco:
+    //   tesseramento.partitaiva -> Anagrafiche.codiceateco -> codiciateco.{unione,mestiere,settore}
+    // ATTENZIONE: codiceateco su Anagrafiche ha spazi finali -> TRIM su entrambi i lati.
+    G('ateco-msg').textContent='Join Anagrafiche e codiciateco…';
+    atecoEnrich(data, await atecoFetchAll('Anagrafiche'), await atecoFetchAll('codiciateco'));
+
     atecoData=data;
     
     console.log('📊 Tot record caricati:',data.length);
