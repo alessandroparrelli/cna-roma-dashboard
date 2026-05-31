@@ -19,6 +19,7 @@ var raggLoaded  = false;
 var raggLoading = false;
 var raggData    = [];
 var raggAnni    = [];   // anni disponibili per il filtro
+var raggZone    = [];   // zone disponibili (nomi esatti dal DB)
 
 // Stesse costanti non-deliberato usate in ateco.js
 var RAGG_ND = {
@@ -78,15 +79,17 @@ async function raggLoad(force) {
     pb(8,  'Caricamento tesseramento_records…');
     var tess = await raggFetchAll('tesseramento_records');
 
-    pb(30, 'Caricamento Anagrafiche…');
-    // Prendi solo i campi che ci servono per alleggerire
+    pb(25, 'Caricamento Anagrafiche…');
+    // Campo zona sta in diretti.zonacliente; codiceateco (= Ateco 2007) sta in Anagrafiche
     var anagrafiche = await raggFetchAll('Anagrafiche',
-      'codiceanagrafica,codiceateco,cap,sesso,cftitolare');
+      'codiceanagrafica,codiceateco,sesso,cftitolare');
 
-    pb(58, 'Caricamento codiciateco…');
-    var codici = await raggFetchAll('codiciateco');
+    pb(48, 'Caricamento Diretti (per zona cliente)…');
+    // diretti.zonacliente contiene il nome della zona esattamente come da DB
+    var diretti = await raggFetchAll('diretti',
+      'codiceanagrafica,zonacliente');
 
-    pb(80, 'Elaborazione join…');
+    pb(70, 'Elaborazione join…');
 
     // ── Mappa codiceanagrafica → dati anagrafica ──────────────────────────────
     var anaMap = {};
@@ -95,12 +98,23 @@ async function raggLoad(force) {
       if (k && !anaMap[k]) anaMap[k] = a;
     });
 
-    // ── Mappa codiceateco → riga codiciateco ──────────────────────────────────
-    var codMap = {};
-    (codici || []).forEach(function(c) {
-      var k = String(c.codiceateco || '').trim();
-      if (k && !codMap[k]) codMap[k] = c;
+    // ── Mappa codiceanagrafica → zona cliente (primo record diretti) ───────────
+    var zonaMap = {};
+    (diretti || []).forEach(function(d) {
+      var k = String(d.codiceanagrafica || '').trim().toUpperCase();
+      if (k && !zonaMap[k] && d.zonacliente) zonaMap[k] = String(d.zonacliente).trim();
     });
+
+    // ── Normalizza codice ATECO: rimuove .0 float e puntini ───────────────────
+    function normAteco(raw) {
+      if (!raw || raw === 'null' || raw === 'undefined') return '';
+      var s = String(raw).trim();
+      // Se arriva come float tipo "46720.0" → togli decimali
+      var f = parseFloat(s);
+      if (!isNaN(f) && String(f) === s) s = String(Math.round(f));
+      // Rimuovi puntini/spazi
+      return s.replace(/\./g, '').replace(/\s/g, '');
+    }
 
     var ANNO = new Date().getFullYear();
 
@@ -109,38 +123,26 @@ async function raggLoad(force) {
       var cc  = String(tr.codicecliente || '').trim().toUpperCase();
       var ana = cc ? anaMap[cc] : null;
 
-      // Anno di stipula (campo diretto in tesseramento_records)
+      // Anno di stipula
       tr._anno = tr.anno ? parseInt(tr.anno, 10) : null;
       if (!tr._anno) {
-        // fallback: parse da datastipula
         var ds = String(tr.datastipula || '').trim();
         if (ds) { var m = ds.match(/(\d{4})/); if (m) tr._anno = parseInt(m[1], 10); }
       }
 
-      // Dati da Anagrafiche
-      var atecoRaw = ana ? String(ana.codiceateco || '').trim() : '';
-      var capRaw   = ana ? String(ana.cap         || '').trim() : '';
-      var sessoRaw = ana ? String(ana.sesso        || '').trim().toUpperCase() : '';
-      var cfTit    = ana ? String(ana.cftitolare   || '').trim().toUpperCase() : '';
+      // Zona: da diretti.zonacliente, nome esatto come nel DB
+      tr._zona = (cc && zonaMap[cc]) ? zonaMap[cc] : 'N/D';
 
-      // Normalizza CAP a 5 cifre
-      var cap5 = '';
-      if (capRaw && capRaw !== 'nan' && capRaw !== 'None') {
-        var capNum = parseInt(capRaw, 10);
-        if (!isNaN(capNum)) {
-          cap5 = String(capNum).padStart(5, '0');
-        }
-      }
+      // Sesso da Anagrafiche
+      var sessoRaw = ana ? String(ana.sesso || '').trim().toUpperCase() : '';
+      tr._isDonna  = (sessoRaw === 'F');
 
-      // Zona da CAP
-      tr._zona = raggCapToZona(cap5);
-
-      // Flag sesso
-      tr._isDonna    = (sessoRaw === 'F');
+      // CF Titolare da Anagrafiche
+      var cfTit = ana ? String(ana.cftitolare || '').trim().toUpperCase() : '';
 
       // Straniero: 12° char del CF titolare = 'Z'
       tr._isStraniero = (cfTit.length >= 12 && cfTit.charAt(11).toUpperCase() === 'Z');
-      tr._nazionalita  = tr._isStraniero ? 'Straniero' : (cfTit.length >= 12 ? 'Italiano' : '');
+      tr._nazionalita = tr._isStraniero ? 'Straniero' : (cfTit.length >= 12 ? 'Italiano' : '');
 
       // Giovani: anno nascita da posizioni 7-8 del CF titolare
       tr._isGiovane = false;
@@ -162,26 +164,27 @@ async function raggLoad(force) {
         }
       }
 
-      // ATECO: dalla riga anagrafica, poi lookup in codiciateco
+      // ATECO 2007: da Anagrafiche.codiceateco, normalizzato
+      var atecoRaw = ana ? normAteco(ana.codiceateco) : '';
       tr._ateco = atecoRaw;
-      var codRow = atecoRaw ? codMap[atecoRaw] : null;
-      tr._unione   = codRow ? String(codRow.unione   || '').trim() : '';
-      tr._settore  = codRow ? String(codRow.settore  || '').trim() : '';
-      tr._mestiere = codRow ? String(codRow.mestiere || '').trim() : '';
 
-      // Flag settoriali (prefisso sul codice ATECO senza puntini)
-      var at = atecoRaw.replace(/\./g, '');
-      tr._isCommercio = at.startsWith('46') || at.startsWith('47');
-      tr._isTurismo   = at.startsWith('55') || at.startsWith('56') || at.startsWith('79');
-      tr._isCinema    = at.startsWith('591') || at.startsWith('592');
+      // Flag settoriali (prefisso sul codice ATECO normalizzato)
+      tr._isCommercio = atecoRaw.startsWith('46') || atecoRaw.startsWith('47');
+      tr._isTurismo   = atecoRaw.startsWith('55') || atecoRaw.startsWith('56') || atecoRaw.startsWith('79');
+      tr._isCinema    = atecoRaw.startsWith('591') || atecoRaw.startsWith('592');
     });
 
-    raggData   = tess || [];
+    raggData = tess || [];
 
     // Raccoglie anni disponibili (ordinati desc) per il filtro
     var anniSet = {};
     raggData.forEach(function(r) { if (r._anno) anniSet[r._anno] = 1; });
     raggAnni = Object.keys(anniSet).map(Number).sort(function(a,b){ return b-a; });
+
+    // Raccoglie zone disponibili (dal DB, non inventate) per popolare il filtro
+    var zoneSet = {};
+    raggData.forEach(function(r) { if (r._zona && r._zona !== 'N/D') zoneSet[r._zona] = 1; });
+    raggZone = Object.keys(zoneSet).sort();
 
     raggLoaded = true;
     pb(100, 'Completato!');
@@ -201,28 +204,16 @@ async function raggLoad(force) {
   }
 }
 
-// ── Mappa CAP → Zona CNA Roma ─────────────────────────────────────────────────
-function raggCapToZona(cap5) {
-  if (!cap5 || cap5.length !== 5) return 'N/D';
-  if (!cap5.startsWith('00')) return 'Fuori Roma';
-  var n = parseInt(cap5, 10);
-  if (isNaN(n)) return 'N/D';
-  if (n >= 118 && n <= 199) return 'Roma Centro';
-  if (n >= 10  && n <= 29)  return 'Roma Est / Tiburtina';
-  if (n >= 40  && n <= 49)  return 'Roma Sud / Appia';
-  if (n >= 50  && n <= 59)  return 'Ostia / Litorale';
-  if (n >= 60  && n <= 79)  return 'Roma Nord / Flaminia';
-  if (n >= 30  && n <= 39)  return 'Castelli Romani';
-  if (n >= 1   && n <= 9)   return 'Roma Centro';
-  if (n >= 80  && n <= 117) return 'Hinterland';
-  return 'Altro';
-}
-
 // ── Calcolo statistiche ────────────────────────────────────────────────────────
 function raggCompute(records) {
-  var ZONE = ['Roma Centro','Roma Est / Tiburtina','Roma Sud / Appia',
-              'Roma Nord / Flaminia','Ostia / Litorale','Castelli Romani',
-              'Hinterland','Fuori Roma','Altro','N/D'];
+  // Zone dinamiche: quelle presenti nei record (nomi esatti dal DB)
+  var zoneSet = {};
+  records.forEach(function(r) { zoneSet[r._zona || 'N/D'] = 1; });
+  var ZONE = Object.keys(zoneSet).sort(function(a, b) {
+    if (a === 'N/D') return 1;
+    if (b === 'N/D') return -1;
+    return a.localeCompare(b, 'it');
+  });
 
   function newZoneObj() {
     var o = {};
@@ -363,14 +354,6 @@ function raggBuildUI() {
           border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
           font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
           <option value="">Tutte le zone</option>
-          <option>Roma Centro</option>
-          <option>Roma Est / Tiburtina</option>
-          <option>Roma Sud / Appia</option>
-          <option>Roma Nord / Flaminia</option>
-          <option>Ostia / Litorale</option>
-          <option>Castelli Romani</option>
-          <option>Hinterland</option>
-          <option>Fuori Roma</option>
         </select>
         <select id="ragg-f-sesso" style="padding:7px 12px;border-radius:8px;
           border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
@@ -401,6 +384,16 @@ function raggBuildUI() {
       var opt = document.createElement('option');
       opt.value = a; opt.textContent = a;
       selAnno.appendChild(opt);
+    });
+  }
+
+  // Popola zone dinamicamente (nomi esatti dal DB)
+  var selZona = G('ragg-f-zona');
+  if (selZona) {
+    raggZone.forEach(function(z) {
+      var opt = document.createElement('option');
+      opt.value = z; opt.textContent = z;
+      selZona.appendChild(opt);
     });
   }
 
@@ -493,22 +486,17 @@ function raggRenderAll(s) {
 
 // ── Box Zone ───────────────────────────────────────────────────────────────────
 function raggZoneCard(s) {
-  var COLORS = {
-    'Roma Centro':          '#005CA9',
-    'Roma Est / Tiburtina': '#3B82F6',
-    'Roma Sud / Appia':     '#F59E0B',
-    'Roma Nord / Flaminia': '#10B981',
-    'Ostia / Litorale':     '#06B6D4',
-    'Castelli Romani':      '#8B5CF6',
-    'Hinterland':           '#EC4899',
-    'Fuori Roma':           '#94a3b8',
-    'Altro':                '#94a3b8',
-    'N/D':                  '#cbd5e1'
-  };
+  // Palette ciclica — si adatta a qualsiasi nome di zona venga dal DB
+  var PALETTE = ['#005CA9','#3B82F6','#10B981','#F59E0B','#8B5CF6',
+                 '#06B6D4','#EC4899','#F97316','#EF4444','#14B8A6'];
 
   var zoneOrd = Object.keys(s.zone)
     .filter(function(z) { return s.zone[z].n > 0; })
-    .sort(function(a, b) { return s.zone[b].n - s.zone[a].n; });
+    .sort(function(a, b) {
+      if (a === 'N/D') return 1;
+      if (b === 'N/D') return -1;
+      return s.zone[b].n - s.zone[a].n;
+    });
   var maxN = zoneOrd.length ? s.zone[zoneOrd[0]].n : 1;
   var totMappate = zoneOrd
     .filter(function(z) { return z !== 'N/D'; })
@@ -516,7 +504,7 @@ function raggZoneCard(s) {
 
   var rows = zoneOrd.map(function(zona) {
     var d   = s.zone[zona];
-    var col = COLORS[zona] || '#64748b';
+    var col = zona === 'N/D' ? '#cbd5e1' : (PALETTE[zoneOrd.indexOf(zona) % PALETTE.length] || '#64748b');
     var pct = s.tot > 0 ? (d.n / s.tot * 100).toFixed(1) : '0';
     var bar = Math.round(d.n / maxN * 100);
     var pD  = d.n > 0 ? (d.donne     / d.n * 100).toFixed(0) : '0';
