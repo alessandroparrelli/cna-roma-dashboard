@@ -62,54 +62,7 @@ async function repCaricaEAnteprima() {
     repAllData = await sbGetAll(TR);
     repSetStatus(true, 'Caricamento serie storica…');
     var repStoricaData = await sbGetAll('serie_storica');
-    repSetStatus(true, 'Caricamento anagrafiche…');
-    var repAnaData   = await sbGetAll('Anagrafiche');
-    var repDirettiData = await sbGetAll('diretti');
     repSetStatus(true, 'Elaborazione e rendering…');
-
-    // ── Arricchisce repAllData con sesso/CF/ateco da Anagrafiche (come raggruppamenti.js) ──
-    var anaMap = {};
-    (repAnaData || []).forEach(function(a) {
-      var k = String(a.codiceanagrafica || '').trim().toUpperCase();
-      if (k && k !== '0' && !anaMap[k]) anaMap[k] = a;
-    });
-    var zonaMap = {};
-    (repDirettiData || []).forEach(function(d) {
-      var k = String(d.codiceanagrafica || '').trim().toUpperCase();
-      if (k && !zonaMap[k] && d.zonacliente) zonaMap[k] = String(d.zonacliente).trim();
-    });
-    function normAteco(raw) {
-      if (!raw || raw === 'null') return '';
-      var s = String(raw).trim();
-      var f = parseFloat(s);
-      if (!isNaN(f) && String(f) === s) s = String(Math.round(f));
-      return s.replace(/\./g,'').replace(/\s/g,'');
-    }
-    var ANNO_CUR = anno;
-    repAllData.forEach(function(tr) {
-      var cc  = String(tr.codicecliente || '').trim().toUpperCase();
-      var ana = cc ? anaMap[cc] : null;
-      var zonaStr = (cc && zonaMap[cc]) ? zonaMap[cc] : (ana ? String(ana.zoncliente||'').trim() : '');
-      tr._zona       = zonaStr || 'N/D';
-      var sessoRaw   = ana ? String(ana.sesso||'').trim().toUpperCase() : '';
-      tr._isDonna    = (sessoRaw === 'F');
-      var cfTit      = ana ? String(ana.cftitolare||'').trim().toUpperCase() : '';
-      tr._isStraniero = (cfTit.length >= 12 && cfTit.charAt(11) === 'Z');
-      tr._isGiovane   = false;
-      if (cfTit.length === 16) {
-        var a2 = cfTit.substring(6,8);
-        if (/^\d{2}$/.test(a2)) {
-          var y2 = parseInt(a2,10);
-          var annoNasc = y2 <= (ANNO_CUR-2000) ? 2000+y2 : 1900+y2;
-          tr._isGiovane = (ANNO_CUR - annoNasc) <= 40;
-        }
-      }
-      var atecoRaw    = ana ? normAteco(ana.codiceateco) : '';
-      tr._isCommercio = atecoRaw.startsWith('46') || atecoRaw.startsWith('47');
-      tr._isTurismo   = atecoRaw.startsWith('55') || atecoRaw.startsWith('56') || atecoRaw.startsWith('79');
-      tr._isCinema    = atecoRaw.startsWith('591') || atecoRaw.startsWith('592');
-    });
-
     G('rep-periodo-label').textContent = MESI[mese] + ' ' + anno;
     G('rep-pages-container').innerHTML = '';
     var pages = repBuildAllPages(repAllData, anno, mese, repStoricaData);
@@ -1100,18 +1053,35 @@ function repPagRaggruppamenti(data, anno, mese, soloMese, nPag) {
   var periodoLabel = soloMese ? MESI[mese] + ' ' + anno : 'Anno ' + anno;
   var titolo = 'Raggruppamenti e Zone · ' + periodoLabel;
 
-  // ── Filtra record per periodo (identico a logica ATECO) ──
-  // mese: solo quel mese; anno: tutti i mesi dell'anno (non YTD)
+  // ── Filtra record per periodo ──
   var rec = data.filter(function(r) {
-    if (parseInt(r.anno) !== anno) return false;
-    if (soloMese) return parseInt(r.mese) === mese;
-    return true; // tutto l'anno
+    var a = parseInt(r.anno), m = parseInt(r.mese);
+    if (a !== anno) return false;
+    return soloMese ? m === mese : true;
   });
 
   var tot = rec.length;
 
-  // I flag _isDonna, _isStraniero, _isGiovane, _isCommercio, _isTurismo, _isCinema
-  // sono già stati calcolati in repCaricaEAnteprima tramite join con Anagrafiche.
+  // ── Arricchisce ogni record con i flag (usa campi reali di tesseramento_records) ──
+  var ANNO_CUR = anno;
+  rec.forEach(function(r) {
+    // Sesso: campo 'sesso' con valori 'Maschio'/'Femmina'
+    var sx = String(r.sesso || '').trim().toLowerCase();
+    r._isDonna = (sx === 'femmina' || sx === 'f');
+
+    // Straniero: da campo 'nazionalita' con valore 'Straniero'
+    var naz = String(r.nazionalita || '').trim().toLowerCase();
+    r._isStraniero = naz === 'straniero';
+
+    // Giovane: non disponibile direttamente — default false
+    r._isGiovane = false;
+
+    // ATECO: campo 'ateco' in tesseramento_records
+    var ateco = String(r.ateco || '').replace(/\./g,'').replace(/\s/g,'');
+    r._isCommercio = ateco.startsWith('46') || ateco.startsWith('47');
+    r._isTurismo   = ateco.startsWith('55') || ateco.startsWith('56') || ateco.startsWith('79');
+    r._isCinema    = ateco.startsWith('591') || ateco.startsWith('592');
+  });
 
   // ── Aggregazione 6 categorie ──
   var cats = {
