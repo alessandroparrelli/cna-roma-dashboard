@@ -1,4 +1,4 @@
-console.log('✅ ateco.js CARICATO v3 (join su codice cliente + normalizzazione non deliberato)');
+console.log('✅ ateco.js CARICATO v4 (join codice cliente + CCIAA fallback per mestiere/settore)');
 
 var atecoLoaded=false, atecoLoading=false, atecoData=[], atecoFiltered=[];
 
@@ -15,6 +15,30 @@ async function atecoFetchAll(table){
     if(rows.length<size) break;
   }
   return all;
+}
+
+// Fetch da cciaa SOLO per le partite IVA del tesseramento (non tutte le 945k).
+// Restituisce: { partitaIVA -> primo ateco valido (non '000000') }
+async function cciaaFetchPivaAteco(pivas){
+  var result={};
+  if(!pivas||pivas.length===0) return result;
+  var CHUNK=200;
+  for(var i=0;i<pivas.length;i+=CHUNK){
+    var chunk=pivas.slice(i,i+CHUNK);
+    var url=SB+'/rest/v1/cciaa?select=partita_iva,ateco2007&partita_iva=in.('+chunk.join(',')+')'+'&ateco2007=neq.000000&limit=1000';
+    try{
+      var r=await fetch(url,{headers:H()});
+      if(!r.ok){console.warn('cciaa chunk HTTP',r.status);continue;}
+      var rows=await r.json();
+      (rows||[]).forEach(function(x){
+        var k=String(x.partita_iva||'').trim();
+        var v=String(x.ateco2007||'').trim();
+        if(k&&v&&v!=='000000'&&!result[k]) result[k]=v;
+      });
+    }catch(e){console.warn('cciaa chunk error',e);}
+  }
+  console.log('📍 CCIAA: trovati codici ATECO per',Object.keys(result).length,'partite IVA su',pivas.length);
+  return result;
 }
 
 // Ricava Unione/Mestiere/Settore (+ sesso/nazionalità) per ogni record tesseramento
@@ -42,7 +66,7 @@ function atecoClassify(raw, dim){
   return String(raw).trim();
 }
 
-function atecoEnrich(records, anagrafiche, codici){
+function atecoEnrich(records, anagrafiche, codici, pivaAtecoMap){
   // Mappa codice cliente (= codiceanagrafica su Anagrafiche) -> anagrafica
   var anaMap={};
   (anagrafiche||[]).forEach(function(a){
@@ -56,11 +80,12 @@ function atecoEnrich(records, anagrafiche, codici){
     if(k && !codMap[k]) codMap[k]=c;
   });
 
-  var nAna=0, nNoAteco=0, nCod=0;
+  var nAna=0, nNoAteco=0, nCod=0, nCciaa=0;
   (records||[]).forEach(function(tr){
-    var cc=String(tr.codicecliente||'').trim().toUpperCase();
-    var ana=cc?anaMap[cc]:null;
-    var cod=null;
+    var cc  = String(tr.codicecliente||'').trim().toUpperCase();
+    var piva= String(tr.partitaiva||'').trim();
+    var ana = cc?anaMap[cc]:null;
+    var cod = null;
 
     if(ana){
       nAna++;
@@ -81,19 +106,28 @@ function atecoEnrich(records, anagrafiche, codici){
       }
     }
 
-    // Unione/Mestiere/Settore SEMPRE dal join, con normalizzazione.
-    // Record senza match Anagrafiche / senza codiceateco / senza match codiciateco
-    // -> etichette "non deliberato" (mai più N/D).
-    tr.unione   = atecoClassify(cod ? cod.unione   : null, 'unione');
-    tr.mestiere = atecoClassify(cod ? cod.mestiere : null, 'mestiere');
-    tr.settore  = atecoClassify(cod ? cod.settore  : null, 'settore');
+    // Codice CCIAA come fallback (via partita IVA)
+    var cciaCode = (pivaAtecoMap&&piva) ? (pivaAtecoMap[piva]||null) : null;
+    var ccod     = cciaCode ? codMap[cciaCode] : null;
+    if(ccod&&!cod) nCciaa++;
+
+    // Per ogni campo: usa il valore da Anagrafiche/codiciateco se deliberato,
+    // altrimenti tenta il codice CCIAA per quel campo specifico.
+    function bestField(field){
+      var v = cod ? String(cod[field]||'').trim() : null;
+      if(v && !ATECO_NON_DELIBERATO[v.toLowerCase()]) return v;
+      var cv= ccod ? String(ccod[field]||'').trim() : null;
+      if(cv && !ATECO_NON_DELIBERATO[cv.toLowerCase()]) return cv;
+      return null;
+    }
+
+    tr.unione   = atecoClassify(bestField('unione'),   'unione');
+    tr.mestiere = atecoClassify(bestField('mestiere'), 'mestiere');
+    tr.settore  = atecoClassify(bestField('settore'),  'settore');
   });
 
   var n = records ? records.length : 0;
-  console.log('🔗 Join — record:'+n+' | match Anagrafiche (codice cliente):'+nAna+' | con codiceateco vuoto:'+nNoAteco+' | match codiciateco:'+nCod);
-  console.log('   es. codice cliente (tesseramento):', (records||[]).slice(0,5).map(function(r){return r.codicecliente;}));
-  console.log('   es. codiceanagrafica (Anagrafiche):', (anagrafiche||[]).slice(0,5).map(function(a){return a.codiceanagrafica;}));
-  console.log('   es. codiceateco (codiciateco):', (codici||[]).slice(0,5).map(function(c){return c.codiceateco;}));
+  console.log('🔗 Join — record:'+n+' | match Anagrafiche:'+nAna+' | match codiciateco:'+nCod+' | recuperati da CCIAA:'+nCciaa+' | senza codiceateco:'+nNoAteco);
 }
 
 async function atecoLoad(force){
@@ -110,12 +144,19 @@ async function atecoLoad(force){
     G('ateco-msg').textContent='Caricamento tesseramento_records…';
     var data=await sbGetAll('tesseramento_records');
 
-    // Unione, Mestiere e Settore NON sono affidabili su tesseramento_records
-    // (colonne quasi sempre vuote). Vanno ricavati via join su codiciateco:
-    //   tesseramento.partitaiva -> Anagrafiche.codiceateco -> codiciateco.{unione,mestiere,settore}
-    // ATTENZIONE: codiceateco su Anagrafiche ha spazi finali -> TRIM su entrambi i lati.
-    G('ateco-msg').textContent='Join Anagrafiche e codiciateco…';
-    atecoEnrich(data, await atecoFetchAll('Anagrafiche'), await atecoFetchAll('codiciateco'));
+    // Ricava Unione/Mestiere/Settore via doppio join:
+    // 1) codicecliente -> Anagrafiche.codiceanagrafica -> codiceateco  (fonte principale)
+    // 2) partitaiva -> cciaa.partita_iva -> ateco2007                  (fallback per campo mancante)
+    // entrambi -> codiciateco.{unione,mestiere,settore}
+    var pivaList=[...new Set((data||[]).map(function(r){return String(r.partitaiva||'').trim();}).filter(Boolean))];
+    G('ateco-msg').textContent='Caricamento Anagrafiche, CCIAA e codiciateco…';
+    var atecoResults=await Promise.all([
+      atecoFetchAll('Anagrafiche'),
+      atecoFetchAll('codiciateco'),
+      cciaaFetchPivaAteco(pivaList)
+    ]);
+    G('ateco-msg').textContent='Calcolo unione, mestiere e settore…';
+    atecoEnrich(data, atecoResults[0], atecoResults[1], atecoResults[2]);
 
     atecoData=data;
     
