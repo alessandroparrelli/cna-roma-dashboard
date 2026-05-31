@@ -148,8 +148,8 @@ function showApp(){
   
   if(isAdmin()){
     var aa=G('mobile-admin-actions'); if(aa) aa.style.display='flex';
-    // Mostra tab Reportistica solo agli admin
-    var repBtn=G('tab-btn-reportistica'); if(repBtn) repBtn.style.display='';
+    // Mostra sezione Amministrazione app solo agli admin
+    var adminSec=G('sb-admin-section'); if(adminSec) adminSec.style.display='block';
     // Inizializza il modulo reportistica
     setTimeout(function(){ if(typeof reportisticaInit==='function') reportisticaInit(); }, 500);
   }
