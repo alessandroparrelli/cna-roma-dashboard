@@ -1,27 +1,51 @@
-// v2026.05.07.2 - cache busting
+// v2026.05.31.4 - top nav
 
-// ── SIDEBAR COLLAPSE ──────────────────────────────────────────────────
-function sbToggle(){
-  var sb=G('sidebar');
-  if(!sb) return;
-  var collapsed=sb.classList.toggle('sb-collapsed');
-  document.documentElement.style.setProperty('--sb-w', collapsed?'64px':'220px');
-  try{localStorage.setItem('cna-sb-collapsed', collapsed?'1':'0');}catch(e){}
+// ── TOP NAV: scroll con frecce ─────────────────────────────────────────────
+function sbScroll(dir) {
+  var nav = G('sb-nav-scroll');
+  if (!nav) return;
+  nav.scrollBy({ left: dir * 220, behavior: 'smooth' });
+  // Aggiorna frecce dopo lo scroll
+  setTimeout(sbUpdateArrows, 300);
 }
 
-// Ripristina lo stato di collasso al caricamento della pagina
-(function(){
-  try{
-    if(localStorage.getItem('cna-sb-collapsed')==='1'){
-      var sb=document.getElementById('sidebar');
-      if(sb){
-        sb.classList.add('sb-collapsed');
-        document.documentElement.style.setProperty('--sb-w','64px');
-      }
-    }
-  }catch(e){}
+function sbUpdateArrows() {
+  var nav   = G('sb-nav-scroll');
+  var left  = G('sb-arrow-left');
+  var right = G('sb-arrow-right');
+  if (!nav || !left || !right) return;
+  var atStart = nav.scrollLeft <= 4;
+  var atEnd   = nav.scrollLeft >= (nav.scrollWidth - nav.clientWidth - 4);
+  left.classList.toggle('sb-arrow-hidden', atStart);
+  right.classList.toggle('sb-arrow-hidden', atEnd);
+}
+
+// Inizializza le frecce e aggiorna allo scroll
+(function() {
+  function initArrows() {
+    var nav = G('sb-nav-scroll');
+    if (!nav) return;
+    nav.addEventListener('scroll', sbUpdateArrows, { passive: true });
+    sbUpdateArrows();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initArrows);
+  } else {
+    setTimeout(initArrows, 100);
+  }
 })();
-// ─────────────────────────────────────────────────────────────────────
+
+// Scroll automatico verso il tab attivo
+function sbScrollToActive() {
+  var nav = G('sb-nav-scroll');
+  var active = nav ? nav.querySelector('.sb-item.active') : null;
+  if (active && nav) {
+    var offset = active.offsetLeft - nav.clientWidth / 2 + active.offsetWidth / 2;
+    nav.scrollTo({ left: offset, behavior: 'smooth' });
+    setTimeout(sbUpdateArrows, 350);
+  }
+}
+
 async function loadDashboard(){
   showLoad('Caricamento dati…');
   try{

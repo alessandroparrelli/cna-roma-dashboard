@@ -949,10 +949,14 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
     if(tabId==='tab-storica' && !storicaLoaded && !storicaLoading){ storicaInit(); }
     // Lazy-load incassi on first visit
     if(tabId==='tab-incassi' && !incassiLoaded && !incassiLoading){ incassiInit(); }
+    // Lazy-load raggruppamenti on first visit
+    if(tabId==='tab-raggruppamenti' && !raggLoaded && !raggLoading){ raggLoad(); }
     // Assicura che il toggle filtri sia inizializzato anche su tab iniettati
     setTimeout(reInitFiltersToggle, 100);
     // Rilancia animazione countUp al click su Andamento
     if(tabId==='tab-overview' && typeof renderOverview === 'function'){ renderOverview(); }
+    // Centra il tab attivo nelle frecce della top nav
+    if(typeof sbScrollToActive === 'function') sbScrollToActive();
   });
 });
 

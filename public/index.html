@@ -125,15 +125,13 @@
   </button>
 </div>
 
-<!-- SIDEBAR -->
+<!-- SIDEBAR / TOP NAV -->
 <div id="sidebar" style="display:none">
-  <div class="sb-header">
-    <span class="sb-header-label">Navigazione</span>
-    <button class="sb-collapse-btn" onclick="sbToggle()" title="Comprimi menu">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-  </div>
-  <nav class="sb-nav">
+  <!-- Freccia sinistra -->
+  <button class="sb-arrow sb-arrow-hidden" id="sb-arrow-left" onclick="sbScroll(-1)" title="Scorri a sinistra" aria-label="Scorri a sinistra">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <nav class="sb-nav" id="sb-nav-scroll">
 
     <button class="tab-btn sb-item active" data-tab="tab-home">
       <span class="sb-icon" style="background:#005CA9"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></span>
@@ -203,6 +201,10 @@
     </div>
 
   </nav>
+  <!-- Freccia destra -->
+  <button class="sb-arrow" id="sb-arrow-right" onclick="sbScroll(1)" title="Scorri a destra" aria-label="Scorri a destra">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+  </button>
 </div>
 
 <!-- UPLOAD -->
@@ -1475,17 +1477,17 @@
 
 <script src="js/config.js?v=1779631901"></script>
 <script src="js/auth.js?v=1779631901"></script>
-<script src="js/dashboard.js?v=2026052801"></script>
+<script src="js/dashboard.js?v=1780245482"></script>
 <script src="js/admin.js?v=1780074962"></script>
 <script src="js/anagrafiche.js?v=1780074962"></script>
 <script src="js/contratti.js?v=1779631901"></script>
 <script src="js/consulenti.js?v=1779631901"></script>
-<script src="js/import.js?v=2026052801"></script>
+<script src="js/import.js?v=1780245482"></script>
 <script src="js/trasformatore.js?v=2026052901"></script>
 <script src="js/scheda.js?v=1779631901"></script>
 <script src="js/mestieri.js?v=1779631901"></script>
 <script src="js/ateco.js?v=1779631901"></script>
-<script src="js/raggruppamenti.js?v=2026053101"></script>
+<script src="js/raggruppamenti.js?v=1780245482"></script>
 <script src="js/storica.js?v=1779631901"></script>
 <script src="js/reportistica.js?v=1779631901"></script>
 <script src="js/incassi.js?v=2026052903"></script>
