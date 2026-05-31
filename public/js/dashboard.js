@@ -1,4 +1,27 @@
 // v2026.05.07.2 - cache busting
+
+// ── SIDEBAR COLLAPSE ──────────────────────────────────────────────────
+function sbToggle(){
+  var sb=G('sidebar');
+  if(!sb) return;
+  var collapsed=sb.classList.toggle('sb-collapsed');
+  document.documentElement.style.setProperty('--sb-w', collapsed?'64px':'220px');
+  try{localStorage.setItem('cna-sb-collapsed', collapsed?'1':'0');}catch(e){}
+}
+
+// Ripristina lo stato di collasso al caricamento della pagina
+(function(){
+  try{
+    if(localStorage.getItem('cna-sb-collapsed')==='1'){
+      var sb=document.getElementById('sidebar');
+      if(sb){
+        sb.classList.add('sb-collapsed');
+        document.documentElement.style.setProperty('--sb-w','64px');
+      }
+    }
+  }catch(e){}
+})();
+// ─────────────────────────────────────────────────────────────────────
 async function loadDashboard(){
   showLoad('Caricamento dati…');
   try{
@@ -7,7 +30,7 @@ async function loadDashboard(){
     allData=data.map(mapRow);
     // La tabs-bar è sempre visibile dopo login: il tab Anagrafiche
     // è un modulo indipendente che legge da altre tabelle.
-    G('tabs-bar-wrap').style.display='flex'; if(typeof tabsUpdateArrow==='function') setTimeout(tabsUpdateArrow,300);
+    G('sidebar').style.display='flex';
     var appFooter = G('app-footer'); if(appFooter) appFooter.style.display='block';
     
     // FILTRA TAB IN BASE AL RUOLO
@@ -64,7 +87,7 @@ function handleFile(file,isAdd){
       showLoad('Aggiornamento…');
       var data=await sbGetAll(TR);
       allData=data.map(mapRow);
-      G('tabs-bar-wrap').style.display='flex'; if(typeof tabsUpdateArrow==='function') setTimeout(tabsUpdateArrow,300);
+      G('sidebar').style.display='flex';
       G('upload-zone').style.display='none';
       rebuildFilters();renderOverview();renderPromoTrend();
       toast('✓ '+parsed.length+' record salvati','success');
@@ -765,7 +788,7 @@ function renderPromoCards(data, anni, matrix, totAnno, sortedPromo) {
 function showDashboard(){
   G('upload-zone').style.display='none';
   G('admin-panel').style.display='none';
-  G('tabs-bar-wrap').style.display='flex'; if(typeof tabsUpdateArrow==='function') setTimeout(tabsUpdateArrow,300);
+  G('sidebar').style.display='flex';
   // Show active tab
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   G('tab-overview').classList.add('active');
