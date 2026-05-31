@@ -80,14 +80,11 @@ async function raggLoad(force) {
     var tess = await raggFetchAll('tesseramento_records');
 
     pb(25, 'Caricamento Anagrafiche…');
-    // Campo zona sta in diretti.zonacliente; codiceateco (= Ateco 2007) sta in Anagrafiche
-    var anagrafiche = await raggFetchAll('Anagrafiche',
-      'codiceanagrafica,codiceateco,sesso,cftitolare');
+    // select=* per evitare errori su nomi campo — stesso approccio di ateco.js
+    var anagrafiche = await raggFetchAll('Anagrafiche');
 
     pb(48, 'Caricamento Diretti (per zona cliente)…');
-    // diretti.zonacliente contiene il nome della zona esattamente come da DB
-    var diretti = await raggFetchAll('diretti',
-      'codiceanagrafica,zonacliente');
+    var diretti = await raggFetchAll('diretti');
 
     pb(70, 'Elaborazione join…');
 
@@ -117,6 +114,19 @@ async function raggLoad(force) {
     }
 
     var ANNO = new Date().getFullYear();
+
+    // Debug: verifica join
+    var dbgAnaSample = anagrafiche[0] || {};
+    console.log('🔍 Campi Anagrafiche (primo record):', Object.keys(dbgAnaSample));
+    console.log('🔍 Esempio codiceanagrafica:', dbgAnaSample.codiceanagrafica, '| codiceateco:', dbgAnaSample.codiceateco, '| sesso:', dbgAnaSample.sesso, '| cftitolare:', dbgAnaSample.cftitolare);
+    console.log('🔍 Campi diretti (primo record):', Object.keys(diretti[0] || {}));
+    console.log('🔍 Esempio zonacliente:', (diretti[0] || {}).zonacliente);
+    var dbgTessSample = tess[0] || {};
+    console.log('🔍 Campi tess (primo record):', Object.keys(dbgTessSample));
+    console.log('🔍 Esempio codicecliente:', dbgTessSample.codicecliente, '| anno:', dbgTessSample.anno);
+    console.log('🔍 anaMap size:', Object.keys(anaMap).length, '| zonaMap size:', Object.keys(zonaMap).length);
+    var ccSample = String(dbgTessSample.codicecliente || '').trim().toUpperCase();
+    console.log('🔍 Match test:', ccSample, '→ anaMap hit:', !!anaMap[ccSample], '→ zonaMap hit:', !!zonaMap[ccSample]);
 
     // ── Enrich ogni record tesseramento ──────────────────────────────────────
     (tess || []).forEach(function(tr) {
@@ -175,6 +185,22 @@ async function raggLoad(force) {
     });
 
     raggData = tess || [];
+
+    // Debug post-enrich
+    var nDonne = raggData.filter(function(r){ return r._isDonna; }).length;
+    var nStr   = raggData.filter(function(r){ return r._isStraniero; }).length;
+    var nComm  = raggData.filter(function(r){ return r._isCommercio; }).length;
+    var nGiov  = raggData.filter(function(r){ return r._isGiovane; }).length;
+    var nZona  = raggData.filter(function(r){ return r._zona && r._zona !== 'N/D'; }).length;
+    console.log('📊 Post-enrich — Totale:', raggData.length,
+      '| Donne:', nDonne, '| Stranieri:', nStr,
+      '| Commercio:', nComm, '| Giovani:', nGiov,
+      '| Con zona:', nZona);
+    // Sample ateco
+    var atecoSamples = raggData.slice(0,10).map(function(r){ return r._ateco || '(vuoto)'; });
+    console.log('🔍 Campione ATECO (primi 10):', atecoSamples);
+    var zonaSamples = raggData.slice(0,5).map(function(r){ return r._zona; });
+    console.log('🔍 Campione zone (primi 5):', zonaSamples);
 
     // Raccoglie anni disponibili (ordinati desc) per il filtro
     var anniSet = {};
