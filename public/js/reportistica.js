@@ -1062,21 +1062,20 @@ function repPagRaggruppamenti(data, anno, mese, soloMese, nPag) {
 
   var tot = rec.length;
 
-  // ── Arricchisce ogni record con i flag (usa campi reali di tesseramento_records) ──
-  var ANNO_CUR = anno;
+  // ── Arricchisce ogni record con i flag (campi reali di tesseramento_records) ──
   rec.forEach(function(r) {
-    // Sesso: campo 'sesso' con valori 'Maschio'/'Femmina'
+    // Sesso: 'Femmina'/'Maschio'
     var sx = String(r.sesso || '').trim().toLowerCase();
     r._isDonna = (sx === 'femmina' || sx === 'f');
 
-    // Straniero: da campo 'nazionalita' con valore 'Straniero'
+    // Nazionalità: 'Italiano'/'Straniero'
     var naz = String(r.nazionalita || '').trim().toLowerCase();
-    r._isStraniero = naz === 'straniero';
+    r._isStraniero = (naz === 'straniero');
 
-    // Giovane: non disponibile direttamente — default false
+    // Giovani: CF non disponibile in tesseramento_records → 0
     r._isGiovane = false;
 
-    // ATECO: campo 'ateco' in tesseramento_records
+    // ATECO: campo 'ateco'
     var ateco = String(r.ateco || '').replace(/\./g,'').replace(/\s/g,'');
     r._isCommercio = ateco.startsWith('46') || ateco.startsWith('47');
     r._isTurismo   = ateco.startsWith('55') || ateco.startsWith('56') || ateco.startsWith('79');
