@@ -51,6 +51,22 @@ function buildReportisticaUI() {
   repCaricaEAnteprima();
 }
 
+// Fetch paginato — stesso metodo di raggruppamenti.js, evita GET 400 da in.() lunghi
+async function repFetchAll(table) {
+  var all = [], offset = 0, size = 1000;
+  var base = SB + '/rest/v1/' + encodeURIComponent(table) + '?limit=' + size + '&select=*';
+  while (true) {
+    var r = await fetch(base + '&offset=' + offset, { headers: H() });
+    if (!r.ok) throw new Error(table + ': HTTP ' + r.status);
+    var rows = await r.json();
+    if (!Array.isArray(rows) || rows.length === 0) break;
+    all = all.concat(rows);
+    offset += size;
+    if (rows.length < size) break;
+  }
+  return all;
+}
+
 async function repCaricaEAnteprima() {
   if (reportisticaLoading) return;
   reportisticaLoading = true;
@@ -62,6 +78,58 @@ async function repCaricaEAnteprima() {
     repAllData = await sbGetAll(TR);
     repSetStatus(true, 'Caricamento serie storica…');
     var repStoricaData = await sbGetAll('serie_storica');
+
+    // ── Join con Anagrafiche per sesso/CF/ateco (per le pagine Raggruppamenti) ──
+    repSetStatus(true, 'Caricamento anagrafiche…');
+    var repAna = await repFetchAll('Anagrafiche');
+    var repDir = await repFetchAll('diretti');
+
+    var anaMap = {};
+    repAna.forEach(function(a) {
+      var k = String(a.codiceanagrafica || '').trim().toUpperCase();
+      if (k && k !== '0' && !anaMap[k]) anaMap[k] = a;
+    });
+    var zonaMap = {};
+    repDir.forEach(function(d) {
+      var k = String(d.codiceanagrafica || '').trim().toUpperCase();
+      if (k && !zonaMap[k] && d.zonacliente) zonaMap[k] = String(d.zonacliente).trim();
+    });
+    function normAteco(raw) {
+      if (!raw || raw === 'null') return '';
+      var s = String(raw).trim();
+      var f = parseFloat(s);
+      if (!isNaN(f) && String(f) === s) s = String(Math.round(f));
+      return s.replace(/\./g,'').replace(/\s/g,'');
+    }
+    repAllData.forEach(function(tr) {
+      var cc  = String(tr.codicecliente || '').trim().toUpperCase();
+      var ana = cc ? anaMap[cc] : null;
+      // Zona
+      tr._zona = (cc && zonaMap[cc]) ? zonaMap[cc] : (ana ? String(ana.zoncliente||'').trim() : '') || 'N/D';
+      // Sesso: priorità campo diretto, poi Anagrafiche
+      var sx = String(tr.sesso || (ana ? ana.sesso : '') || '').trim().toLowerCase();
+      tr._isDonna = (sx === 'femmina' || sx === 'f');
+      // Straniero: priorità nazionalita diretto, poi CF da Anagrafiche
+      var naz = String(tr.nazionalita || '').trim().toLowerCase();
+      var cfTit = ana ? String(ana.cftitolare||'').trim().toUpperCase() : '';
+      tr._isStraniero = (naz === 'straniero') || (cfTit.length >= 12 && cfTit.charAt(11) === 'Z');
+      // Giovane: da CF
+      tr._isGiovane = false;
+      if (cfTit.length === 16) {
+        var a2 = cfTit.substring(6,8);
+        if (/^\d{2}$/.test(a2)) {
+          var y2 = parseInt(a2,10);
+          var annoNasc = y2 <= (anno-2000) ? 2000+y2 : 1900+y2;
+          tr._isGiovane = (anno - annoNasc) <= 40;
+        }
+      }
+      // ATECO: priorità campo diretto, poi Anagrafiche
+      var ateco = normAteco(tr.ateco) || (ana ? normAteco(ana.codiceateco) : '');
+      tr._isCommercio = ateco.startsWith('46') || ateco.startsWith('47');
+      tr._isTurismo   = ateco.startsWith('55') || ateco.startsWith('56') || ateco.startsWith('79');
+      tr._isCinema    = ateco.startsWith('591') || ateco.startsWith('592');
+    });
+
     repSetStatus(true, 'Elaborazione e rendering…');
     G('rep-periodo-label').textContent = MESI[mese] + ' ' + anno;
     G('rep-pages-container').innerHTML = '';
@@ -1062,25 +1130,8 @@ function repPagRaggruppamenti(data, anno, mese, soloMese, nPag) {
 
   var tot = rec.length;
 
-  // ── Arricchisce ogni record con i flag (campi reali di tesseramento_records) ──
-  rec.forEach(function(r) {
-    // Sesso: 'Femmina'/'Maschio'
-    var sx = String(r.sesso || '').trim().toLowerCase();
-    r._isDonna = (sx === 'femmina' || sx === 'f');
-
-    // Nazionalità: 'Italiano'/'Straniero'
-    var naz = String(r.nazionalita || '').trim().toLowerCase();
-    r._isStraniero = (naz === 'straniero');
-
-    // Giovani: CF non disponibile in tesseramento_records → 0
-    r._isGiovane = false;
-
-    // ATECO: campo 'ateco'
-    var ateco = String(r.ateco || '').replace(/\./g,'').replace(/\s/g,'');
-    r._isCommercio = ateco.startsWith('46') || ateco.startsWith('47');
-    r._isTurismo   = ateco.startsWith('55') || ateco.startsWith('56') || ateco.startsWith('79');
-    r._isCinema    = ateco.startsWith('591') || ateco.startsWith('592');
-  });
+  // I flag _isDonna, _isStraniero, _isGiovane, _isCommercio, _isTurismo, _isCinema
+  // sono già stati calcolati in repCaricaEAnteprima (join con Anagrafiche).
 
   // ── Aggregazione 6 categorie ──
   var cats = {
