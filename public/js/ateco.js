@@ -1,4 +1,4 @@
-console.log('✅ ateco.js CARICATO v2');
+console.log('✅ ateco.js CARICATO v3 (join su codice cliente + normalizzazione non deliberato)');
 
 var atecoLoaded=false, atecoLoading=false, atecoData=[], atecoFiltered=[];
 
@@ -18,13 +18,35 @@ async function atecoFetchAll(table){
 }
 
 // Ricava Unione/Mestiere/Settore (+ sesso/nazionalità) per ogni record tesseramento
-// tramite join: partitaiva -> Anagrafiche.codiceateco -> codiciateco.
-// I valori derivati sovrascrivono le colonne (quasi sempre vuote) su tesseramento_records.
+// tramite join: tesseramento.codicecliente -> Anagrafiche.codiceanagrafica
+//              -> Anagrafiche.codiceateco -> codiciateco.{unione,mestiere,settore}
+// NB: la chiave di collegamento è il CODICE CLIENTE (= codiceanagrafica su Anagrafiche),
+//     NON la partita IVA. codiceateco su Anagrafiche ha spazi finali -> TRIM su entrambi i lati.
+
+// Valori (di codiciateco o mancanti) da trattare come "non deliberato" — case-insensitive
+var ATECO_NON_DELIBERATO = {
+  '':1, 'n/d':1, 'nd':1, 'n.d.':1,
+  'art.ne di mestiere non deliberata':1,
+  'unione non assegnata':1,
+  'attività n.c.a.':1, 'attivita n.c.a.':1,
+  'attività non deliberata':1, 'attivita non deliberata':1,
+  'unione non deliberata':1, 'mestiere non deliberato':1, 'settore non deliberato':1
+};
+function atecoClassify(raw, dim){
+  var key = (raw==null?'':String(raw)).trim().toLowerCase();
+  if(ATECO_NON_DELIBERATO[key]){
+    return dim==='unione'   ? 'Unione non deliberata'
+         : dim==='mestiere' ? 'Mestiere non deliberato'
+         :                     'Settore non deliberato';
+  }
+  return String(raw).trim();
+}
+
 function atecoEnrich(records, anagrafiche, codici){
-  // Mappa partita IVA -> anagrafica (prima occorrenza vince)
+  // Mappa codice cliente (= codiceanagrafica su Anagrafiche) -> anagrafica
   var anaMap={};
   (anagrafiche||[]).forEach(function(a){
-    var k=String(a.partitaiva||'').trim();
+    var k=String(a.codiceanagrafica||'').trim().toUpperCase();
     if(k && !anaMap[k]) anaMap[k]=a;
   });
   // Mappa codiceateco (TRIM) -> codiciateco (prima occorrenza vince)
@@ -34,34 +56,44 @@ function atecoEnrich(records, anagrafiche, codici){
     if(k && !codMap[k]) codMap[k]=c;
   });
 
-  var matched=0;
+  var nAna=0, nNoAteco=0, nCod=0;
   (records||[]).forEach(function(tr){
-    var piva=String(tr.partitaiva||'').trim();
-    var ana=piva?anaMap[piva]:null;
-    if(!ana) return;
+    var cc=String(tr.codicecliente||'').trim().toUpperCase();
+    var ana=cc?anaMap[cc]:null;
+    var cod=null;
 
-    var code=String(ana.codiceateco||'').trim();
-    var cod=code?codMap[code]:null;
-    if(cod){
-      matched++;
-      // Deriva dalla codiciateco; fallback al valore già presente sul record
-      tr.unione   = (cod.unione   && String(cod.unione).trim())   || tr.unione   || null;
-      tr.mestiere = (cod.mestiere && String(cod.mestiere).trim()) || tr.mestiere || null;
-      tr.settore  = (cod.settore  && String(cod.settore).trim())  || tr.settore  || null;
+    if(ana){
+      nAna++;
+      var code=String(ana.codiceateco||'').trim();
+      if(!code) nNoAteco++;
+      cod=code?codMap[code]:null;
+      if(cod) nCod++;
+
+      // Sesso da Anagrafiche (M/F)
+      var sx=String(ana.sesso||'').trim().toUpperCase();
+      if(sx==='F') tr.sesso='Femmina';
+      else if(sx==='M') tr.sesso='Maschio';
+
+      // Nazionalità: CF titolare con 12° carattere 'Z' = Straniero
+      var cf=String(ana.cftitolare||'').trim();
+      if(cf.length>=12){
+        tr.nazionalita=(cf.charAt(11).toUpperCase()==='Z')?'Straniero':'Italiano';
+      }
     }
 
-    // Sesso da Anagrafiche (M/F)
-    var sx=String(ana.sesso||'').trim().toUpperCase();
-    if(sx==='F') tr.sesso='Femmina';
-    else if(sx==='M') tr.sesso='Maschio';
-
-    // Nazionalità: CF titolare con 12° carattere 'Z' = Straniero
-    var cf=String(ana.cftitolare||'').trim();
-    if(cf.length>=12){
-      tr.nazionalita=(cf.charAt(11).toUpperCase()==='Z')?'Straniero':'Italiano';
-    }
+    // Unione/Mestiere/Settore SEMPRE dal join, con normalizzazione.
+    // Record senza match Anagrafiche / senza codiceateco / senza match codiciateco
+    // -> etichette "non deliberato" (mai più N/D).
+    tr.unione   = atecoClassify(cod ? cod.unione   : null, 'unione');
+    tr.mestiere = atecoClassify(cod ? cod.mestiere : null, 'mestiere');
+    tr.settore  = atecoClassify(cod ? cod.settore  : null, 'settore');
   });
-  console.log('🔗 Join codiciateco: '+matched+'/'+(records?records.length:0)+' record arricchiti');
+
+  var n = records ? records.length : 0;
+  console.log('🔗 Join — record:'+n+' | match Anagrafiche (codice cliente):'+nAna+' | con codiceateco vuoto:'+nNoAteco+' | match codiciateco:'+nCod);
+  console.log('   es. codice cliente (tesseramento):', (records||[]).slice(0,5).map(function(r){return r.codicecliente;}));
+  console.log('   es. codiceanagrafica (Anagrafiche):', (anagrafiche||[]).slice(0,5).map(function(a){return a.codiceanagrafica;}));
+  console.log('   es. codiceateco (codiciateco):', (codici||[]).slice(0,5).map(function(c){return c.codiceateco;}));
 }
 
 async function atecoLoad(force){
