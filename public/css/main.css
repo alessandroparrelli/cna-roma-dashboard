@@ -2600,11 +2600,12 @@ body.dark-mode .sb-item.active { background: rgba(0,92,169,.22); }
 }
 .page { max-width: none; }
 
-/* Su mobile nasconde le label e rimpicciolisce le icone */
+/* Su mobile: mantiene label visibili, icone leggermente ridotte */
 @media (max-width: 600px) {
   :root { --topnav-h: 48px; }
-  .sb-label { display: none; }
-  .sb-item { padding: 6px 10px; gap: 0; }
+  .sb-label { display: inline; font-size: 13px; }
+  .sb-item { padding: 7px 12px; gap: 7px; }
   .sb-icon { width: 26px; height: 26px; border-radius: 7px; }
   .sb-arrow { width: 34px; }
+  .sb-group-label { display: none; }
 }
