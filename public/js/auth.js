@@ -149,7 +149,7 @@ function showApp(){
   if(isAdmin()){
     var aa=G('mobile-admin-actions'); if(aa) aa.style.display='flex';
     // Mostra sezione Amministrazione app solo agli admin
-    var adminSec=G('sb-admin-section'); if(adminSec) adminSec.style.display='block';
+    var adminSec=G('sb-admin-section'); if(adminSec) adminSec.style.display='flex';
     // Inizializza il modulo reportistica
     setTimeout(function(){ if(typeof reportisticaInit==='function') reportisticaInit(); }, 500);
   }
