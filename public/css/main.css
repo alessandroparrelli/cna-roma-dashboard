@@ -1761,23 +1761,22 @@ header .btn svg,
   flex-shrink:0;transition:var(--transition);
 }
 .tab-icon-solid{
-  width:34px;height:34px;border-radius:11px;
+  width:24px;height:24px;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;
   flex-shrink:0;transition:var(--transition);
-  box-shadow:0 2px 6px rgba(0,0,0,0.12);
+  box-shadow:0 1px 3px rgba(0,0,0,0.15);
 }
-.tab-icon-solid svg{width:17px;height:17px;}
 .tab-btn:not(.active) .tab-icon-solid{
-  opacity:0.92;
+  opacity:0.72;
+  box-shadow:none;
 }
 .tab-btn.active .tab-icon-solid{
   opacity:1;
-  box-shadow:0 3px 8px rgba(0,0,0,0.2);
-  transform:scale(1.04);
+  box-shadow:0 2px 6px rgba(0,0,0,0.18);
+  transform:scale(1.05);
 }
 .tab-btn:hover:not(.active) .tab-icon-solid{
-  opacity:1;
-  transform:scale(1.03);
+  opacity:0.9;
 }
 
 /* ── Separatore tra tab principali e dropdown ── */
