@@ -324,12 +324,22 @@ function raggBuildUI() {
       .ragg-sec{font-size:11px;font-weight:800;color:var(--text-secondary,#475569);
         text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px}
       .ragg-zona-row{display:flex;align-items:center;gap:8px;margin-bottom:9px}
-      .ragg-zona-name{font-size:13px;font-weight:700;color:var(--text,#1e293b);min-width:170px;
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-      .ragg-zona-n{font-size:13px;font-weight:800;min-width:40px;text-align:right}
+      .ragg-zona-name{font-size:13px;font-weight:700;color:var(--text,#1e293b);min-width:120px;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:0}
+      .ragg-zona-n{font-size:13px;font-weight:800;min-width:36px;text-align:right;flex-shrink:0}
       .ragg-zona-pct{font-size:12px;font-weight:600;color:var(--text-secondary,#475569);
-        min-width:38px;text-align:right}
-      .ragg-zona-pills{display:flex;gap:4px;min-width:200px;justify-content:flex-end;flex-wrap:nowrap}
+        min-width:36px;text-align:right;flex-shrink:0}
+      .ragg-zona-pills{display:flex;gap:4px;min-width:120px;justify-content:flex-end;flex-wrap:nowrap;flex-shrink:0}
+      @media(max-width:768px){
+        .ragg-zona-row{flex-wrap:wrap;gap:3px;padding:4px 0}
+        .ragg-zona-name{min-width:0;width:calc(100% - 90px)}
+        .ragg-zona-n{min-width:28px}
+        .ragg-zona-pct{min-width:30px}
+        .ragg-zona-pills{min-width:0;width:100%;justify-content:flex-start;margin-top:3px}
+        .ragg-zona-pills .ragg-pill{font-size:11px;padding:2px 7px}
+        .ragg-big{font-size:32px}
+        .ragg-kpi-num{font-size:20px}
+      }
       @keyframes raggFadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
       .ragg-anim{animation:raggFadeUp .45s ease-out both}
     `;
@@ -456,7 +466,7 @@ function raggRenderAll(s) {
   html += raggZoneCard(s);
 
   // ── Righe 2-3: 3 colonne ──
-  html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:18px">';
+  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:18px">';
   html += raggSimpleCard(s.commercio, s.tot, {
     title: '🛒 Commercio', color: '#F59E0B',
     desc:  'Imprese con ATECO che inizia per 46 o 47',
@@ -549,7 +559,7 @@ function raggZoneCard(s) {
           <span style="flex:1"></span>
           <span style="min-width:40px;text-align:right">N</span>
           <span style="min-width:38px;text-align:right">%</span>
-          <span style="min-width:200px;text-align:right">♀ Donne · 🌍 Stranieri · ⚡ Giovani</span>
+          <span style="min-width:200px;text-align:right;display:none" class="ragg-pills-header">♀ Donne · 🌍 Stranieri · ⚡ Giovani</span>
         </div>
         ${rows}
       </div>
