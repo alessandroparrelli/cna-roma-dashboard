@@ -794,9 +794,19 @@ function raggSimpleCard(d, totTot, cfg) {
         <div class="ragg-big" style="color:${cfg.color}">${d.tot.toLocaleString('it-IT')}</div>
         <div class="ragg-sub">${pct}% dei nuovi associati</div>
         <div class="ragg-desc">${cfg.desc}</div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <span class="ragg-pill" style="background:rgba(236,72,153,.12);color:#be185d;border-color:rgba(236,72,153,.3)">♀ Donne ${pctD}%</span>
-          <span class="ragg-pill" style="background:rgba(16,185,129,.12);color:#065f46;border-color:rgba(16,185,129,.3)">🌍 Stranieri ${pctS}%</span>
+        <div class="ragg-kpi3">
+          <div class="ragg-kpi-cell">
+            <div class="ragg-kpi-num" style="color:${cfg.color}">${d.tot.toLocaleString('it-IT')}</div>
+            <div class="ragg-kpi-lbl">Totale</div>
+          </div>
+          <div class="ragg-kpi-cell">
+            <div class="ragg-kpi-num" style="color:#EC4899">${d.donne.toLocaleString('it-IT')}</div>
+            <div class="ragg-kpi-lbl">Donne<br>${pctD}%</div>
+          </div>
+          <div class="ragg-kpi-cell">
+            <div class="ragg-kpi-num" style="color:#10B981">${d.stranieri.toLocaleString('it-IT')}</div>
+            <div class="ragg-kpi-lbl">Stranieri<br>${pctS}%</div>
+          </div>
         </div>
         <div class="ragg-sec">Per zona</div>
         ${zoneHtml || '<span style="font-size:13px;color:var(--text-secondary,#475569)">Nessun dato</span>'}
@@ -961,9 +971,19 @@ function raggGiovaniCard(d, totTot) {
         <div class="ragg-big" style="color:#EF4444">${d.tot.toLocaleString('it-IT')}</div>
         <div class="ragg-sub">${pct}% dei nuovi associati</div>
         <div class="ragg-desc">Titolari con età ≤ 40 anni (CF titolare da Anagrafiche)</div>
-        <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
-          <span class="ragg-pill" style="background:rgba(236,72,153,.12);color:#be185d;border-color:rgba(236,72,153,.3)">♀ Donne ${pctD}%</span>
-          <span class="ragg-pill" style="background:rgba(16,185,129,.12);color:#065f46;border-color:rgba(16,185,129,.3)">🌍 Stranieri ${pctS}%</span>
+        <div class="ragg-kpi3">
+          <div class="ragg-kpi-cell">
+            <div class="ragg-kpi-num" style="color:#EF4444">${d.tot.toLocaleString('it-IT')}</div>
+            <div class="ragg-kpi-lbl">Totale</div>
+          </div>
+          <div class="ragg-kpi-cell">
+            <div class="ragg-kpi-num" style="color:#EC4899">${d.donne.toLocaleString('it-IT')}</div>
+            <div class="ragg-kpi-lbl">Donne<br>${pctD}%</div>
+          </div>
+          <div class="ragg-kpi-cell">
+            <div class="ragg-kpi-num" style="color:#10B981">${d.stranieri.toLocaleString('it-IT')}</div>
+            <div class="ragg-kpi-lbl">Stranieri<br>${pctS}%</div>
+          </div>
         </div>
         <div class="ragg-sec">Fasce d'età</div>
         ${fascHtml}
