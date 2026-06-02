@@ -330,13 +330,35 @@ function raggBuildUI() {
       .ragg-zona-pct{font-size:12px;font-weight:600;color:var(--text-secondary,#475569);
         min-width:36px;text-align:right;flex-shrink:0}
       .ragg-zona-pills{display:flex;gap:4px;min-width:120px;justify-content:flex-end;flex-wrap:nowrap;flex-shrink:0}
+      /* ── zona badges (sesso/stranieri/giovani per riga zona) ── */
+      .ragg-zona-badges{display:flex;gap:5px;flex-shrink:0;align-items:center;flex-wrap:nowrap}
+      .ragg-zbadge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:6px;
+        font-size:12px;font-weight:600;white-space:nowrap;line-height:1.2}
+      .zbadge-pct{font-size:11px;font-weight:500;opacity:.75;margin-left:1px}
+      .zbadge-f{background:rgba(236,72,153,.12);color:#be185d}
+      .zbadge-s{background:rgba(16,185,129,.12);color:#065f46}
+      .zbadge-g{background:rgba(59,130,246,.12);color:#1e40af}
+      /* ── header colonne zona ── */
+      .ragg-zona-header{display:flex;align-items:center;gap:8px;padding:0 0 8px;
+        border-bottom:2px solid var(--border,#e2e8f0);margin-bottom:8px;
+        font-size:11px;font-weight:800;color:var(--text-secondary,#475569);
+        text-transform:uppercase;letter-spacing:.07em}
+      .rzh-zona{min-width:100px;flex-shrink:0}
+      .rzh-n{min-width:36px;text-align:right;flex-shrink:0}
+      .rzh-pct{min-width:36px;text-align:right;flex-shrink:0}
+      .rzh-badges{min-width:200px;text-align:right;flex-shrink:0}
+      /* ── riga totali ── */
+      .ragg-zona-totrow{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:10px;
+        border-top:2px solid var(--border,#e2e8f0)}
+      /* ── responsive ── */
       @media(max-width:768px){
-        .ragg-zona-row{flex-wrap:wrap;gap:3px;padding:4px 0}
+        .ragg-zona-row,.ragg-zona-totrow{flex-wrap:wrap;gap:3px;padding:4px 0}
         .ragg-zona-name{min-width:0;width:calc(100% - 90px)}
         .ragg-zona-n{min-width:28px}
         .ragg-zona-pct{min-width:30px}
-        .ragg-zona-pills{min-width:0;width:100%;justify-content:flex-start;margin-top:3px}
-        .ragg-zona-pills .ragg-pill{font-size:11px;padding:2px 7px}
+        .ragg-zona-badges{width:100%;justify-content:flex-start;margin-top:4px;flex-wrap:wrap;gap:4px}
+        .ragg-zbadge{font-size:11px;padding:2px 6px}
+        .rzh-badges{display:none}
         .ragg-big{font-size:32px}
         .ragg-kpi-num{font-size:20px}
       }
@@ -497,8 +519,28 @@ function raggRenderAll(s) {
 }
 
 // ── Box Zone ───────────────────────────────────────────────────────────────────
+// ── Normalizzazione nome zona ─────────────────────────────────────────────────
+// Mappa esatta dei valori DB → etichetta breve
+var ZONA_LABELS = {
+  '10 - AREA OVEST - MASSAIA': 'Area Ovest',
+  '20 - AREA TIBURTINO':       'Area Tiburtino',
+  '30 - AREA NORD':            'Area Nord',
+  '40 - AREA SUD':             'Area Sud',
+  '60 - AREA TIVOLI':          'Area Tivoli',
+  '00 - FUORI PROVINCIA':      'Fuori Provincia'
+};
+function normZona(raw) {
+  if (!raw || raw === 'N/D') return 'N/D';
+  if (ZONA_LABELS[raw]) return ZONA_LABELS[raw];
+  // Fallback: rimuovi prefisso numerico "XX - " e titolizza
+  var s = raw.replace(/^\d+\s*-\s*/, '');
+  // Rimuovi suffissi tipo " - MASSAIA"
+  s = s.replace(/\s*-\s*[A-Z ]+$/, '').trim();
+  // Title case
+  return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+}
+
 function raggZoneCard(s) {
-  // Palette ciclica — si adatta a qualsiasi nome di zona venga dal DB
   var PALETTE = ['#005CA9','#3B82F6','#10B981','#F59E0B','#8B5CF6',
                  '#06B6D4','#EC4899','#F97316','#EF4444','#14B8A6'];
 
@@ -514,31 +556,67 @@ function raggZoneCard(s) {
     .filter(function(z) { return z !== 'N/D'; })
     .reduce(function(acc, z) { return acc + s.zone[z].n; }, 0);
 
-  var rows = zoneOrd.map(function(zona) {
-    var d   = s.zone[zona];
-    var col = zona === 'N/D' ? '#cbd5e1' : (PALETTE[zoneOrd.indexOf(zona) % PALETTE.length] || '#64748b');
-    var pct = s.tot > 0 ? (d.n / s.tot * 100).toFixed(1) : '0';
-    var bar = Math.round(d.n / maxN * 100);
-    var pD  = d.n > 0 ? (d.donne     / d.n * 100).toFixed(0) : '0';
-    var pS  = d.n > 0 ? (d.stranieri / d.n * 100).toFixed(0) : '0';
-    var pG  = d.n > 0 ? (d.giovani   / d.n * 100).toFixed(0) : '0';
+  // Totali per la riga sommaria
+  var totDonne = 0, totStranieri = 0, totGiovani = 0;
+  zoneOrd.forEach(function(z) {
+    totDonne     += s.zone[z].donne     || 0;
+    totStranieri += s.zone[z].stranieri || 0;
+    totGiovani   += s.zone[z].giovani   || 0;
+  });
+
+  var rows = zoneOrd.map(function(zona, idx) {
+    var d    = s.zone[zona];
+    var col  = zona === 'N/D' ? '#94a3b8' : (PALETTE[idx % PALETTE.length] || '#64748b');
+    var label = normZona(zona);
+    var pct  = s.tot > 0 ? (d.n / s.tot * 100).toFixed(1) : '0';
+    var bar  = Math.round(d.n / maxN * 100);
+    // contatori assoluti + percentuale su totale zona
+    var nD   = d.donne     || 0;
+    var nS   = d.stranieri || 0;
+    var nG   = d.giovani   || 0;
+    var pD   = d.n > 0 ? (nD / d.n * 100).toFixed(0) : '0';
+    var pS   = d.n > 0 ? (nS / d.n * 100).toFixed(0) : '0';
+    var pG   = d.n > 0 ? (nG / d.n * 100).toFixed(0) : '0';
     return `
       <div class="ragg-zona-row ragg-anim">
-        <div class="ragg-zona-name" style="color:${col}">${zona}</div>
-        <div style="flex:1">
+        <div class="ragg-zona-name" style="color:${col}">${label}</div>
+        <div style="flex:1;min-width:40px">
           <div class="ragg-bar">
             <div class="ragg-bar-fill" data-w="${bar}%" style="background:${col};width:0%"></div>
           </div>
         </div>
         <div class="ragg-zona-n" style="color:${col}">${d.n.toLocaleString('it-IT')}</div>
         <div class="ragg-zona-pct">${pct}%</div>
-        <div class="ragg-zona-pills">
-          <span class="ragg-pill" style="background:rgba(236,72,153,.12);color:#be185d;border-color:rgba(236,72,153,.3)">♀ ${pD}%</span>
-          <span class="ragg-pill" style="background:rgba(16,185,129,.12);color:#065f46;border-color:rgba(16,185,129,.3)">🌍 ${pS}%</span>
-          <span class="ragg-pill" style="background:rgba(59,130,246,.12);color:#1e40af;border-color:rgba(59,130,246,.3)">⚡ ${pG}%</span>
+        <div class="ragg-zona-badges">
+          <span class="ragg-zbadge zbadge-f" title="Donne">
+            ♀ <b>${nD}</b><span class="zbadge-pct">${pD}%</span>
+          </span>
+          <span class="ragg-zbadge zbadge-s" title="Stranieri">
+            🌍 <b>${nS}</b><span class="zbadge-pct">${pS}%</span>
+          </span>
+          <span class="ragg-zbadge zbadge-g" title="Giovani ≤40">
+            ⚡ <b>${nG}</b><span class="zbadge-pct">${pG}%</span>
+          </span>
         </div>
       </div>`;
   }).join('');
+
+  // Riga totali
+  var pTotD = s.tot > 0 ? (totDonne     / s.tot * 100).toFixed(0) : '0';
+  var pTotS = s.tot > 0 ? (totStranieri / s.tot * 100).toFixed(0) : '0';
+  var pTotG = s.tot > 0 ? (totGiovani   / s.tot * 100).toFixed(0) : '0';
+  var totRow = `
+    <div class="ragg-zona-totrow ragg-anim">
+      <div class="ragg-zona-name" style="font-weight:800;color:var(--text,#1e293b)">Totale</div>
+      <div style="flex:1;min-width:40px"></div>
+      <div class="ragg-zona-n" style="color:var(--text,#1e293b)">${s.tot.toLocaleString('it-IT')}</div>
+      <div class="ragg-zona-pct" style="color:var(--text,#1e293b)">100%</div>
+      <div class="ragg-zona-badges">
+        <span class="ragg-zbadge zbadge-f">♀ <b>${totDonne}</b><span class="zbadge-pct">${pTotD}%</span></span>
+        <span class="ragg-zbadge zbadge-s">🌍 <b>${totStranieri}</b><span class="zbadge-pct">${pTotS}%</span></span>
+        <span class="ragg-zbadge zbadge-g">⚡ <b>${totGiovani}</b><span class="zbadge-pct">${pTotG}%</span></span>
+      </div>
+    </div>`;
 
   return `
     <div class="ragg-card ragg-anim">
@@ -549,19 +627,19 @@ function raggZoneCard(s) {
         </svg>
         Zone
         <span style="font-size:12px;font-weight:500;opacity:.85;margin-left:auto">
-          ${totMappate.toLocaleString('it-IT')} di ${s.tot.toLocaleString('it-IT')} associati con area mappata
+          ${totMappate.toLocaleString('it-IT')} di ${s.tot.toLocaleString('it-IT')} associati mappati
         </span>
       </div>
-      <div class="ragg-body">
-        <div style="display:flex;font-size:11px;font-weight:800;color:var(--text-secondary,#475569);
-          text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;gap:8px">
-          <span style="min-width:170px">Zona</span>
+      <div class="ragg-body" style="padding:14px 18px">
+        <div class="ragg-zona-header">
+          <span class="rzh-zona">Zona</span>
           <span style="flex:1"></span>
-          <span style="min-width:40px;text-align:right">N</span>
-          <span style="min-width:38px;text-align:right">%</span>
-          <span style="min-width:200px;text-align:right;display:none" class="ragg-pills-header">♀ Donne · 🌍 Stranieri · ⚡ Giovani</span>
+          <span class="rzh-n">N</span>
+          <span class="rzh-pct">%</span>
+          <span class="rzh-badges">♀ Donne · 🌍 Stranieri · ⚡ Giovani</span>
         </div>
         ${rows}
+        ${totRow}
       </div>
     </div>`;
 }
@@ -582,7 +660,7 @@ function raggSimpleCard(d, totTot, cfg) {
     var p   = d.tot > 0 ? (x[1] / d.tot * 100).toFixed(1) : '0';
     return `<div style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-        <span style="font-weight:700;color:var(--text,#1e293b)">${x[0]}</span>
+        <span style="font-weight:700;color:var(--text,#1e293b)">${normZona(x[0])}</span>
         <span style="color:${cfg.color};font-weight:800">${x[1]}
           <span style="color:var(--text-secondary,#475569);font-weight:500">(${p}%)</span></span>
       </div>
@@ -627,7 +705,7 @@ function raggDonneCard(d, totTot) {
     var p   = d.tot > 0 ? (x[1] / d.tot * 100).toFixed(1) : '0';
     return `<div style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-        <span style="font-weight:700;color:var(--text,#1e293b)">${x[0]}</span>
+        <span style="font-weight:700;color:var(--text,#1e293b)">${normZona(x[0])}</span>
         <span style="color:#EC4899;font-weight:800">${x[1]}
           <span style="color:var(--text-secondary,#475569);font-weight:500">(${p}%)</span></span>
       </div>
@@ -685,7 +763,7 @@ function raggStranCard(d, totTot) {
     var p   = d.tot > 0 ? (x[1] / d.tot * 100).toFixed(1) : '0';
     return `<div style="margin-bottom:8px">
       <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px">
-        <span style="font-weight:700;color:var(--text,#1e293b)">${x[0]}</span>
+        <span style="font-weight:700;color:var(--text,#1e293b)">${normZona(x[0])}</span>
         <span style="color:#10B981;font-weight:800">${x[1]}
           <span style="color:var(--text-secondary,#475569);font-weight:500">(${p}%)</span></span>
       </div>
