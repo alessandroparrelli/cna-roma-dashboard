@@ -1,5 +1,5 @@
 // ============================================================
-// RAGGRUPPAMENTI.JS — Tab Raggruppamenti e Zone  v2026.05.31.4
+// RAGGRUPPAMENTI.JS — Tab Raggruppamenti e Zone  v2026.06.02.1
 //
 // Join corretto (verificato sui file reali):
 //   tesseramento_records.codicecliente
@@ -13,7 +13,7 @@
 //   Totale: 3571 | Commercio: 501 | Turismo: 477 | Cinema: 93
 //   Donne: 969 | Stranieri: 309 | Giovani≤40: 840
 // ============================================================
-console.log('✅ raggruppamenti.js v4 CARICATO');
+console.log('✅ raggruppamenti.js v5 CARICATO');
 
 var raggLoaded  = false;
 var raggLoading = false;
@@ -313,7 +313,7 @@ function raggBuildUI() {
       .ragg-big{font-size:42px;font-weight:900;letter-spacing:-1.5px;line-height:1}
       .ragg-sub{font-size:13px;font-weight:600;color:var(--text-secondary,#475569);margin-top:4px}
       .ragg-desc{font-size:12px;color:var(--text,#1e293b);font-weight:500;margin-top:2px}
-      .ragg-bar{background:var(--border,#e2e8f0);border-radius:999px;height:8px;overflow:hidden;margin:6px 0}
+      .ragg-bar{background:var(--border,#e2e8f0);border-radius:999px;height:5px;overflow:hidden;margin:4px 0}
       .ragg-bar-fill{height:100%;border-radius:999px;transition:width .7s cubic-bezier(.4,0,.2,1)}
       .ragg-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;
         border-radius:999px;font-size:12px;font-weight:700;border:1px solid transparent}
@@ -331,13 +331,13 @@ function raggBuildUI() {
         min-width:36px;text-align:right;flex-shrink:0}
       .ragg-zona-pills{display:flex;gap:4px;min-width:120px;justify-content:flex-end;flex-wrap:nowrap;flex-shrink:0}
       /* ── zona badges (sesso/stranieri/giovani per riga zona) ── */
-      .ragg-zona-badges{display:flex;gap:5px;flex-shrink:0;align-items:center;flex-wrap:nowrap}
-      .ragg-zbadge{display:inline-flex;align-items:center;gap:3px;padding:3px 8px;border-radius:6px;
-        font-size:12px;font-weight:600;white-space:nowrap;line-height:1.2}
-      .zbadge-pct{font-size:11px;font-weight:500;opacity:.75;margin-left:1px}
-      .zbadge-f{background:rgba(236,72,153,.12);color:#be185d}
-      .zbadge-s{background:rgba(16,185,129,.12);color:#065f46}
-      .zbadge-g{background:rgba(59,130,246,.12);color:#1e40af}
+      .ragg-zona-badges{display:flex;gap:6px;flex-shrink:0;align-items:center;flex-wrap:nowrap}
+      .ragg-zbadge{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:5px 11px;border-radius:8px;
+        font-size:13px;font-weight:700;white-space:nowrap;line-height:1.3;min-width:72px;text-align:center}
+      .zbadge-pct{font-size:11px;font-weight:600;opacity:.8;margin-left:2px}
+      .zbadge-f{background:rgba(236,72,153,.13);color:#be185d;border:1px solid rgba(236,72,153,.25)}
+      .zbadge-s{background:rgba(16,185,129,.13);color:#047857;border:1px solid rgba(16,185,129,.25)}
+      .zbadge-g{background:rgba(59,130,246,.13);color:#1d4ed8;border:1px solid rgba(59,130,246,.25)}
       /* ── header colonne zona ── */
       .ragg-zona-header{display:flex;align-items:center;gap:8px;padding:0 0 8px;
         border-bottom:2px solid var(--border,#e2e8f0);margin-bottom:8px;
@@ -346,7 +346,7 @@ function raggBuildUI() {
       .rzh-zona{min-width:100px;flex-shrink:0}
       .rzh-n{min-width:36px;text-align:right;flex-shrink:0}
       .rzh-pct{min-width:36px;text-align:right;flex-shrink:0}
-      .rzh-badges{min-width:200px;text-align:right;flex-shrink:0}
+      .rzh-badges{min-width:240px;text-align:right;flex-shrink:0;font-size:12px;letter-spacing:.04em}
       /* ── riga totali ── */
       .ragg-zona-totrow{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:10px;
         border-top:2px solid var(--border,#e2e8f0)}
@@ -356,8 +356,8 @@ function raggBuildUI() {
         .ragg-zona-name{min-width:0;width:calc(100% - 90px)}
         .ragg-zona-n{min-width:28px}
         .ragg-zona-pct{min-width:30px}
-        .ragg-zona-badges{width:100%;justify-content:flex-start;margin-top:4px;flex-wrap:wrap;gap:4px}
-        .ragg-zbadge{font-size:11px;padding:2px 6px}
+        .ragg-zona-badges{width:100%;justify-content:flex-start;margin-top:6px;flex-wrap:wrap;gap:5px}
+        .ragg-zbadge{font-size:12px;padding:4px 8px;min-width:60px}
         .rzh-badges{display:none}
         .ragg-big{font-size:32px}
         .ragg-kpi-num{font-size:20px}
@@ -368,46 +368,110 @@ function raggBuildUI() {
     document.head.appendChild(st);
   }
 
+  var MESI_NOMI = ['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+  var mesiOptsHtml = MESI_NOMI.map(function(n,i){return '<option value="'+(i+1)+'">'+n+'</option>';}).join('');
+
   tab.innerHTML = `
     <div class="tab-hero">
       <h2 class="tab-hero-title">Raggruppamenti e Zone</h2>
       <p class="tab-hero-desc">Analisi dei nuovi associati per area territoriale, settore e caratteristiche del titolare</p>
     </div>
     <div style="padding:0 20px 30px">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;
-        background:var(--surface2,#f8fafc);padding:12px 16px;border-radius:10px;
-        border:1px solid var(--border,#e2e8f0)">
-        <span style="font-size:11px;font-weight:800;color:var(--text-secondary,#475569);
-          text-transform:uppercase;letter-spacing:.08em">Filtra:</span>
-        <select id="ragg-f-anno" style="padding:7px 12px;border-radius:8px;
-          border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
-          font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
-          <option value="">Tutti gli anni</option>
-        </select>
-        <select id="ragg-f-zona" style="padding:7px 12px;border-radius:8px;
-          border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
-          font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
-          <option value="">Tutte le zone</option>
-        </select>
-        <select id="ragg-f-sesso" style="padding:7px 12px;border-radius:8px;
-          border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
-          font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
-          <option value="">Tutti i sessi</option>
-          <option value="M">Maschi</option>
-          <option value="F">Femmine</option>
-        </select>
-        <select id="ragg-f-naz" style="padding:7px 12px;border-radius:8px;
-          border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
-          font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
-          <option value="">Italiani e Stranieri</option>
-          <option value="Italiano">Italiani</option>
-          <option value="Straniero">Stranieri</option>
-        </select>
-        <button id="ragg-reset" style="padding:7px 16px;border-radius:8px;border:none;
-          background:#005CA9;color:#fff;font-size:13px;font-weight:700;cursor:pointer">↺ Reset</button>
-        <span id="ragg-tot-label" style="font-size:13px;font-weight:700;
-          color:var(--text,#1e293b);margin-left:auto"></span>
+
+      <!-- Barra superiore: label stato filtri + pulsante toggle -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <span id="ragg-tot-label" style="font-size:13px;font-weight:700;color:var(--text,#1e293b);flex:1"></span>
+        <button id="ragg-filter-toggle" style="display:inline-flex;align-items:center;gap:6px;
+          padding:7px 14px;border-radius:8px;border:1px solid var(--border,#e2e8f0);
+          background:var(--surface,#fff);color:var(--text,#1e293b);font-size:13px;
+          font-weight:700;cursor:pointer;transition:all .2s" title="Mostra/nascondi filtri">
+          <svg id="ragg-filter-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2.2" style="transition:transform .25s">
+            <line x1="3" y1="6" x2="21" y2="6"/>
+            <line x1="6" y1="12" x2="18" y2="12"/>
+            <line x1="9" y1="18" x2="15" y2="18"/>
+          </svg>
+          Filtri
+          <span id="ragg-filter-badge" style="display:none;background:#005CA9;color:#fff;
+            border-radius:999px;font-size:11px;padding:1px 7px;font-weight:800">0</span>
+        </button>
       </div>
+
+      <!-- Pannello filtri collassabile -->
+      <div id="ragg-filter-panel" style="overflow:hidden;max-height:0;transition:max-height .35s cubic-bezier(.4,0,.2,1),opacity .3s;opacity:0;margin-bottom:0">
+        <div style="background:var(--surface2,#f8fafc);padding:14px 16px;border-radius:12px;
+          border:1px solid var(--border,#e2e8f0);margin-bottom:16px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;align-items:end">
+
+            <div>
+              <label style="display:block;font-size:11px;font-weight:800;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Anno</label>
+              <select id="ragg-f-anno" style="width:100%;padding:8px 10px;border-radius:8px;
+                border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
+                font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
+                <option value="">Tutti gli anni</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="display:block;font-size:11px;font-weight:800;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Mese da</label>
+              <select id="ragg-f-mese-da" style="width:100%;padding:8px 10px;border-radius:8px;
+                border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
+                font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
+                <option value="">– Inizio –</option>
+                ${mesiOptsHtml}
+              </select>
+            </div>
+
+            <div>
+              <label style="display:block;font-size:11px;font-weight:800;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Mese a</label>
+              <select id="ragg-f-mese-a" style="width:100%;padding:8px 10px;border-radius:8px;
+                border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
+                font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
+                <option value="">– Fine –</option>
+                ${mesiOptsHtml}
+              </select>
+            </div>
+
+            <div>
+              <label style="display:block;font-size:11px;font-weight:800;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Zona</label>
+              <select id="ragg-f-zona" style="width:100%;padding:8px 10px;border-radius:8px;
+                border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
+                font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
+                <option value="">Tutte le zone</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="display:block;font-size:11px;font-weight:800;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Sesso</label>
+              <select id="ragg-f-sesso" style="width:100%;padding:8px 10px;border-radius:8px;
+                border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
+                font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
+                <option value="">Tutti</option>
+                <option value="M">Maschi</option>
+                <option value="F">Femmine</option>
+              </select>
+            </div>
+
+            <div>
+              <label style="display:block;font-size:11px;font-weight:800;color:var(--text-secondary,#64748b);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px">Nazionalità</label>
+              <select id="ragg-f-naz" style="width:100%;padding:8px 10px;border-radius:8px;
+                border:1px solid var(--border,#e2e8f0);background:var(--surface,#fff);
+                font-size:13px;font-weight:600;color:var(--text,#1e293b);cursor:pointer">
+                <option value="">Tutti</option>
+                <option value="Italiano">Italiani</option>
+                <option value="Straniero">Stranieri</option>
+              </select>
+            </div>
+
+            <div style="display:flex;gap:8px;align-items:flex-end;padding-bottom:1px">
+              <button id="ragg-reset" style="flex:1;padding:8px 14px;border-radius:8px;border:none;
+                background:#005CA9;color:#fff;font-size:13px;font-weight:700;cursor:pointer">↺ Reset</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
       <div id="ragg-boxes"></div>
     </div>`;
 
@@ -431,23 +495,68 @@ function raggBuildUI() {
     });
   }
 
-  ['ragg-f-anno','ragg-f-zona','ragg-f-sesso','ragg-f-naz'].forEach(function(id) {
-    var el = G(id); if (el) el.addEventListener('change', raggApplyFilter);
+  var FILTER_IDS = ['ragg-f-anno','ragg-f-mese-da','ragg-f-mese-a','ragg-f-zona','ragg-f-sesso','ragg-f-naz'];
+
+  FILTER_IDS.forEach(function(id) {
+    var el = G(id); if (el) el.addEventListener('change', function() { raggApplyFilter(); raggUpdateFilterBadge(); });
   });
+
   var rst = G('ragg-reset');
   if (rst) rst.addEventListener('click', function() {
-    ['ragg-f-anno','ragg-f-zona','ragg-f-sesso','ragg-f-naz'].forEach(function(id) {
-      var el = G(id); if (el) el.value = '';
-    });
+    FILTER_IDS.forEach(function(id) { var el = G(id); if (el) el.value = ''; });
     raggApplyFilter();
+    raggUpdateFilterBadge();
   });
+
+  // Toggle pannello filtri
+  var toggleBtn = G('ragg-filter-toggle');
+  var panel     = G('ragg-filter-panel');
+  var icon      = G('ragg-filter-icon');
+  if (toggleBtn && panel) {
+    toggleBtn.addEventListener('click', function() {
+      var open = panel.style.maxHeight && panel.style.maxHeight !== '0px' && panel.style.maxHeight !== '0';
+      if (open) {
+        panel.style.maxHeight = '0';
+        panel.style.opacity   = '0';
+        panel.style.marginBottom = '0';
+        toggleBtn.style.background = 'var(--surface,#fff)';
+        toggleBtn.style.borderColor = 'var(--border,#e2e8f0)';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      } else {
+        panel.style.maxHeight = '400px';
+        panel.style.opacity   = '1';
+        panel.style.marginBottom = '0';
+        toggleBtn.style.background = '#EFF6FF';
+        toggleBtn.style.borderColor = '#005CA9';
+        if (icon) icon.style.transform = 'rotate(0deg)';
+      }
+    });
+  }
+}
+
+function raggUpdateFilterBadge() {
+  var FILTER_IDS = ['ragg-f-anno','ragg-f-mese-da','ragg-f-mese-a','ragg-f-zona','ragg-f-sesso','ragg-f-naz'];
+  var count = FILTER_IDS.filter(function(id){ var el = G(id); return el && el.value !== ''; }).length;
+  var badge = G('ragg-filter-badge');
+  if (badge) {
+    if (count > 0) { badge.style.display = 'inline'; badge.textContent = count; }
+    else           { badge.style.display = 'none'; }
+  }
+  // Aggiorna colore pulsante toggle se filtri attivi
+  var btn = G('ragg-filter-toggle');
+  if (btn) {
+    if (count > 0) { btn.style.background = '#EFF6FF'; btn.style.borderColor = '#005CA9'; btn.style.color = '#005CA9'; }
+    else           { btn.style.background = 'var(--surface,#fff)'; btn.style.borderColor = 'var(--border,#e2e8f0)'; btn.style.color = 'var(--text,#1e293b)'; }
+  }
 }
 
 function raggApplyFilter() {
-  var annoF  = (G('ragg-f-anno') || {}).value || '';
-  var zonaF  = (G('ragg-f-zona') || {}).value || '';
-  var sessoF = (G('ragg-f-sesso') || {}).value || '';
-  var nazF   = (G('ragg-f-naz')  || {}).value || '';
+  var annoF   = (G('ragg-f-anno')  || {}).value || '';
+  var zonaF   = (G('ragg-f-zona')  || {}).value || '';
+  var sessoF  = (G('ragg-f-sesso') || {}).value || '';
+  var nazF    = (G('ragg-f-naz')   || {}).value || '';
+  var meseDaF = parseInt((G('ragg-f-mese-da') || {}).value || '0', 10) || 0;
+  var meseAF  = parseInt((G('ragg-f-mese-a')  || {}).value || '0', 10) || 0;
 
   var filtered = raggData.filter(function(r) {
     if (annoF && String(r._anno || '') !== annoF)       return false;
@@ -455,16 +564,20 @@ function raggApplyFilter() {
     if (sessoF === 'F' && !r._isDonna)                  return false;
     if (sessoF === 'M' && r._isDonna)                   return false;
     if (nazF   && r._nazionalita !== nazF)              return false;
+    if (meseDaF && r.mese && r.mese < meseDaF)          return false;
+    if (meseAF  && r.mese && r.mese > meseAF)           return false;
     return true;
   });
 
   raggRenderAll(raggCompute(filtered));
 
   // Ripristina valori dopo re-render
-  if (G('ragg-f-anno'))  G('ragg-f-anno').value  = annoF;
-  if (G('ragg-f-zona'))  G('ragg-f-zona').value  = zonaF;
-  if (G('ragg-f-sesso')) G('ragg-f-sesso').value = sessoF;
-  if (G('ragg-f-naz'))   G('ragg-f-naz').value   = nazF;
+  if (G('ragg-f-anno'))     G('ragg-f-anno').value     = annoF;
+  if (G('ragg-f-zona'))     G('ragg-f-zona').value     = zonaF;
+  if (G('ragg-f-sesso'))    G('ragg-f-sesso').value    = sessoF;
+  if (G('ragg-f-naz'))      G('ragg-f-naz').value      = nazF;
+  if (G('ragg-f-mese-da'))  G('ragg-f-mese-da').value  = meseDaF || '';
+  if (G('ragg-f-mese-a'))   G('ragg-f-mese-a').value   = meseAF  || '';
 }
 
 // ── Render ─────────────────────────────────────────────────────────────────────
