@@ -331,9 +331,9 @@ function raggBuildUI() {
         min-width:36px;text-align:right;flex-shrink:0}
       .ragg-zona-pills{display:flex;gap:4px;min-width:120px;justify-content:flex-end;flex-wrap:nowrap;flex-shrink:0}
       /* ── zona badges (sesso/stranieri/giovani per riga zona) ── */
-      .ragg-zona-badges{display:flex;gap:6px;flex-shrink:0;align-items:center;flex-wrap:nowrap}
-      .ragg-zbadge{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:5px 11px;border-radius:8px;
-        font-size:13px;font-weight:700;white-space:nowrap;line-height:1.3;min-width:72px;text-align:center}
+      .ragg-zona-badges{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;flex-shrink:0;align-items:center;width:270px}
+      .ragg-zbadge{display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:5px 0;border-radius:8px;
+        font-size:13px;font-weight:700;white-space:nowrap;line-height:1.3;width:100%;text-align:center}
       .zbadge-pct{font-size:11px;font-weight:600;opacity:.8;margin-left:2px}
       .zbadge-f{background:rgba(236,72,153,.13);color:#be185d;border:1px solid rgba(236,72,153,.25)}
       .zbadge-s{background:rgba(16,185,129,.13);color:#047857;border:1px solid rgba(16,185,129,.25)}
@@ -346,18 +346,20 @@ function raggBuildUI() {
       .rzh-zona{min-width:100px;flex-shrink:0}
       .rzh-n{min-width:36px;text-align:right;flex-shrink:0}
       .rzh-pct{min-width:36px;text-align:right;flex-shrink:0}
-      .rzh-badges{min-width:240px;text-align:right;flex-shrink:0;font-size:12px;letter-spacing:.04em}
+      .rzh-badges{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:270px;flex-shrink:0}
       /* ── riga totali ── */
       .ragg-zona-totrow{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:10px;
         border-top:2px solid var(--border,#e2e8f0)}
       /* ── responsive ── */
+      @media(max-width:900px){.ragg-card-grid{grid-template-columns:repeat(2,1fr)!important}}
+      @media(max-width:600px){.ragg-card-grid{grid-template-columns:1fr!important}}
       @media(max-width:768px){
         .ragg-zona-row,.ragg-zona-totrow{flex-wrap:wrap;gap:3px;padding:4px 0}
         .ragg-zona-name{min-width:0;width:calc(100% - 90px)}
         .ragg-zona-n{min-width:28px}
         .ragg-zona-pct{min-width:30px}
-        .ragg-zona-badges{width:100%;justify-content:flex-start;margin-top:6px;flex-wrap:wrap;gap:5px}
-        .ragg-zbadge{font-size:12px;padding:4px 8px;min-width:60px}
+        .ragg-zona-badges{width:100%;grid-template-columns:repeat(3,1fr);margin-top:6px}
+        .ragg-zbadge{font-size:12px;padding:4px 4px}
         .rzh-badges{display:none}
         .ragg-big{font-size:32px}
         .ragg-kpi-num{font-size:20px}
@@ -601,7 +603,7 @@ function raggRenderAll(s) {
   html += raggZoneCard(s);
 
   // ── Righe 2-3: 3 colonne ──
-  html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-top:18px">';
+  html += '<div class="ragg-card-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:18px">';
   html += raggSimpleCard(s.commercio, s.tot, {
     title: '🛒 Commercio', color: '#F59E0B',
     desc:  'Imprese con ATECO che inizia per 46 o 47',
@@ -749,7 +751,7 @@ function raggZoneCard(s) {
           <span style="flex:1"></span>
           <span class="rzh-n">N</span>
           <span class="rzh-pct">%</span>
-          <span class="rzh-badges">♀ Donne · 🌍 Stranieri · ⚡ Giovani</span>
+          <div class="rzh-badges"><span style="text-align:center;font-size:11px;font-weight:800;color:#be185d;letter-spacing:.04em;text-transform:uppercase">♀ Donne</span><span style="text-align:center;font-size:11px;font-weight:800;color:#047857;letter-spacing:.04em;text-transform:uppercase">🌍 Stranieri</span><span style="text-align:center;font-size:11px;font-weight:800;color:#1d4ed8;letter-spacing:.04em;text-transform:uppercase">⚡ Giovani</span></div>
         </div>
         ${rows}
         ${totRow}
