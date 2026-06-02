@@ -219,13 +219,48 @@ function repPag0_Copertina(anno, mese) {
 }
 
 // HEADER: bianco, logo proporzionato (non deformato), titolo Inter Bold nero
+var REP_TAB_INFO = {
+  'dato mensile':                    ['Nuovi associati',       'KPI mensili, andamento per tipo rete e promotore'],
+  'dato annuale':                    ['Nuovi associati',       'Andamento YTD dell\'anno selezionato'],
+  'raffronto mese':                  ['Analisi nuovi',         'Confronto mese corrente con gli anni precedenti'],
+  'raffronto con anni precedenti':   ['Analisi nuovi',         'Confronto mese corrente con gli anni precedenti'],
+  'raffronto ytd':                   ['Analisi nuovi',         'Confronto YTD con gli anni precedenti'],
+  'schede individuali':              ['Analisi nuovi',         'Performance individuali dei promotori attivi'],
+  'schede promotori':                ['Analisi nuovi',         'Performance individuali dei promotori attivi'],
+  'serie storica':                   ['Serie storica',         'Storico degli associati diretti di CNA Roma dal 2000 ad oggi'],
+  'previsione':                      ['Serie storica',         'Previsione anno corrente e piano mensile per l\'obiettivo'],
+  'analisi ateco':                   ['Unioni e mestieri',     'Analisi dei nuovi associati per codice ATECO'],
+  'unione':                          ['Unioni e mestieri',     'Distribuzione per Unione CNA di appartenenza'],
+  'mestiere':                        ['Unioni e mestieri',     'Distribuzione per mestiere / settore di attività'],
+  'settore':                         ['Unioni e mestieri',     'Distribuzione per settore ATECO aggregato'],
+  'zone':                            ['Raggruppamenti e Zone', 'Distribuzione geografica dei nuovi associati per area'],
+  'raggruppamenti':                  ['Raggruppamenti e Zone', 'Analisi dei nuovi associati per categoria speciale'],
+};
+
 function repHeader(titoloPagina, anno, mese) {
   var meseStr = MESI[mese] + ' ' + anno;
+
+  // Trova il tab info corrispondente al titolo pagina
+  var tabInfo = null;
+  var tp = (titoloPagina||'').toLowerCase();
+  Object.keys(REP_TAB_INFO).forEach(function(key) {
+    if (tp.indexOf(key) !== -1 && !tabInfo) tabInfo = REP_TAB_INFO[key];
+  });
+
+  var tabBlock = '';
+  if (tabInfo) {
+    tabBlock = '<div style="padding:8px 28px 0;background:white;display:flex;align-items:baseline;gap:12px">'
+      + '<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:18px;font-weight:800;color:#0f172a;letter-spacing:-0.3px;white-space:nowrap">' + tabInfo[0] + '</div>'
+      + '<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:11px;font-weight:500;color:#64748b;line-height:1.4">' + tabInfo[1] + '</div>'
+      + '</div>';
+  }
+
   return '<div style="display:flex;align-items:center;justify-content:space-between;padding:11px 28px 9px;border-bottom:1.5px solid #e2e8f0;background:white">'
     + '<img src="' + LOGO_URL + '" style="height:42px;width:auto;max-width:160px;object-fit:contain;object-position:left center" crossorigin="anonymous" />'
     + '<div style="text-align:right"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:19px;font-weight:800;color:#0f172a;line-height:1.2">Dati tesseramento ' + meseStr + '</div></div>'
     + '</div>'
-    + '<div style="padding:6px 28px 5px;background:white"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:14px;font-weight:700;color:#0f172a">● ' + titoloPagina + '</div></div>';
+    + tabBlock
+    + '<div style="padding:4px 28px 5px;background:white"><div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;color:#64748b">● ' + titoloPagina + '</div></div>';
 }
 
 function repFooter(n) {
