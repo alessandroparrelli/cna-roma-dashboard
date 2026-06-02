@@ -183,10 +183,12 @@ function repBuildAllPages(data, anno, mese, storicaData) {
   // Ateco anno: 4 pagine
   var atecoAnno = repPagAtecoSplit(data, anno, mese, false);
   var allPages = basePages.concat(atecoMese).concat(atecoAnno);
-  // Raggruppamenti: pagine 15 (mese) e 16 (anno) — calcolate dopo il concat
-  var pRaggMese = String(allPages.length + 1);
-  var pRaggAnno = String(allPages.length + 2);
+  // Zone mese + Raggruppamenti mese e anno
+  var pZoneMese  = String(allPages.length + 1);
+  var pRaggMese  = String(allPages.length + 2);
+  var pRaggAnno  = String(allPages.length + 3);
   allPages = allPages
+    .concat([repPagZone(data, anno, mese)])
     .concat([repPagRaggruppamenti(data, anno, mese, true,  pRaggMese)])
     .concat([repPagRaggruppamenti(data, anno, mese, false, pRaggAnno)]);
   var totale = allPages.length;
@@ -1116,7 +1118,145 @@ function repPagAtecoSplit(data, anno, mese, soloMese) {
   ];
 }
 
-// ── PAGINE RAGGRUPPAMENTI E ZONE ─────────────────────────────────────────────
+// ── PAGINA ZONE (solo mese selezionato) ──────────────────────────────────────
+function repPagZone(data, anno, mese) {
+  var titolo = 'Zone · ' + MESI[mese] + ' ' + anno;
+
+  // Palette identica alla tab
+  var PALETTE = ['#005CA9','#3B82F6','#10B981','#F59E0B','#8B5CF6',
+                 '#06B6D4','#EC4899','#F97316','#EF4444','#14B8A6'];
+  var ZONA_LABELS = {
+    '10 - AREA OVEST - MASSAIA':'Area Ovest',
+    '20 - AREA TIBURTINO':'Area Tiburtino',
+    '30 - AREA NORD':'Area Nord',
+    '40 - AREA SUD':'Area Sud',
+    '60 - AREA TIVOLI':'Area Tivoli',
+    '00 - FUORI PROVINCIA':'Fuori Provincia'
+  };
+  function normZ(raw) {
+    if (!raw||raw==='N/D') return 'N/D';
+    if (ZONA_LABELS[raw]) return ZONA_LABELS[raw];
+    var s=raw.replace(/^\d+\s*-\s*/,'').replace(/\s*-\s*[A-Z ]+$/,'').trim();
+    return s.charAt(0).toUpperCase()+s.slice(1).toLowerCase();
+  }
+
+  // Filtra solo il mese
+  var rec = data.filter(function(r){ return parseInt(r.anno)===anno && parseInt(r.mese)===mese; });
+  var tot = rec.length;
+
+  // Aggrega per zona
+  var zoneMap = {};
+  rec.forEach(function(r){
+    var z = r._zona||'N/D';
+    if (!zoneMap[z]) zoneMap[z]={n:0,donne:0,stranieri:0,giovani:0};
+    zoneMap[z].n++;
+    if (r._isDonna)     zoneMap[z].donne++;
+    if (r._isStraniero) zoneMap[z].stranieri++;
+    if (r._isGiovane)   zoneMap[z].giovani++;
+  });
+
+  var zoneOrd = Object.keys(zoneMap)
+    .filter(function(z){return zoneMap[z].n>0;})
+    .sort(function(a,b){
+      if(a==='N/D') return 1; if(b==='N/D') return -1;
+      return zoneMap[b].n-zoneMap[a].n;
+    });
+  var maxN = zoneOrd.length ? zoneMap[zoneOrd[0]].n : 1;
+  var totMappate = zoneOrd.filter(function(z){return z!=='N/D';}).reduce(function(s,z){return s+zoneMap[z].n;},0);
+  var totD=0,totS=0,totG=0;
+  zoneOrd.forEach(function(z){totD+=zoneMap[z].donne;totS+=zoneMap[z].stranieri;totG+=zoneMap[z].giovani;});
+
+  if (!tot) {
+    return repPage(repHeader(titolo,anno,mese),
+      '<div style="padding:60px;text-align:center;color:#94a3b8">Nessun dato per questo periodo</div>',
+      repFooter('__'));
+  }
+
+  // Header colonne
+  var colsHdr = '<div style="display:flex;align-items:center;gap:8px;padding:0 0 10px;border-bottom:2px solid #e2e8f0;margin-bottom:8px">'
+    +'<span style="min-width:160px;font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase;letter-spacing:.07em">Zona</span>'
+    +'<span style="flex:1"></span>'
+    +'<span style="min-width:50px;text-align:right;font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase">N</span>'
+    +'<span style="min-width:50px;text-align:right;font-size:10px;font-weight:800;color:#64748b;text-transform:uppercase">%</span>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:300px;flex-shrink:0">'
+    +'<span style="text-align:center;font-size:10px;font-weight:800;color:#be185d;text-transform:uppercase">♀ Donne</span>'
+    +'<span style="text-align:center;font-size:10px;font-weight:800;color:#047857;text-transform:uppercase">🌍 Stranieri</span>'
+    +'<span style="text-align:center;font-size:10px;font-weight:800;color:#1d4ed8;text-transform:uppercase">⚡ Giovani</span>'
+    +'</div></div>';
+
+  // Righe zone
+  var rows = zoneOrd.map(function(zona,idx){
+    var d=zoneMap[zona];
+    var col=zona==='N/D'?'#94a3b8':(PALETTE[idx%PALETTE.length]||'#64748b');
+    var label=normZ(zona);
+    var pct=tot>0?(d.n/tot*100).toFixed(1):'0';
+    var bar=Math.round(d.n/maxN*100);
+    var pD=d.n>0?(d.donne/d.n*100).toFixed(0):'0';
+    var pS=d.n>0?(d.stranieri/d.n*100).toFixed(0):'0';
+    var pG=d.n>0?(d.giovani/d.n*100).toFixed(0):'0';
+    return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">'
+      +'<div style="min-width:160px;font-size:13px;font-weight:700;color:'+col+';white-space:nowrap;flex-shrink:0">'+label+'</div>'
+      +'<div style="flex:1;min-width:60px"><div style="background:#e2e8f0;border-radius:999px;height:5px;overflow:hidden"><div style="width:'+bar+'%;height:100%;background:'+col+';border-radius:999px"></div></div></div>'
+      +'<div style="min-width:50px;font-size:13px;font-weight:800;text-align:right;color:'+col+'">'+d.n.toLocaleString('it-IT')+'</div>'
+      +'<div style="min-width:50px;font-size:12px;font-weight:600;text-align:right;color:#64748b">'+pct+'%</div>'
+      +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:300px;flex-shrink:0">'
+      +'<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:5px 4px;border-radius:8px;background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.2);font-size:12px;font-weight:700;color:#be185d">♀ <b>'+d.donne+'</b> <span style="font-size:10px;opacity:.8">'+pD+'%</span></div>'
+      +'<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:5px 4px;border-radius:8px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);font-size:12px;font-weight:700;color:#047857">🌍 <b>'+d.stranieri+'</b> <span style="font-size:10px;opacity:.8">'+pS+'%</span></div>'
+      +'<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:5px 4px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);font-size:12px;font-weight:700;color:#1d4ed8">⚡ <b>'+d.giovani+'</b> <span style="font-size:10px;opacity:.8">'+pG+'%</span></div>'
+      +'</div></div>';
+  }).join('');
+
+  // Riga totale
+  var pTotD=tot>0?(totD/tot*100).toFixed(0):'0';
+  var pTotS=tot>0?(totS/tot*100).toFixed(0):'0';
+  var pTotG=tot>0?(totG/tot*100).toFixed(0):'0';
+  var totRow='<div style="display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:2px solid #e2e8f0">'
+    +'<div style="min-width:160px;font-size:13px;font-weight:800;color:#0f172a;flex-shrink:0">Totale</div>'
+    +'<div style="flex:1;min-width:60px"></div>'
+    +'<div style="min-width:50px;font-size:13px;font-weight:800;text-align:right;color:#0f172a">'+tot.toLocaleString('it-IT')+'</div>'
+    +'<div style="min-width:50px;font-size:12px;font-weight:600;text-align:right;color:#0f172a">100%</div>'
+    +'<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;width:300px;flex-shrink:0">'
+    +'<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:5px 4px;border-radius:8px;background:rgba(236,72,153,.1);border:1px solid rgba(236,72,153,.2);font-size:12px;font-weight:700;color:#be185d">♀ <b>'+totD+'</b> <span style="font-size:10px;opacity:.8">'+pTotD+'%</span></div>'
+    +'<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:5px 4px;border-radius:8px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);font-size:12px;font-weight:700;color:#047857">🌍 <b>'+totS+'</b> <span style="font-size:10px;opacity:.8">'+pTotS+'%</span></div>'
+    +'<div style="display:flex;align-items:center;justify-content:center;gap:3px;padding:5px 4px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2);font-size:12px;font-weight:700;color:#1d4ed8">⚡ <b>'+totG+'</b> <span style="font-size:10px;opacity:.8">'+pTotG+'%</span></div>'
+    +'</div></div>';
+
+  // KPI strip in cima
+  var totMapp=totMappate;
+  var pMapp=tot>0?(totMapp/tot*100).toFixed(1):'0';
+  var kpiTop='<div style="display:flex;gap:12px;margin-bottom:20px">'
+    +'<div style="flex:1;padding:14px;background:linear-gradient(135deg,#14B8A6,#0D9488);border-radius:10px;color:white;text-align:center">'
+    +'<div style="font-size:32px;font-weight:800;line-height:1">'+tot.toLocaleString('it-IT')+'</div>'
+    +'<div style="font-size:10px;font-weight:600;opacity:.85;margin-top:3px">Totale nuovi associati</div></div>'
+    +'<div style="flex:1;padding:14px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;text-align:center">'
+    +'<div style="font-size:32px;font-weight:800;color:#14B8A6;line-height:1">'+totMapp.toLocaleString('it-IT')+'</div>'
+    +'<div style="font-size:10px;font-weight:600;color:#64748b;margin-top:3px">Mappati ('+pMapp+'%)</div></div>'
+    +'<div style="flex:1;padding:14px;background:#fdf2f8;border:1px solid #fce7f3;border-radius:10px;text-align:center">'
+    +'<div style="font-size:32px;font-weight:800;color:#EC4899;line-height:1">'+totD+'</div>'
+    +'<div style="font-size:10px;font-weight:600;color:#64748b;margin-top:3px">Donne ('+pTotD+'%)</div></div>'
+    +'<div style="flex:1;padding:14px;background:#ecfdf5;border:1px solid #d1fae5;border-radius:10px;text-align:center">'
+    +'<div style="font-size:32px;font-weight:800;color:#10B981;line-height:1">'+totS+'</div>'
+    +'<div style="font-size:10px;font-weight:600;color:#64748b;margin-top:3px">Stranieri ('+pTotS+'%)</div></div>'
+    +'<div style="flex:1;padding:14px;background:#eff6ff;border:1px solid #dbeafe;border-radius:10px;text-align:center">'
+    +'<div style="font-size:32px;font-weight:800;color:#3B82F6;line-height:1">'+totG+'</div>'
+    +'<div style="font-size:10px;font-weight:600;color:#64748b;margin-top:3px">Giovani ≤40 ('+pTotG+'%)</div></div>'
+    +'</div>';
+
+  // Card principale
+  var cardBody='<div style="background:white;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden">'
+    +'<div style="background:linear-gradient(135deg,#14B8A6,#0D9488);padding:12px 18px;display:flex;align-items:center;gap:10px;color:white;font-size:14px;font-weight:800">'
+    +'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>'
+    +'Zone'
+    +'<span style="font-size:11px;font-weight:500;opacity:.85;margin-left:auto">'+totMapp.toLocaleString('it-IT')+' di '+tot.toLocaleString('it-IT')+' associati mappati</span>'
+    +'</div>'
+    +'<div style="padding:16px 20px">'+colsHdr+rows+totRow+'</div>'
+    +'</div>';
+
+  var body = kpiTop + cardBody;
+  return repPage(repHeader(titolo, anno, mese), body, repFooter('__'));
+}
+
+
 function repPagRaggruppamenti(data, anno, mese, soloMese, nPag) {
   var periodoLabel = soloMese ? MESI[mese] + ' ' + anno : 'Anno ' + anno;
   var titolo = 'Raggruppamenti e Zone · ' + periodoLabel;
