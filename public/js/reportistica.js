@@ -1121,104 +1121,169 @@ function repPagRaggruppamenti(data, anno, mese, soloMese, nPag) {
   var periodoLabel = soloMese ? MESI[mese] + ' ' + anno : 'Anno ' + anno;
   var titolo = 'Raggruppamenti e Zone · ' + periodoLabel;
 
-  // ── Filtra record per periodo ──
   var rec = data.filter(function(r) {
-    var a = parseInt(r.anno), m = parseInt(r.mese);
-    if (a !== anno) return false;
-    return soloMese ? m === mese : true;
+    if (parseInt(r.anno) !== anno) return false;
+    if (soloMese) return parseInt(r.mese) === mese;
+    return true;
   });
 
   var tot = rec.length;
+  if (!tot) {
+    return repPage(repHeader(titolo, anno, mese),
+      '<div style="padding:60px;text-align:center;color:#94a3b8">Nessun dato per questo periodo</div>',
+      repFooter(nPag || '__'));
+  }
 
-  // I flag _isDonna, _isStraniero, _isGiovane, _isCommercio, _isTurismo, _isCinema
-  // sono già stati calcolati in repCaricaEAnteprima (join con Anagrafiche).
-
-  // ── Aggregazione 6 categorie ──
+  // I flag _isDonna, _isStraniero, _isGiovane, _isCommercio, _isTurismo, _isCinema, _zona
+  // sono già calcolati in repCaricaEAnteprima (join con Anagrafiche)
   var cats = {
-    commercio: { tot:0, donne:0, stranieri:0 },
-    turismo:   { tot:0, donne:0, stranieri:0 },
-    cinema:    { tot:0, donne:0, stranieri:0 },
-    donne:     { tot:0, stranieri:0, giovani:0 },
-    stranieri: { tot:0, donne:0, giovani:0 },
-    giovani:   { tot:0, donne:0, stranieri:0 }
+    commercio: {tot:0,donne:0,stranieri:0,byZona:{}},
+    turismo:   {tot:0,donne:0,stranieri:0,byZona:{}},
+    cinema:    {tot:0,donne:0,stranieri:0,byZona:{}},
+    donne:     {tot:0,stranieri:0,giovani:0,byZona:{}},
+    stranieri: {tot:0,donne:0,giovani:0,byZona:{}},
+    giovani:   {tot:0,donne:0,stranieri:0,byFascia:{'≤25 anni':0,'26–30 anni':0,'31–35 anni':0,'36–40 anni':0},byZona:{}}
   };
 
+  function addZona(cat, zona) {
+    if (!cat.byZona[zona]) cat.byZona[zona] = 0;
+    cat.byZona[zona]++;
+  }
+
   rec.forEach(function(r) {
-    if (r._isCommercio) {
-      cats.commercio.tot++;
-      if (r._isDonna)     cats.commercio.donne++;
-      if (r._isStraniero) cats.commercio.stranieri++;
-    }
-    if (r._isTurismo) {
-      cats.turismo.tot++;
-      if (r._isDonna)     cats.turismo.donne++;
-      if (r._isStraniero) cats.turismo.stranieri++;
-    }
-    if (r._isCinema) {
-      cats.cinema.tot++;
-      if (r._isDonna)     cats.cinema.donne++;
-      if (r._isStraniero) cats.cinema.stranieri++;
-    }
-    if (r._isDonna) {
-      cats.donne.tot++;
-      if (r._isStraniero) cats.donne.stranieri++;
-      if (r._isGiovane)   cats.donne.giovani++;
-    }
-    if (r._isStraniero) {
-      cats.stranieri.tot++;
-      if (r._isDonna)   cats.stranieri.donne++;
-      if (r._isGiovane) cats.stranieri.giovani++;
-    }
+    var z = r._zona || 'N/D';
+    if (r._isCommercio) { cats.commercio.tot++; if(r._isDonna)cats.commercio.donne++; if(r._isStraniero)cats.commercio.stranieri++; addZona(cats.commercio,z); }
+    if (r._isTurismo)   { cats.turismo.tot++;   if(r._isDonna)cats.turismo.donne++;   if(r._isStraniero)cats.turismo.stranieri++;   addZona(cats.turismo,z);   }
+    if (r._isCinema)    { cats.cinema.tot++;    if(r._isDonna)cats.cinema.donne++;    if(r._isStraniero)cats.cinema.stranieri++;    addZona(cats.cinema,z);    }
+    if (r._isDonna)     { cats.donne.tot++;     if(r._isStraniero)cats.donne.stranieri++; if(r._isGiovane)cats.donne.giovani++; addZona(cats.donne,z); }
+    if (r._isStraniero) { cats.stranieri.tot++; if(r._isDonna)cats.stranieri.donne++; if(r._isGiovane)cats.stranieri.giovani++; addZona(cats.stranieri,z); }
     if (r._isGiovane) {
-      cats.giovani.tot++;
-      if (r._isDonna)     cats.giovani.donne++;
-      if (r._isStraniero) cats.giovani.stranieri++;
+      cats.giovani.tot++; if(r._isDonna)cats.giovani.donne++; if(r._isStraniero)cats.giovani.stranieri++; addZona(cats.giovani,z);
+      // Fascia
+      var eta = r._eta || 0;
+      if (eta<=25) cats.giovani.byFascia['≤25 anni']++;
+      else if (eta<=30) cats.giovani.byFascia['26–30 anni']++;
+      else if (eta<=35) cats.giovani.byFascia['31–35 anni']++;
+      else cats.giovani.byFascia['36–40 anni']++;
     }
   });
 
-  // ── Funzione card ──
-  function card(label, icon, color, n, donne, stranieri, extraLabel, extraVal, extraColor) {
-    var pct     = tot > 0 ? (n / tot * 100).toFixed(1) : '0';
-    var pctD    = n > 0 ? (donne / n * 100).toFixed(0) : '0';
-    var pctS    = n > 0 ? (stranieri / n * 100).toFixed(0) : '0';
-    var pctEx   = n > 0 && extraVal !== undefined ? (extraVal / n * 100).toFixed(0) : null;
+  // ── Helper: zone top 5 barre ──
+  function zoneBarHtml(byZona, totCat, color) {
+    var zoneOrd = Object.keys(byZona).filter(function(z){return byZona[z]>0 && z!=='N/D';}).sort(function(a,b){return byZona[b]-byZona[a];}).slice(0,5);
+    if(!zoneOrd.length) return '<span style="font-size:11px;color:#94a3b8">Nessun dato zona</span>';
+    var maxA = byZona[zoneOrd[0]] || 1;
+    return zoneOrd.map(function(z){
+      var n=byZona[z], bar=Math.round(n/maxA*100), p=totCat>0?(n/totCat*100).toFixed(1):'0';
+      return '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="font-weight:700;color:#1e293b">'+z+'</span><span style="color:'+color+';font-weight:800">'+n+' <span style="color:#64748b;font-weight:500">('+p+'%)</span></span></div><div style="background:#f1f5f9;border-radius:3px;height:4px"><div style="width:'+bar+'%;height:100%;background:'+color+';border-radius:3px;opacity:.8"></div></div></div>';
+    }).join('');
+  }
+
+  // ── Helper: card semplice (Commercio, Turismo, Cinema) ──
+  function simpleCard(d, color, title, desc, icon) {
+    var pct=tot>0?(d.tot/tot*100).toFixed(1):'0';
+    var pD=d.tot>0?(d.donne/d.tot*100).toFixed(1):'0';
+    var pS=d.tot>0?(d.stranieri/d.tot*100).toFixed(1):'0';
     return '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
-      +'<div style="background:'+color+';padding:10px 14px;display:flex;align-items:center;gap:8px">'
-      +'<div style="width:28px;height:28px;border-radius:50%;background:rgba(255,255,255,0.18);display:flex;align-items:center;justify-content:center;flex-shrink:0">'
-      +icon+'</div>'
-      +'<span style="font-size:13px;font-weight:700;color:white">'+label+'</span>'
-      +'</div>'
+      +'<div style="background:linear-gradient(135deg,'+color+','+color+'cc);padding:10px 14px;display:flex;align-items:center;gap:8px;color:white;font-size:13px;font-weight:700">'+icon+' '+title+'</div>'
       +'<div style="padding:14px 16px">'
-      // Numero grande
-      +'<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:38px;font-weight:800;color:#0f172a;line-height:1;letter-spacing:-0.5px">'+n+'</div>'
-      +'<div style="font-size:11px;color:#64748b;font-weight:600;margin-top:3px;margin-bottom:12px">'+pct+'% dei nuovi associati</div>'
-      // Pill Donne + Stranieri
-      +'<div style="display:flex;flex-wrap:wrap;gap:6px">'
-      +'<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(236,72,153,0.1);color:#be185d">♀ '+donne+' ('+pctD+'%)</span>'
-      +'<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(16,185,129,0.1);color:#065f46">🌍 '+stranieri+' ('+pctS+'%)</span>'
-      +(extraLabel && extraVal !== undefined ? '<span style="font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:rgba(59,130,246,0.1);color:#1e40af">'+extraLabel+' '+extraVal+' ('+pctEx+'%)</span>' : '')
+      +'<div style="font-size:34px;font-weight:800;color:'+color+';line-height:1;font-family:Inter,Helvetica,Arial,sans-serif">'+d.tot.toLocaleString('it-IT')+'</div>'
+      +'<div style="font-size:11px;color:#64748b;font-weight:600;margin:3px 0 2px">'+pct+'% dei nuovi associati</div>'
+      +'<div style="font-size:10px;color:#94a3b8;margin-bottom:10px">'+desc+'</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'
+      +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(236,72,153,.1);color:#be185d">♀ Donne '+pD+'%</span>'
+      +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(16,185,129,.1);color:#065f46">🌍 Stranieri '+pS+'%</span>'
       +'</div>'
+      +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Per zona</div>'
+      +zoneBarHtml(d.byZona,d.tot,color)
       +'</div></div>';
   }
 
-  var icoCommercio = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>';
-  var icoTurismo   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
-  var icoCinema    = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>';
-  var icoDonne     = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M12 12v8M9 18h6"/></svg>';
-  var icoStranieri = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg>';
-  var icoGiovani   = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><polyline points="13 17 18 12 13 7"/><polyline points="6 17 11 12 6 7"/></svg>';
+  // ── Helper: card Donne ──
+  function donneCard(d) {
+    var pct=tot>0?(d.tot/tot*100).toFixed(1):'0';
+    var pS=d.tot>0?(d.stranieri/d.tot*100).toFixed(1):'0';
+    var pG=d.tot>0?(d.giovani/d.tot*100).toFixed(1):'0';
+    return '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
+      +'<div style="background:linear-gradient(135deg,#EC4899,#db2777);padding:10px 14px;display:flex;align-items:center;gap:8px;color:white;font-size:13px;font-weight:700">'
+      +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M12 12v8M9 18h6"/></svg> 👩 Donne</div>'
+      +'<div style="padding:14px 16px">'
+      +'<div style="font-size:34px;font-weight:800;color:#EC4899;line-height:1;font-family:Inter,Helvetica,Arial,sans-serif">'+d.tot.toLocaleString('it-IT')+'</div>'
+      +'<div style="font-size:11px;color:#64748b;font-weight:600;margin:3px 0 2px">'+pct+'% dei nuovi associati</div>'
+      +'<div style="font-size:10px;color:#94a3b8;margin-bottom:10px">Imprese con titolare di sesso femminile</div>'
+      +'<div style="display:flex;gap:10px;margin-bottom:10px">'
+      +'<div style="text-align:center;flex:1;padding:8px;background:#fdf2f8;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#EC4899">'+d.tot.toLocaleString('it-IT')+'</div><div style="font-size:9px;color:#64748b;font-weight:600">Totale</div></div>'
+      +'<div style="text-align:center;flex:1;padding:8px;background:#ecfdf5;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#10B981">'+d.stranieri.toLocaleString('it-IT')+'</div><div style="font-size:9px;color:#64748b;font-weight:600">Straniere '+pS+'%</div></div>'
+      +'<div style="text-align:center;flex:1;padding:8px;background:#eff6ff;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#3B82F6">'+d.giovani.toLocaleString('it-IT')+'</div><div style="font-size:9px;color:#64748b;font-weight:600">Giovani ≤40 '+pG+'%</div></div>'
+      +'</div>'
+      +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Per zona</div>'
+      +zoneBarHtml(d.byZona,d.tot,'#EC4899')
+      +'</div></div>';
+  }
 
-  var body = tot === 0
-    ? '<div style="padding:60px;text-align:center;color:#94a3b8">Nessun dato per questo periodo</div>'
-    : '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">'
-        +card('Commercio',        icoCommercio, '#F59E0B', cats.commercio.tot, cats.commercio.donne, cats.commercio.stranieri)
-        +card('Turismo',          icoTurismo,   '#3B82F6', cats.turismo.tot,   cats.turismo.donne,   cats.turismo.stranieri)
-        +card('Cinema e Audiovisivo', icoCinema,'#8B5CF6', cats.cinema.tot,    cats.cinema.donne,    cats.cinema.stranieri)
-        +card('Donne',            icoDonne,     '#EC4899', cats.donne.tot,     cats.donne.stranieri, cats.donne.giovani,     '⚡ Giovani', cats.donne.giovani, '#1d4ed8')
-        +card('Stranieri',        icoStranieri, '#10B981', cats.stranieri.tot, cats.stranieri.donne, cats.stranieri.giovani, '⚡ Giovani', cats.stranieri.giovani, '#1d4ed8')
-        +card('Giovani ≤40',      icoGiovani,   '#6366F1', cats.giovani.tot,   cats.giovani.donne,   cats.giovani.stranieri)
-      +'</div>';
+  // ── Helper: card Stranieri ──
+  function stranieriCard(d) {
+    var pct=tot>0?(d.tot/tot*100).toFixed(1):'0';
+    var pD=d.tot>0?(d.donne/d.tot*100).toFixed(1):'0';
+    var pG=d.tot>0?(d.giovani/d.tot*100).toFixed(1):'0';
+    return '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
+      +'<div style="background:linear-gradient(135deg,#10B981,#059669);padding:10px 14px;display:flex;align-items:center;gap:8px;color:white;font-size:13px;font-weight:700">'
+      +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg> 🌍 Stranieri</div>'
+      +'<div style="padding:14px 16px">'
+      +'<div style="font-size:34px;font-weight:800;color:#10B981;line-height:1;font-family:Inter,Helvetica,Arial,sans-serif">'+d.tot.toLocaleString('it-IT')+'</div>'
+      +'<div style="font-size:11px;color:#64748b;font-weight:600;margin:3px 0 2px">'+pct+'% dei nuovi associati</div>'
+      +'<div style="font-size:10px;color:#94a3b8;margin-bottom:10px">Titolari con CF straniero (11° carattere = Z)</div>'
+      +'<div style="display:flex;gap:10px;margin-bottom:10px">'
+      +'<div style="text-align:center;flex:1;padding:8px;background:#ecfdf5;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#10B981">'+d.tot.toLocaleString('it-IT')+'</div><div style="font-size:9px;color:#64748b;font-weight:600">Totale</div></div>'
+      +'<div style="text-align:center;flex:1;padding:8px;background:#fdf2f8;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#EC4899">'+d.donne.toLocaleString('it-IT')+'</div><div style="font-size:9px;color:#64748b;font-weight:600">Donne '+pD+'%</div></div>'
+      +'<div style="text-align:center;flex:1;padding:8px;background:#eff6ff;border-radius:8px"><div style="font-size:20px;font-weight:800;color:#3B82F6">'+d.giovani.toLocaleString('it-IT')+'</div><div style="font-size:9px;color:#64748b;font-weight:600">Giovani ≤40 '+pG+'%</div></div>'
+      +'</div>'
+      +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Per zona</div>'
+      +zoneBarHtml(d.byZona,d.tot,'#10B981')
+      +'</div></div>';
+  }
 
-  // Il numero di pagina verrà sostituito da __TOTPAG__ in repBuildAllPages
+  // ── Helper: card Giovani ──
+  function giovaniCard(d) {
+    var pct=tot>0?(d.tot/tot*100).toFixed(1):'0';
+    var pD=d.tot>0?(d.donne/d.tot*100).toFixed(1):'0';
+    var pS=d.tot>0?(d.stranieri/d.tot*100).toFixed(1):'0';
+    var FASCE=['≤25 anni','26–30 anni','31–35 anni','36–40 anni'];
+    var maxF=Math.max.apply(null,FASCE.map(function(f){return d.byFascia[f]||0;}))||1;
+    var fascHtml=FASCE.map(function(f){
+      var n=d.byFascia[f]||0, bar=Math.round(n/maxF*100), p=d.tot>0?(n/d.tot*100).toFixed(1):'0';
+      return '<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;font-size:10px;margin-bottom:2px"><span style="font-weight:700;color:#1e293b">'+f+'</span><span style="color:#EF4444;font-weight:800">'+n+' <span style="color:#64748b;font-weight:500">('+p+'%)</span></span></div><div style="background:#f1f5f9;border-radius:3px;height:4px"><div style="width:'+bar+'%;height:100%;background:#EF4444;border-radius:3px"></div></div></div>';
+    }).join('');
+    return '<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
+      +'<div style="background:linear-gradient(135deg,#EF4444,#DC2626);padding:10px 14px;display:flex;align-items:center;gap:8px;color:white;font-size:13px;font-weight:700">'
+      +'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> 🌱 Giovani</div>'
+      +'<div style="padding:14px 16px">'
+      +'<div style="font-size:34px;font-weight:800;color:#EF4444;line-height:1;font-family:Inter,Helvetica,Arial,sans-serif">'+d.tot.toLocaleString('it-IT')+'</div>'
+      +'<div style="font-size:11px;color:#64748b;font-weight:600;margin:3px 0 2px">'+pct+'% dei nuovi associati</div>'
+      +'<div style="font-size:10px;color:#94a3b8;margin-bottom:10px">Titolari con età ≤ 40 anni</div>'
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'
+      +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(236,72,153,.1);color:#be185d">♀ Donne '+pD+'%</span>'
+      +'<span style="font-size:9px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(16,185,129,.1);color:#065f46">🌍 Stranieri '+pS+'%</span>'
+      +'</div>'
+      +'<div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Fasce d\'età</div>'
+      +fascHtml
+      +'</div></div>';
+  }
+
+  // ── Icone SVG ──
+  var icoComm = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>';
+  var icoTur  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>';
+  var icoCin  = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>';
+
+  // ── Layout: grid 3 colonne ──
+  var body = '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">'
+    + simpleCard(cats.commercio, '#F59E0B', '🛒 Commercio', 'ATECO che inizia per 46 o 47', icoComm)
+    + simpleCard(cats.turismo,   '#3B82F6', '🏨 Turismo',   'ATECO che inizia per 55, 56 o 79', icoTur)
+    + simpleCard(cats.cinema,    '#8B5CF6', '🎬 Cinema e Audiovisivo', 'ATECO che inizia per 591 o 592', icoCin)
+    + donneCard(cats.donne)
+    + stranieriCard(cats.stranieri)
+    + giovaniCard(cats.giovani)
+    + '</div>';
+
   return repPage(repHeader(titolo, anno, mese), body, repFooter(nPag || '__'));
 }
