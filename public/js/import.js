@@ -733,8 +733,13 @@ function showImportResults(results) {
     html += '</div>';
   }
   
-  html += '<div style="margin-top:20px;display:flex;gap:10px">';
+  html += '<div style="margin-top:20px;display:flex;gap:10px;flex-wrap:wrap">';
   html += '<button class="btn btn-primary" onclick="this.closest(\'[role=dialog]\').remove()">Chiudi</button>';
+  if (results.anagrafiche) {
+    html += '<button class="btn btn-secondary" id="btn-sync-zone" onclick="sincronizzaZone(this)" style="background:#14B8A6;color:white;border:none">'
+      + '🗺️ Sincronizza Zone da CAP</button>';
+    html += '<span style="font-size:11px;color:var(--text-sub);align-self:center">Associa la zona geografica ai nuovi associati tramite il CAP</span>';
+  }
   html += '</div>';
   html += '</div>';
   
@@ -1039,3 +1044,30 @@ drop.addEventListener('dragleave',function(){drop.classList.remove('drag-over');
 drop.addEventListener('drop',function(e){e.preventDefault();drop.classList.remove('drag-over');handleFile(e.dataTransfer.files[0],false);});
 
 // HAMBURGER MENU
+// ── Sincronizza zone da CAP dopo import Anagrafiche ──────────────────────────
+async function sincronizzaZone(btn) {
+  btn.disabled = true;
+  btn.textContent = '⏳ Sincronizzazione in corso…';
+  try {
+    var resp = await fetch(SB + '/rest/v1/rpc/sincronizza_zone_da_cap', {
+      method: 'POST',
+      headers: H({ 'Content-Type': 'application/json' }),
+      body: '{}'
+    });
+    if (!resp.ok) {
+      var err = await resp.text();
+      throw new Error('HTTP ' + resp.status + ': ' + err);
+    }
+    var result = await resp.json();
+    // result è un array di oggetti {aggiornati, inseriti}
+    var r = Array.isArray(result) ? result[0] : result;
+    btn.textContent = '✅ Zone sincronizzate';
+    btn.style.background = '#10B981';
+    toast('Zone sincronizzate: ' + (r.aggiornati||0) + ' aggiornati, ' + (r.inseriti||0) + ' inseriti', 'success');
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = '🗺️ Sincronizza Zone da CAP';
+    toast('Errore sincronizzazione zone: ' + e.message, 'error');
+    console.error(e);
+  }
+}
