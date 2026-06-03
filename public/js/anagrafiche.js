@@ -163,13 +163,36 @@ async function anaLoad(force){
       return svc !== 'NON ASSOCIABILE' && svc !== 'CONTABILITA\'';
     });
     
-    // Arricchisce ogni record con dati CCIAA e contratti attivi
+    // Costruisci mappa iscritti da diretti: codiceanagrafica → {datastipula, acuradi}
+    var iscrittiMap = {};
+    dir.forEach(function(d){
+      if(!d.servizio || !d.codiceanagrafica) return;
+      var svc = String(d.servizio).trim().toUpperCase();
+      if(svc === 'ISCRITTO'){
+        // Mantieni quello con data più recente
+        var existing = iscrittiMap[d.codiceanagrafica];
+        var dataNew = d.datastipula ? new Date(d.datastipula) : new Date(0);
+        var dataOld = existing ? new Date(existing.datastipula || 0) : new Date(0);
+        if(!existing || dataNew >= dataOld){
+          iscrittiMap[d.codiceanagrafica] = {
+            datastipula: d.datastipula || null,
+            acuradi: d.acuradi || ''
+          };
+        }
+      }
+    });
+
+    // Arricchisce ogni record con dati CCIAA, iscritto e contratti attivi
     anaAll.forEach(function(r){
       var piva = String(r.partitaiva || '').trim();
       var cc = anaCCIAAMap[piva] || null;
       r.addetti_sub    = cc ? (parseInt(cc.num_addetti_sub)    || 0) : 0;
       r.addetti_fam    = cc ? (parseInt(cc.num_addetti_fam_ul) || 0) : 0;
       r.totale_addetti = r.addetti_sub + r.addetti_fam;
+      // Iscritto da diretti
+      var isc = iscrittiMap[r.codiceanagrafica] || null;
+      r.iscritto_data      = isc ? (isc.datastipula || null) : null;
+      r.iscritto_consulente = isc ? (isc.acuradi || '') : '';
       // Contratti attivi: cerca per codiceanagrafica
       r.contratti_attivi = anaContratti[r.codiceanagrafica] || {};
     });
@@ -392,17 +415,19 @@ function anaRender(){
   // ── Aggiorna header dinamicamente ──
   var thead = G('ana-table') && G('ana-table').querySelector('thead tr');
   if (thead) {
-    // Rimuovi colonne dinamiche precedenti (dopo Mestiere = ultima colonna fissa = indice 26)
+    // Rimuovi tutte le colonne dinamiche (indice >= 27)
     var thList = Array.from(thead.querySelectorAll('th'));
     for (var j = thList.length - 1; j >= 27; j--) thList[j].parentNode.removeChild(thList[j]);
-    // Aggiunge le 3 colonne dipendenti se non già presenti
-    if (!thead.querySelector('[data-col="dip-sub"]')) {
-      var th;
-      th = document.createElement('th'); th.setAttribute('data-col','dip-sub'); th.textContent='Dip. Sub.'; th.style.cssText='text-align:center;border-left:2px solid var(--border)'; thead.appendChild(th);
-      th = document.createElement('th'); th.setAttribute('data-col','dip-fam'); th.textContent='Dip. Fam.'; th.style.cssText='text-align:center'; thead.appendChild(th);
-      th = document.createElement('th'); th.setAttribute('data-col','dip-tot'); th.textContent='Tot. Dip.'; th.style.cssText='text-align:center;font-weight:700;color:#005CA9;border-right:2px solid #005CA9'; thead.appendChild(th);
-    }
-    // Aggiunge 3 th per ogni tipo contratto
+    // 1) Iscritto (3 colonne)
+    var th;
+    th = document.createElement('th'); th.setAttribute('data-col','isc-stato'); th.textContent='Iscritto'; th.style.cssText='text-align:center;border-left:2px solid #10B981;color:#065F46;font-weight:700'; thead.appendChild(th);
+    th = document.createElement('th'); th.setAttribute('data-col','isc-data');  th.style.cssText='font-size:11px;color:#666;text-align:center;white-space:nowrap'; th.innerHTML='Data<br><small>Iscritto</small>'; thead.appendChild(th);
+    th = document.createElement('th'); th.setAttribute('data-col','isc-cons');  th.style.cssText='font-size:11px;color:#666;white-space:nowrap;border-right:2px solid #10B981'; th.innerHTML='Consulente<br><small>Iscritto</small>'; thead.appendChild(th);
+    // 2) Dipendenti (3 colonne)
+    th = document.createElement('th'); th.setAttribute('data-col','dip-sub'); th.textContent='Dip. Sub.'; th.style.cssText='text-align:center;border-left:2px solid var(--border)'; thead.appendChild(th);
+    th = document.createElement('th'); th.setAttribute('data-col','dip-fam'); th.textContent='Dip. Fam.'; th.style.cssText='text-align:center'; thead.appendChild(th);
+    th = document.createElement('th'); th.setAttribute('data-col','dip-tot'); th.textContent='Tot. Dip.'; th.style.cssText='text-align:center;font-weight:700;color:#005CA9;border-right:2px solid #005CA9'; thead.appendChild(th);
+    // 3) Contratti attivi (3 colonne per tipo)
     servizi.forEach(function(s){
       var th1 = document.createElement('th');
       th1.textContent = s;
@@ -430,7 +455,7 @@ function anaRender(){
   var info=G('ana-limit-info');
   if(info){ info.textContent = total ? ('Pagina '+(anaPage+1)+' di '+totalPages+' · '+ANA_PAGE_SIZE+' per pagina') : ''; }
 
-  var colCount = 27 + 3 + (servizi.length * 3); // 27 base + 3 dip + 3*servizi
+  var colCount = 27 + 3 + 3 + (servizi.length * 3); // 27 base + 3 iscritto + 3 dip + 3*servizi
   var tb=G('ana-tbody');
   if(!rows.length){ tb.innerHTML='<tr><td colspan="'+colCount+'" class="ana-empty">Nessun record trovato</td></tr>'; anaRenderPagination(totalPages, start, end); anaUpdateSelCount(); return; }
   var html=[];
@@ -469,6 +494,15 @@ function anaRender(){
       '<td>'+anaEsc(r.settore)+'</td>',
       '<td>'+anaEsc(r.mestiere)+'</td>'
     );
+    // Colonne Iscritto (da diretti)
+    if(r.iscritto_data){
+      var iscDataStr = new Date(r.iscritto_data).toLocaleDateString('it-IT');
+      html.push('<td style="text-align:center;font-size:11px;font-weight:700;color:#fff;background:#10B981;border-left:2px solid #10B981">Attivo</td>');
+      html.push('<td style="text-align:center;font-size:12px;white-space:nowrap">'+iscDataStr+'</td>');
+      html.push('<td style="font-size:12px;border-right:2px solid #10B981">'+anaEsc(r.iscritto_consulente||'-')+'</td>');
+    } else {
+      html.push('<td style="border-left:2px solid #10B981"></td><td></td><td style="border-right:2px solid #10B981"></td>');
+    }
     // Colonne dipendenti
     html.push('<td style="text-align:center;border-left:2px solid var(--border)">'+(r.addetti_sub > 0 ? r.addetti_sub : '-')+'</td>');
     html.push('<td style="text-align:center">'+(r.addetti_fam > 0 ? r.addetti_fam : '-')+'</td>');
@@ -573,35 +607,36 @@ function anaExport(){
     alert('❌ ACCESSO NEGATO: Solo amministratori e supervisori possono esportare dati.');
     return;
   }
-  
   if(anaSelected.size===0){ toast('Seleziona almeno una riga','error'); return; }
   try{
     var servizi = Object.keys(anaServiziSet).sort();
     var indices = Array.from(anaSelected).sort(function(a,b){return a-b;});
     var wsData = [];
 
-    // Riga titolo
-    wsData.push(['Archivio Imprese CNA']);
+    // Riga 1: Titolo
+    wsData.push(['Archivio Imprese CNA — ' + new Date().toLocaleDateString('it-IT')]);
 
-    // Header
+    // Riga 2: Header
     var headerRow = [
       'PARTITA IVA','COD. FISCALE','RAGIONE SOCIALE','TELEFONO','EMAIL','CELLULARE',
       'INDIRIZZO','CAP','COMUNE','SESSO','COGNOME','NOME','DATA NASCITA','LUOGO NASCITA',
       'COD. ATECO','SERVIZIO','DATA STIPULA','DATA DISDETTA','RAGGRUPPAMENTO',
       'SEDE EROGAZIONE','A CURA DI','MOTIVO INIZIO','IMPORTO','UNIONE','SETTORE','MESTIERE',
+      'ISCRITTO','DATA STIPULA ISCRITTO','CONSULENTE ISCRITTO',
       'DIP. SUBORDINATI','DIP. FAMILIARI','TOT. DIPENDENTI'
     ];
     servizi.forEach(function(s){
-      headerRow.push(s);
+      headerRow.push(s.toUpperCase());
       headerRow.push('DATA STIPULA '+s.toUpperCase());
       headerRow.push('CONSULENTE '+s.toUpperCase());
     });
     wsData.push(headerRow);
 
-    // Dati
+    // Righe dati
     indices.forEach(function(idx){
       var r = anaFiltered[idx];
       if(!r) return;
+      var iscDataStr = r.iscritto_data ? new Date(r.iscritto_data).toLocaleDateString('it-IT') : '';
       var row = [
         r.partitaiva||'', r.codicefiscale||'', r.ragionesociale||'',
         r.telefono||'', r.email||'', r.cellulare||'',
@@ -611,31 +646,131 @@ function anaExport(){
         r.servizio||'', r.datastipula||'', r.datadisdetta||'',
         r.raggruppamento||'', r.sedeerogazione||'', r.acuradi||'',
         r.motivoinizio||'', r.importo||'', r.unione||'', r.settore||'', r.mestiere||'',
-        r.addetti_sub||'', r.addetti_fam||'', r.totale_addetti||''
+        r.iscritto_data ? 'Attivo' : '', iscDataStr, r.iscritto_consulente||'',
+        r.addetti_sub > 0 ? r.addetti_sub : '', r.addetti_fam > 0 ? r.addetti_fam : '', r.totale_addetti > 0 ? r.totale_addetti : ''
       ];
       var contratti = r.contratti_attivi || {};
       servizi.forEach(function(srv){
         var c = contratti[srv];
         if(c){
           var dataStr = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '';
-          row.push('Attivo');
-          row.push(dataStr);
-          row.push(c.consulente||'');
-        } else {
-          row.push('','','');
-        }
+          row.push('Attivo'); row.push(dataStr); row.push(c.consulente||'');
+        } else { row.push('','',''); }
       });
       wsData.push(row);
     });
 
     var ws = XLSX.utils.aoa_to_sheet(wsData);
     var colCount = headerRow.length;
+
+    // ── MERGE titolo ──
     ws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:colCount-1}}];
+
+    // ── LARGHEZZE COLONNE ──
+    var colWidths = [13,14,50,13,32,13,35,7,18,6,18,14,11,16,10,20,12,12,18,18,18,16,10,18,18,20];
+    // iscritto+dip
+    colWidths.push(10,14,25,13,12,13);
+    servizi.forEach(function(){ colWidths.push(22,13,25); });
+    ws['!cols'] = colWidths.map(function(w){ return {wch:w}; });
+
+    // ── ROW HEIGHT ──
+    ws['!rows'] = [{hpt:28},{hpt:36}]; // titolo h28, header h36
+
+    // ── STILI ──
+    var CNA_BLUE = 'FF005CA9';
+    var CNA_GREEN = 'FF10B981';
+    var WHITE = 'FFFFFFFF';
+    var GREY_LIGHT = 'FFF2F2F2';
+    var TEXT_WHITE = {rgb: WHITE};
+    var TEXT_DARK  = {rgb: 'FF1A1A2E'};
+
+    // Riga 1: Titolo — sfondo CNA blu, testo bianco grande
+    var titleCell = ws['A1'] || {v:''};
+    ws['A1'] = titleCell;
+    ws['A1'].s = {
+      font: {name:'Calibri', bold:true, sz:18, color:TEXT_WHITE},
+      fill: {patternType:'solid', fgColor:{rgb:CNA_BLUE}},
+      alignment: {horizontal:'left', vertical:'center'}
+    };
+    // Colore tutte le celle del titolo (per merge visivo)
+    for(var tc=1; tc<colCount; tc++){
+      var tcRef = XLSX.utils.encode_col(tc)+'1';
+      if(!ws[tcRef]) ws[tcRef] = {v:''};
+      ws[tcRef].s = {fill:{patternType:'solid', fgColor:{rgb:CNA_BLUE}}, font:{color:TEXT_WHITE}};
+    }
+
+    // Riga 2: Header colonne — sfondo CNA blu scuro, testo bianco grassetto
+    for(var hc=0; hc<colCount; hc++){
+      var hRef = XLSX.utils.encode_col(hc)+'2';
+      if(!ws[hRef]) ws[hRef] = {v: headerRow[hc]||''};
+      ws[hRef].s = {
+        font: {name:'Calibri', bold:true, sz:11, color:TEXT_WHITE},
+        fill: {patternType:'solid', fgColor:{rgb:CNA_BLUE}},
+        alignment: {horizontal:'center', vertical:'center', wrapText:true},
+        border: {
+          left:   {style:'thin', color:{rgb:WHITE}},
+          right:  {style:'thin', color:{rgb:WHITE}},
+          top:    {style:'thin', color:{rgb:WHITE}},
+          bottom: {style:'medium', color:{rgb:'FF0041A0'}}
+        }
+      };
+    }
+
+    // Righe dati: righe alternate bianco / grigio chiaro, Calibri 11
+    var dataRowCount = wsData.length - 2; // -titolo -header
+    for(var dr=0; dr<dataRowCount; dr++){
+      var excelRow = dr + 3; // riga Excel (1-indexed), parte da riga 3
+      var isGrey = (dr % 2 === 1);
+      var bg = isGrey ? GREY_LIGHT : WHITE;
+      for(var dc=0; dc<colCount; dc++){
+        var dRef = XLSX.utils.encode_col(dc) + excelRow;
+        if(!ws[dRef]) ws[dRef] = {v:''};
+        var cellStyle = {
+          font: {name:'Calibri', sz:11, color:TEXT_DARK},
+          fill: {patternType:'solid', fgColor:{rgb:bg}},
+          alignment: {vertical:'center'},
+          border: {
+            bottom: {style:'thin', color:{rgb:'FFDDDDDD'}}
+          }
+        };
+        // Ragione Sociale — grassetto
+        if(dc === 2){
+          cellStyle.font = {name:'Calibri', sz:11, bold:true, color:{rgb:'FF005CA9'}};
+        }
+        // Colonna Iscritto stato (col 26) — verde se "Attivo"
+        if(dc === 26 && ws[dRef].v === 'Attivo'){
+          cellStyle.font = {name:'Calibri', sz:11, bold:true, color:TEXT_WHITE};
+          cellStyle.fill = {patternType:'solid', fgColor:{rgb:CNA_GREEN}};
+          cellStyle.alignment = {horizontal:'center', vertical:'center'};
+        }
+        // Colonne TOT DIPENDENTI (col 31) — blu
+        if(dc === 31 && ws[dRef].v !== ''){
+          cellStyle.font = {name:'Calibri', sz:11, bold:true, color:{rgb:CNA_BLUE}};
+          cellStyle.fill = {patternType:'solid', fgColor:{rgb:'FFE8F0FE'}};
+          cellStyle.alignment = {horizontal:'center', vertical:'center'};
+        }
+        // Colonne Sub/Fam dipendenti (col 29, 30) — centrate
+        if(dc === 29 || dc === 30){
+          cellStyle.alignment = {horizontal:'center', vertical:'center'};
+        }
+        // Colonne "Attivo" contratti (ogni 3° dal col 32+)
+        if(dc >= 32 && (dc - 32) % 3 === 0 && ws[dRef].v === 'Attivo'){
+          cellStyle.font = {name:'Calibri', sz:11, bold:true, color:TEXT_WHITE};
+          cellStyle.fill = {patternType:'solid', fgColor:{rgb:CNA_GREEN}};
+          cellStyle.alignment = {horizontal:'center', vertical:'center'};
+        }
+        ws[dRef].s = cellStyle;
+      }
+    }
+
+    // ── FREEZE: prime 2 righe e prime 3 colonne ──
+    ws['!freeze'] = {xSplit:3, ySplit:2, topLeftCell:'D3', activePane:'bottomRight'};
+
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Imprese');
     var ts = new Date().toISOString().slice(0,10);
     XLSX.writeFile(wb, 'cna_imprese_'+ts+'.xlsx');
-    toast('✓ Esportati '+indices.length+' record','success');
+    toast('✅ Esportati '+indices.length+' record', 'success');
   }catch(e){ toast('Errore export: '+e.message,'error'); }
 }
 
