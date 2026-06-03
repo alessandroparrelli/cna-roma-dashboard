@@ -208,6 +208,13 @@ async function anaLoad(force){
       r.iscritto_consulente = isc ? (isc.acuradi || '') : '';
       // Contratti attivi: cerca per codiceanagrafica
       r.contratti_attivi = anaContratti[r.codiceanagrafica] || {};
+
+      // Arricchisce servizi_tutti con i tipocontratto da contrattiservizio
+      // (alcune imprese hanno ISCRITTO/altri servizi in contrattiservizio invece che in diretti)
+      var svSet = {};
+      (r.servizi_tutti || []).forEach(function(s){ if(s) svSet[s] = true; });
+      Object.keys(r.contratti_attivi).forEach(function(tipo){ if(tipo) svSet[tipo] = true; });
+      r.servizi_tutti = Object.keys(svSet);
     });
 
     anaFiltered = anaAll.slice();
