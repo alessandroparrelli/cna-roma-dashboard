@@ -52,6 +52,9 @@ function anaJoin(ana, dir, cod){
     // Prendi il primo record di Codiciateco
     var c = finalC[0] || {};
     
+    // Array di tutti i servizi diretti per questa anagrafica (per filtro multi-servizio)
+    var serviziTutti = dRecs.map(function(dr){ return dr.servizio || ''; }).filter(Boolean);
+
     res.push({
       codiceanagrafica: a.codiceanagrafica,
       partitaiva:a.partitaiva, codicefiscale:a.codicefiscale, ragionesociale:a.ragionesociale,
@@ -62,7 +65,8 @@ function anaJoin(ana, dir, cod){
       servizio:d.servizio, datastipula:d.datastipula, datadisdetta:d.datadisdetta,
       raggruppamento:d.raggruppamento, sedeerogazione:d.sedeerogazione,
       acuradi:d.acuradi, motivoinizio:d.motivoinizio, importo:d.importo,
-      unione:c.unione, settore:c.settore, mestiere:c.mestiere
+      unione:c.unione, settore:c.settore, mestiere:c.mestiere,
+      servizi_tutti: serviziTutti   // tutti i servizi diretti, usato dal filtro
     });
     
     if(idx%5000===0) anaSetStatus('join', res.length, 'loading');
@@ -264,7 +268,14 @@ function anaPopulateFilters(){
   }
   fillSel('ana-f-comune', uniq('comune'));
   fillSel('ana-f-ateco', uniq('codiceateco'));
-  fillSel('ana-f-servizio', uniq('servizio'));
+  // Popola filtro servizio da TUTTI i servizi diretti (non solo il primo)
+  var serviziSet = {};
+  anaAll.forEach(function(r){
+    (r.servizi_tutti || [r.servizio]).forEach(function(s){
+      if(s && s.trim()) serviziSet[s.trim()] = 1;
+    });
+  });
+  fillSel('ana-f-servizio', Object.keys(serviziSet).sort());
   var anni = uniq('datastipula', function(v){ return v?new Date(v).getFullYear():null; }).map(Number).filter(function(x){return !isNaN(x);}).sort(function(a,b){return b-a;});
   fillSel('ana-f-anno', anni);
   fillSel('ana-f-raggr', uniq('raggruppamento'));
@@ -303,7 +314,10 @@ function anaApply(){
     if(fCom && r.comune!==fCom) return false;
     if(fSex && r.sesso!==fSex) return false;
     if(fAte && String(r.codiceateco||'')!==fAte) return false;
-    if(fSrv && r.servizio!==fSrv) return false;
+    if(fSrv){
+      var tuttiSrv = r.servizi_tutti && r.servizi_tutti.length ? r.servizi_tutti : (r.servizio ? [r.servizio] : []);
+      if(!tuttiSrv.some(function(s){ return s === fSrv; })) return false;
+    }
     if(fAn && (!r.datastipula || String(new Date(r.datastipula).getFullYear())!==fAn)) return false;
     if(fRag && r.raggruppamento!==fRag) return false;
     if(fSed && r.sedeerogazione!==fSed) return false;
