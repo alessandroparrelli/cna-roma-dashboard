@@ -53,7 +53,12 @@ function anaJoin(ana, dir, cod){
     var c = finalC[0] || {};
     
     // Array di tutti i servizi diretti per questa anagrafica (per filtro multi-servizio)
+    // Considera TUTTI i servizi (anche disdettati), per non perdere storici nel filtro
     var serviziTutti = dRecs.map(function(dr){ return dr.servizio || ''; }).filter(Boolean);
+    // Rimuovi duplicati
+    var serviziTuttiUniq = {};
+    serviziTutti.forEach(function(s){ serviziTuttiUniq[s] = true; });
+    serviziTutti = Object.keys(serviziTuttiUniq);
 
     res.push({
       codiceanagrafica: a.codiceanagrafica,
@@ -161,10 +166,14 @@ async function anaLoad(force){
     anaSetProgress(75, 'Unificazione dati…');
     anaAll = anaJoin(ana, dir, cod);
     
-    // Filtra: esclude record con servizio "NON ASSOCIABILE" e "CONTABILITA'"
+    // Filtra: esclude anagrafiche dove TUTTI i servizi diretti sono NON ASSOCIABILE o CONTABILITA'
+    // (non eliminare se ne ha almeno uno valido, es. ISCRITTO)
     anaAll = anaAll.filter(function(r) {
-      var svc = r.servizio ? r.servizio.trim() : '';
-      return svc !== 'NON ASSOCIABILE' && svc !== 'CONTABILITA\'';
+      var tutti = r.servizi_tutti && r.servizi_tutti.length ? r.servizi_tutti : (r.servizio ? [r.servizio] : []);
+      if(tutti.length === 0) return true; // nessun servizio: tengo
+      var esclusi = ['NON ASSOCIABILE', "CONTABILITA'"];
+      // Tieni se almeno un servizio NON è nella lista di esclusione
+      return tutti.some(function(s){ return esclusi.indexOf((s||'').trim()) === -1; });
     });
     
     // Costruisci mappa iscritti da diretti: codiceanagrafica → {datastipula, acuradi}
