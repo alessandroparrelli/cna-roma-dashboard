@@ -1,3 +1,7 @@
+var anaContratti = {};   // codiceanagrafica → { tipocontratto: {data, consulente} }
+var anaServiziSet = {}; // tutti i tipi di contratto trovati
+var anaCCIAAMap = {};   // partita_iva → {num_addetti_sub, num_addetti_fam_ul}
+
 async function anaFetchAll(table){
   var all=[], offset=0, size=1000;
   while(true){
@@ -93,11 +97,64 @@ async function anaLoad(force){
   try{
     anaSetProgress(5, 'Caricamento Anagrafiche…');
     var ana = await anaFetchAll('Anagrafiche');
-    anaSetProgress(30, 'Caricamento Diretti…');
+    anaSetProgress(25, 'Caricamento Diretti…');
     var dir = await anaFetchAll('diretti');
     allDiretti = dir; // Salva per schede anagrafiche
-    anaSetProgress(55, 'Caricamento Codici ATECO…');
+    anaSetProgress(45, 'Caricamento Codici ATECO…');
     var cod = await anaFetchAll('codiciateco');
+
+    // Calcola partite IVA uniche per il fetch CCIAA
+    var pivaSet = {};
+    ana.forEach(function(a){ if(a.partitaiva) pivaSet[String(a.partitaiva).trim()] = true; });
+    var pivaList = Object.keys(pivaSet);
+
+    anaSetProgress(55, 'Caricamento CCIAA e Contratti…');
+
+    // Fetch CCIAA a batch di 50 (partite IVA)
+    var fetchCciaa = Promise.resolve([]);
+    if (pivaList.length > 0) {
+      var batchSize = 50;
+      var batches = [];
+      for (var b = 0; b < pivaList.length; b += batchSize) batches.push(pivaList.slice(b, b + batchSize));
+      fetchCciaa = Promise.all(batches.map(function(batch){
+        return fetch(SB+'/rest/v1/cciaa?select=partita_iva,num_addetti_sub,num_addetti_fam_ul&partita_iva=in.('+batch.join(',')+')', {headers:H()})
+          .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+      })).then(function(results){ return results.reduce(function(acc,r){ return acc.concat(r); }, []); });
+    }
+
+    // Fetch contratti servizio attivi (datadisdetta IS NULL)
+    var fetchContratti = anaFetchAllFiltered('contrattiservizio', 'select=codicecliente,tipocontratto,datastipulacontratto,nomeconsulente&datadisdetta=is.null');
+
+    var extras = await Promise.all([fetchCciaa, fetchContratti]);
+    var cciaaRows = extras[0];
+    var contrattiRows = extras[1];
+
+    // Costruisci mappa CCIAA: partita_iva → {sub, fam}
+    anaCCIAAMap = {};
+    cciaaRows.forEach(function(cc){
+      if(cc.partita_iva) anaCCIAAMap[String(cc.partita_iva).trim()] = cc;
+    });
+
+    // Costruisci mappa contratti: codiceanagrafica → {tipocontratto: {data, consulente}}
+    anaContratti = {};
+    anaServiziSet = {};
+    contrattiRows.forEach(function(c){
+      if(!c.codicecliente) return;
+      if(!anaContratti[c.codicecliente]) anaContratti[c.codicecliente] = {};
+      if(c.tipocontratto){
+        anaServiziSet[c.tipocontratto] = true;
+        var existing = anaContratti[c.codicecliente][c.tipocontratto];
+        var dataC = c.datastipulacontratto ? new Date(c.datastipulacontratto) : new Date(0);
+        if(!existing || dataC > new Date(existing.data || 0)){
+          anaContratti[c.codicecliente][c.tipocontratto] = {
+            data: c.datastipulacontratto || null,
+            consulente: c.nomeconsulente || ''
+          };
+        }
+      }
+    });
+
+    anaSetProgress(75, 'Unificazione dati…');
     anaAll = anaJoin(ana, dir, cod);
     
     // Filtra: esclude record con servizio "NON ASSOCIABILE" e "CONTABILITA'"
@@ -106,6 +163,17 @@ async function anaLoad(force){
       return svc !== 'NON ASSOCIABILE' && svc !== 'CONTABILITA\'';
     });
     
+    // Arricchisce ogni record con dati CCIAA e contratti attivi
+    anaAll.forEach(function(r){
+      var piva = String(r.partitaiva || '').trim();
+      var cc = anaCCIAAMap[piva] || null;
+      r.addetti_sub    = cc ? (parseInt(cc.num_addetti_sub)    || 0) : 0;
+      r.addetti_fam    = cc ? (parseInt(cc.num_addetti_fam_ul) || 0) : 0;
+      r.totale_addetti = r.addetti_sub + r.addetti_fam;
+      // Contratti attivi: cerca per codiceanagrafica
+      r.contratti_attivi = anaContratti[r.codiceanagrafica] || {};
+    });
+
     anaFiltered = anaAll.slice();
     anaSelected.clear();
     anaPage=0;
@@ -127,6 +195,23 @@ async function anaLoad(force){
   }finally{
     anaLoading=false;
   }
+}
+
+// Fetch paginato con filtro custom (non usa select=* per compatibilità)
+async function anaFetchAllFiltered(tableName, filterQuery){
+  var all=[], offset=0, size=1000;
+  while(true){
+    var url = SB+'/rest/v1/'+tableName+'?'+filterQuery+'&offset='+offset+'&limit='+size;
+    var r = await fetch(url, {headers:H()});
+    if(!r.ok) throw new Error(tableName+': HTTP '+r.status);
+    var rows = await r.json();
+    if(!Array.isArray(rows)||rows.length===0) break;
+    all = all.concat(rows);
+    offset += size;
+    if(rows.length < size) break;
+    await new Promise(function(res){setTimeout(res,150);});
+  }
+  return all;
 }
 
 function anaPopulateFilters(){
@@ -301,6 +386,39 @@ function anaRender(){
   G('ana-count').textContent = total.toLocaleString('it-IT')+' record';
   G('ana-info-text').textContent = 'DB: '+anaAll.length.toLocaleString('it-IT')+' totali'+(total<anaAll.length?' · Filtrati: '+total.toLocaleString('it-IT'):'');
 
+  // Lista servizi (ordinata) per le colonne contratti
+  var servizi = Object.keys(anaServiziSet).sort();
+
+  // ── Aggiorna header dinamicamente ──
+  var thead = G('ana-table') && G('ana-table').querySelector('thead tr');
+  if (thead) {
+    // Rimuovi colonne dinamiche precedenti (dopo Mestiere = ultima colonna fissa = indice 26)
+    var thList = Array.from(thead.querySelectorAll('th'));
+    for (var j = thList.length - 1; j >= 27; j--) thList[j].parentNode.removeChild(thList[j]);
+    // Aggiunge le 3 colonne dipendenti se non già presenti
+    if (!thead.querySelector('[data-col="dip-sub"]')) {
+      var th;
+      th = document.createElement('th'); th.setAttribute('data-col','dip-sub'); th.textContent='Dip. Sub.'; th.style.cssText='text-align:center;border-left:2px solid var(--border)'; thead.appendChild(th);
+      th = document.createElement('th'); th.setAttribute('data-col','dip-fam'); th.textContent='Dip. Fam.'; th.style.cssText='text-align:center'; thead.appendChild(th);
+      th = document.createElement('th'); th.setAttribute('data-col','dip-tot'); th.textContent='Tot. Dip.'; th.style.cssText='text-align:center;font-weight:700;color:#005CA9;border-right:2px solid #005CA9'; thead.appendChild(th);
+    }
+    // Aggiunge 3 th per ogni tipo contratto
+    servizi.forEach(function(s){
+      var th1 = document.createElement('th');
+      th1.textContent = s;
+      th1.style.cssText = 'text-align:center;border-left:2px solid #ddd;white-space:nowrap';
+      var th2 = document.createElement('th');
+      th2.style.cssText = 'font-size:11px;color:#666;text-align:center;white-space:nowrap';
+      th2.innerHTML = 'Data<br><small>'+s+'</small>';
+      var th3 = document.createElement('th');
+      th3.style.cssText = 'font-size:11px;color:#666;white-space:nowrap';
+      th3.innerHTML = 'Consulente<br><small>'+s+'</small>';
+      thead.appendChild(th1);
+      thead.appendChild(th2);
+      thead.appendChild(th3);
+    });
+  }
+
   // ── Paginazione: 50 record per pagina ──
   var totalPages = Math.max(1, Math.ceil(total / ANA_PAGE_SIZE));
   if(anaPage > totalPages-1) anaPage = totalPages-1;
@@ -312,8 +430,9 @@ function anaRender(){
   var info=G('ana-limit-info');
   if(info){ info.textContent = total ? ('Pagina '+(anaPage+1)+' di '+totalPages+' · '+ANA_PAGE_SIZE+' per pagina') : ''; }
 
+  var colCount = 27 + 3 + (servizi.length * 3); // 27 base + 3 dip + 3*servizi
   var tb=G('ana-tbody');
-  if(!rows.length){ tb.innerHTML='<tr><td colspan="27" class="ana-empty">Nessun record trovato</td></tr>'; anaRenderPagination(totalPages, start, end); anaUpdateSelCount(); return; }
+  if(!rows.length){ tb.innerHTML='<tr><td colspan="'+colCount+'" class="ana-empty">Nessun record trovato</td></tr>'; anaRenderPagination(totalPages, start, end); anaUpdateSelCount(); return; }
   var html=[];
   for(var j=0;j<rows.length;j++){
     var r=rows[j];
@@ -348,9 +467,26 @@ function anaRender(){
       '<td>'+anaEsc(r.importo)+'</td>',
       '<td>'+anaEsc(r.unione)+'</td>',
       '<td>'+anaEsc(r.settore)+'</td>',
-      '<td>'+anaEsc(r.mestiere)+'</td>',
-      '</tr>'
+      '<td>'+anaEsc(r.mestiere)+'</td>'
     );
+    // Colonne dipendenti
+    html.push('<td style="text-align:center;border-left:2px solid var(--border)">'+(r.addetti_sub > 0 ? r.addetti_sub : '-')+'</td>');
+    html.push('<td style="text-align:center">'+(r.addetti_fam > 0 ? r.addetti_fam : '-')+'</td>');
+    html.push('<td style="text-align:center;font-weight:700;color:#005CA9;background:#E8F0FE;border-right:2px solid #005CA9">'+(r.totale_addetti > 0 ? r.totale_addetti : '-')+'</td>');
+    // Colonne contratti attivi
+    var contratti = r.contratti_attivi || {};
+    servizi.forEach(function(srv){
+      var c = contratti[srv];
+      if(c){
+        var dataStr = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '-';
+        html.push('<td style="text-align:center;font-size:11px;font-weight:700;color:#fff;background:#10B981;border-left:2px solid #ddd">Attivo</td>');
+        html.push('<td style="text-align:center;font-size:12px;white-space:nowrap">'+dataStr+'</td>');
+        html.push('<td style="font-size:12px">'+anaEsc(c.consulente || '-')+'</td>');
+      } else {
+        html.push('<td style="border-left:2px solid #ddd"></td><td></td><td></td>');
+      }
+    });
+    html.push('</tr>');
   }
   tb.innerHTML=html.join('');
   anaRenderPagination(totalPages, start, end);
@@ -440,13 +576,66 @@ function anaExport(){
   
   if(anaSelected.size===0){ toast('Seleziona almeno una riga','error'); return; }
   try{
-    var data = Array.from(anaSelected).map(function(i){ return anaFiltered[i]; }).filter(Boolean);
-    var ws = XLSX.utils.json_to_sheet(data);
+    var servizi = Object.keys(anaServiziSet).sort();
+    var indices = Array.from(anaSelected).sort(function(a,b){return a-b;});
+    var wsData = [];
+
+    // Riga titolo
+    wsData.push(['Archivio Imprese CNA']);
+
+    // Header
+    var headerRow = [
+      'PARTITA IVA','COD. FISCALE','RAGIONE SOCIALE','TELEFONO','EMAIL','CELLULARE',
+      'INDIRIZZO','CAP','COMUNE','SESSO','COGNOME','NOME','DATA NASCITA','LUOGO NASCITA',
+      'COD. ATECO','SERVIZIO','DATA STIPULA','DATA DISDETTA','RAGGRUPPAMENTO',
+      'SEDE EROGAZIONE','A CURA DI','MOTIVO INIZIO','IMPORTO','UNIONE','SETTORE','MESTIERE',
+      'DIP. SUBORDINATI','DIP. FAMILIARI','TOT. DIPENDENTI'
+    ];
+    servizi.forEach(function(s){
+      headerRow.push(s);
+      headerRow.push('DATA STIPULA '+s.toUpperCase());
+      headerRow.push('CONSULENTE '+s.toUpperCase());
+    });
+    wsData.push(headerRow);
+
+    // Dati
+    indices.forEach(function(idx){
+      var r = anaFiltered[idx];
+      if(!r) return;
+      var row = [
+        r.partitaiva||'', r.codicefiscale||'', r.ragionesociale||'',
+        r.telefono||'', r.email||'', r.cellulare||'',
+        r.indirizzo||'', r.cap||'', r.comune||'', r.sesso||'',
+        r.cognometitolare||'', r.nometitolare||'',
+        r.datanascita||'', r.luogonascita||'', r.codiceateco||'',
+        r.servizio||'', r.datastipula||'', r.datadisdetta||'',
+        r.raggruppamento||'', r.sedeerogazione||'', r.acuradi||'',
+        r.motivoinizio||'', r.importo||'', r.unione||'', r.settore||'', r.mestiere||'',
+        r.addetti_sub||'', r.addetti_fam||'', r.totale_addetti||''
+      ];
+      var contratti = r.contratti_attivi || {};
+      servizi.forEach(function(srv){
+        var c = contratti[srv];
+        if(c){
+          var dataStr = c.data ? new Date(c.data).toLocaleDateString('it-IT') : '';
+          row.push('Attivo');
+          row.push(dataStr);
+          row.push(c.consulente||'');
+        } else {
+          row.push('','','');
+        }
+      });
+      wsData.push(row);
+    });
+
+    var ws = XLSX.utils.aoa_to_sheet(wsData);
+    var colCount = headerRow.length;
+    ws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:colCount-1}}];
     var wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'CNA');
+    XLSX.utils.book_append_sheet(wb, ws, 'Imprese');
     var ts = new Date().toISOString().slice(0,10);
-    XLSX.writeFile(wb, 'cna_anagrafiche_'+ts+'.xlsx');
-    toast('✓ Esportati '+data.length+' record','success');
+    XLSX.writeFile(wb, 'cna_imprese_'+ts+'.xlsx');
+    toast('✓ Esportati '+indices.length+' record','success');
   }catch(e){ toast('Errore export: '+e.message,'error'); }
 }
 
