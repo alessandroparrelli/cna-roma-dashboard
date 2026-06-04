@@ -634,6 +634,7 @@ function repSchedaHTML(c, suffix) {
 
 function repPag5_SchedeA(data, anno, mese) {
   var cards=repGetPromoCards(data,anno,mese);
+  var first=cards.slice(0,3);
   while(first.length<3) first.push(first[0]||{p:'–',color:'#ccc',anni:[],annData:{},spark:[],totTot:0,totCnt:0,pctGlob:''});
   var body='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">'
     +first.map(function(c,i){return repSchedaHTML(c,'5-'+i);}).join('')+'</div>';
