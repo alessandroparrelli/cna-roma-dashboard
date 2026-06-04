@@ -415,25 +415,27 @@ async function openAnagraficaModal(anaIdx) {
   overlay.id = 'modal-scheda-bg';
 
   overlay.innerHTML =
-    // Topbar con logo CNA a sinistra + nome impresa a destra
+    // Topbar con logo CNA a sinistra + nome impresa a destra, allineati con scheda-body
     '<div class="scheda-topbar">' +
-      // Sinistra: logo allineato con header tabelle
-      '<div class="scheda-topbar-left">' +
-        '<button class="scheda-topbar-back" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
-          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>' +
-          'Indietro' +
-        '</button>' +
-        '<div class="scheda-topbar-divider"></div>' +
-        '<img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/main/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png" ' +
-          'class="scheda-topbar-logo" alt="CNA Roma" onerror="this.style.display=\'none\'">' +
-      '</div>' +
-      // Destra: ragione sociale
-      '<div class="scheda-topbar-right">' +
-        '<div class="scheda-topbar-company">' +
-          '<span class="scheda-topbar-company-label">Scheda Impresa</span>' +
-          '<span class="scheda-topbar-company-name">' + (ana.ragionesociale || '—') + '</span>' +
+      '<div class="scheda-topbar-inner">' +
+        // Sinistra: bottone + divisore + logo
+        '<div class="scheda-topbar-left">' +
+          '<button class="scheda-topbar-back" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
+            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>' +
+            'Indietro' +
+          '</button>' +
+          '<div class="scheda-topbar-divider"></div>' +
+          '<img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/main/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png" ' +
+            'class="scheda-topbar-logo" alt="CNA Roma" onerror="this.style.display=\'none\'">' +
         '</div>' +
-        '<button class="scheda-topbar-close" onclick="document.getElementById(\'modal-scheda-bg\').remove()">×</button>' +
+        // Destra: ragione sociale + chiudi
+        '<div class="scheda-topbar-right">' +
+          '<div class="scheda-topbar-company">' +
+            '<span class="scheda-topbar-company-label">Scheda Impresa</span>' +
+            '<span class="scheda-topbar-company-name">' + (ana.ragionesociale || '—') + '</span>' +
+          '</div>' +
+          '<button class="scheda-topbar-close" onclick="document.getElementById(\'modal-scheda-bg\').remove()">×</button>' +
+        '</div>' +
       '</div>' +
     '</div>' +
     // Corpo
