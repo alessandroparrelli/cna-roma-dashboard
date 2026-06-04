@@ -548,7 +548,7 @@ function repPag4_RaffrontoYTD(data, anno, mese) {
 }
 
 // ── SCHEDE PROMOTORI ──────────────────────────────────────────────────────────
-function repGetPromoCards(data, anno) {
+function repGetPromoCards(data, anno, mese) {
   var anniSet={};
   data.forEach(function(r){if(r.anno)anniSet[r.anno]=1;});
   var anni=Object.keys(anniSet).map(Number).sort();
@@ -556,10 +556,14 @@ function repGetPromoCards(data, anno) {
   data.forEach(function(r){var p=r.promotore||r.a_cura_di||'N/D'; promoSet[p]=1;});
   var promos=Object.keys(promoSet).sort();
 
+  // Filtra solo i dati YTD (gen → mese selezionato) per tutti gli anni
+  // così il confronto tra anni è equo (stesso periodo)
+  var dataYTD = data.filter(function(r){ return parseInt(r.mese) <= mese; });
+
   return promos.map(function(p,pi){
     var color=COLORS_PROMO[pi%COLORS_PROMO.length];
     var annData={}, spark=new Array(12).fill(0);
-    data.forEach(function(r){
+    dataYTD.forEach(function(r){
       var rp=r.promotore||r.a_cura_di||'N/D';
       if(rp!==p) return;
       var a=parseInt(r.anno), m=parseInt(r.mese);
@@ -569,7 +573,7 @@ function repGetPromoCards(data, anno) {
     });
     var totTot=Object.values(annData).reduce(function(s,d){return s+d.tot;},0);
     var totCnt=Object.values(annData).reduce(function(s,d){return s+d.cnt;},0);
-    var pctGlob=data.length>0?(totCnt/data.length*100).toFixed(1)+'% globale':'';
+    var pctGlob=dataYTD.length>0?(totCnt/dataYTD.length*100).toFixed(1)+'% globale':'';
     return {p:p,color:color,anni:anni,annData:annData,spark:spark,totTot:totTot,totCnt:totCnt,pctGlob:pctGlob};
   });
 }
@@ -629,8 +633,7 @@ function repSchedaHTML(c, suffix) {
 }
 
 function repPag5_SchedeA(data, anno, mese) {
-  var cards=repGetPromoCards(data,anno);
-  var first=cards.slice(0,3);
+  var cards=repGetPromoCards(data,anno,mese);
   while(first.length<3) first.push(first[0]||{p:'–',color:'#ccc',anni:[],annData:{},spark:[],totTot:0,totCnt:0,pctGlob:''});
   var body='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">'
     +first.map(function(c,i){return repSchedaHTML(c,'5-'+i);}).join('')+'</div>';
@@ -638,7 +641,7 @@ function repPag5_SchedeA(data, anno, mese) {
 }
 
 function repPag6_SchedeB(data, anno, mese) {
-  var cards=repGetPromoCards(data,anno);
+  var cards=repGetPromoCards(data,anno,mese);
   var second=cards.slice(3,6);
   if(!second.length) return repPage(repHeader('Schede individuali per promotore',anno,mese),'<p style="color:#94a3b8;text-align:center;padding:40px">Meno di 4 promotori presenti.</p>',repFooter('7'));
   while(second.length<3) second.push(second[0]);
@@ -832,7 +835,7 @@ function repRenderAllCharts(data, anno, mese) {
   mkLine('rep-c4-trend',anni.map(String),anni.map(function(a){return data.filter(function(r){return parseInt(r.anno)===a&&parseInt(r.mese)<=mese;}).length;}),'#8B5CF6');
 
   // P5/P6: sparklines
-  var cards=repGetPromoCards(data,anno);
+  var cards=repGetPromoCards(data,anno,mese);
   cards.forEach(function(c,i){
     var suffix=(i<3?'5':'6')+'-'+(i<3?i:i-3);
     mkSparkline('rep-spark-'+suffix,MESI.slice(1),c.spark,c.color);
