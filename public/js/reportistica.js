@@ -79,15 +79,23 @@ async function repCaricaEAnteprima() {
     repSetStatus(true, 'Caricamento serie storica…');
     var repStoricaData = await sbGetAll('serie_storica');
 
-    // ── Join con Anagrafiche per sesso/CF/ateco (per le pagine Raggruppamenti) ──
+    // ── Join con Anagrafiche + codiciateco per unione/mestiere/settore/sesso/CF ──
     repSetStatus(true, 'Caricamento anagrafiche…');
     var repAna = await repFetchAll('Anagrafiche');
     var repDir = await repFetchAll('diretti');
+    repSetStatus(true, 'Caricamento codiciateco…');
+    var repCodici = await repFetchAll('codiciateco');
 
     var anaMap = {};
     repAna.forEach(function(a) {
       var k = String(a.codiceanagrafica || '').trim().toUpperCase();
       if (k && k !== '0' && !anaMap[k]) anaMap[k] = a;
+    });
+    // Mappa codiceateco → riga codiciateco (identica a ateco.js)
+    var codMap = {};
+    repCodici.forEach(function(c) {
+      var k = String(c.codiceateco || '').trim();
+      if (k && !codMap[k]) codMap[k] = c;
     });
     var zonaMap = {};
     repDir.forEach(function(d) {
@@ -101,6 +109,14 @@ async function repCaricaEAnteprima() {
       if (!isNaN(f) && String(f) === s) s = String(Math.round(f));
       return s.replace(/\./g,'').replace(/\s/g,'');
     }
+    // Valori "non deliberato" da trattare come N/D (come in ateco.js)
+    var ATECO_ND = {'mestiere non deliberato':1,'non deliberato':1,'attività non deliberata':1,
+      'settore non deliberato':1,'unione non deliberata':1,'nd':1,'n/d':1,'n.d.':1};
+    function bestAtecoField(cod, field) {
+      if (!cod) return null;
+      var v = String(cod[field] || '').trim();
+      return (v && !ATECO_ND[v.toLowerCase()]) ? v : null;
+    }
     repAllData.forEach(function(tr) {
       var cc  = String(tr.codicecliente || '').trim().toUpperCase();
       var ana = cc ? anaMap[cc] : null;
@@ -109,25 +125,32 @@ async function repCaricaEAnteprima() {
       // Sesso: priorità campo diretto, poi Anagrafiche
       var sx = String(tr.sesso || (ana ? ana.sesso : '') || '').trim().toLowerCase();
       tr._isDonna = (sx === 'femmina' || sx === 'f');
-      // Straniero: priorità nazionalita diretto, poi CF da Anagrafiche
-      var naz = String(tr.nazionalita || '').trim().toLowerCase();
+      // Straniero: da CF titolare in Anagrafiche
       var cfTit = ana ? String(ana.cftitolare||'').trim().toUpperCase() : '';
+      var naz = String(tr.nazionalita || '').trim().toLowerCase();
       tr._isStraniero = (naz === 'straniero') || (cfTit.length >= 12 && cfTit.charAt(11) === 'Z');
       // Giovane: da CF
       tr._isGiovane = false;
+      tr._eta = 0;
       if (cfTit.length === 16) {
         var a2 = cfTit.substring(6,8);
         if (/^\d{2}$/.test(a2)) {
           var y2 = parseInt(a2,10);
           var annoNasc = y2 <= (anno-2000) ? 2000+y2 : 1900+y2;
-          tr._isGiovane = (anno - annoNasc) <= 40;
+          tr._eta = anno - annoNasc;
+          tr._isGiovane = tr._eta <= 40;
         }
       }
-      // ATECO: priorità campo diretto, poi Anagrafiche
-      var ateco = normAteco(tr.ateco) || (ana ? normAteco(ana.codiceateco) : '');
-      tr._isCommercio = ateco.startsWith('46') || ateco.startsWith('47');
-      tr._isTurismo   = ateco.startsWith('55') || ateco.startsWith('56') || ateco.startsWith('79');
-      tr._isCinema    = ateco.startsWith('591') || ateco.startsWith('592');
+      // ── ATECO → unione/mestiere/settore (identico a ateco.js) ──
+      var atecoCode = ana ? normAteco(ana.codiceateco) : normAteco(tr.ateco);
+      var cod = atecoCode ? codMap[atecoCode] : null;
+      tr.unione   = bestAtecoField(cod, 'unione')   || tr.unione   || null;
+      tr.mestiere = bestAtecoField(cod, 'mestiere') || tr.mestiere || null;
+      tr.settore  = bestAtecoField(cod, 'settore')  || tr.settore  || null;
+      // Flag ATECO per raggruppamenti
+      tr._isCommercio = atecoCode.startsWith('46') || atecoCode.startsWith('47');
+      tr._isTurismo   = atecoCode.startsWith('55') || atecoCode.startsWith('56') || atecoCode.startsWith('79');
+      tr._isCinema    = atecoCode.startsWith('591') || atecoCode.startsWith('592');
     });
 
     repSetStatus(true, 'Elaborazione e rendering…');
