@@ -1281,13 +1281,110 @@
     <div style="font-size:11px;color:#444;line-height:1.8;max-height:420px;overflow-y:auto;border:1px solid #E5E7EB;border-radius:8px;padding:16px;background:#FAFBFF">
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.05.26 &#8212; 18 Maggio 2026 &#10003; ATTUALE</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.32 &#8212; 4 Giugno 2026 &#10003; ATTUALE</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Scheda anagrafica: topbar riprogettata — logo a sinistra, nome impresa a destra<br>
+          &#10003; Layout tabellare professionale (label/valore) in tutte le sezioni scheda<br>
+          &#10003; Sezione CCIAA unificata: stato attività + tipo impresa + addetti in un'unica tabella<br>
+          &#10003; Fix critico: dati CCIAA (stato, artigiano/comm., dipendenti) ora visibili alla prima apertura<br>
+          &#10003; Fix: tabs-bar-wrap → tabs-bar in trasformatore.js e admin.js (errore post-caricamento file)
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.31 &#8212; 4 Giugno 2026</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Fix: rimossa funzione trigger pesante, sostituita con fn sincronizza_zone_da_cap() più efficiente
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.30 &#8212; 3 Giugno 2026</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Archivio Imprese: aggiunta colonna Dipendenti (CCIAA) e Contratti attivi per impresa<br>
+          &#10003; Stato Iscritto da tabella diretti, ordine colonne migliorato<br>
+          &#10003; Export Excel stilizzato con xlsx-js-style locale (v100&#8211;v104)<br>
+          &#10003; Fix filtro ISCRITTO: include tipocontratto da contrattiservizio in servizi_tutti<br>
+          &#10003; Fix filtro Servizio: cerca su tutti i servizi diretti dell'anagrafica
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.29 &#8212; 2 Giugno 2026</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Tab Raggruppamenti e Zone: 3 KPI per card, barre sottili, badge sesso/stranieri/giovani<br>
+          &#10003; Zone: nomi normalizzati, riga totali, filtri range mesi collassabili<br>
+          &#10003; Report PDF: pagina Zone (solo mese selezionato), pagine Raggruppamenti fedeli alla tab<br>
+          &#10003; Fix responsive mobile layout tab Raggruppamenti
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.28 &#8212; 1 Giugno 2026</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Fix menu mobile: label visibili accanto alle icone, Carica Dati e Reportistica in riga
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.05.31 &#8212; 31 Maggio 2026</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Tab Raggruppamenti e Zone: 7 sezioni (Zone, Commercio, Turismo, Donne, Stranieri, Cinema, Giovani)<br>
+          &#10003; Fonte dati tesseramento_records; join codiceanagrafica&#8594;ATECO; zone da zonacliente<br>
+          &#10003; Navigazione: tabs orizzontale top con frecce scroll, rimossa sidebar verticale<br>
+          &#10003; Fix Unioni e Mestieri: join su codiciateco (no più N/D), CCIAA come fallback<br>
+          &#10003; Report PDF: pagine 15&#8211;16 Raggruppamenti e Zone
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.29 &#8212; 30 Maggio 2026</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Guida contestuale per ogni tab: pannello "Cosa puoi fare / Spunti dai dati" (Livello 1)
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.20&#8211;28 &#8212; 28&#8211;29 Maggio 2026</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Tab Carica Dati: Normalizzatore tesseramento diretto integrato (tipo rete, promotore, ATECO, CF)<br>
+          &#10003; Paginazione Archivio Imprese: 50 record per pagina<br>
+          &#10003; Tab Incassi: header card colorati solidi, effetti bagliore, griglia unificata<br>
+          &#10003; Tab Incassi: range mesi da/a, colori Pantone 202C/130C, filtri ripuliti<br>
+          &#10003; Fix responsive mobile: blocca overflow e zoom su schermi piccoli<br>
+          &#10003; Tab Ateco rinominato "Unioni e Mestieri"; tab Raggruppamenti aggiunto (placeholder)
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.09&#8211;19 &#8212; 27&#8211;28 Maggio 2026</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Tab Incassi &amp; Pagamenti: KPI, 4 grafici Chart.js, SEPA vs Cassa, filtri data<br>
+          &#10003; Scheda anagrafica: restyling fullscreen, badge stato evidenti, sezione Pagamenti<br>
+          &#10003; Scheda: dettagli contratto per ogni servizio attivo, iscritto da diretti/contrattiservizio<br>
+          &#10003; Fix login: input type text per username, fix logo<br>
+          &#10003; Fix serie storica: ricalcolo azzera mesi auto senza dati, auto da maggio
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.05.26 &#8212; 26 Maggio 2026</div>
+        <div style="color:#666;font-size:10px">
+          &#10003; Fix admin tabs Ruoli/Log: id btn-crea-utente mancante bloccava tutti i listener<br>
+          &#10003; Fix ruolo commerciale in loadRuoli: badge e select corretti<br>
+          &#10003; Redesign pannello admin
+        </div>
+      </div>
+
+      <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #6366f1;border-radius:3px">
+        <div style="font-weight:700;color:#6366f1;font-size:11px;margin-bottom:3px">v2026.05.18 &#8212; 18&#8211;24 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; App rinominata: "ERP CNA di Roma"<br>
           &#10003; Header: font Black 900, 22px, hero titolo aggiornato<br>
-          &#10003; Favicon multi-size dal logo SVG ufficiale CNA<br>
-          &#10003; PWA: manifest.json, apple-touch-icon, icone 192/512px<br>
-          &#10003; Content-Type header per icone in vercel.json
+          &#10003; Favicon multi-size dal logo SVG ufficiale CNA; PWA manifest, apple-touch-icon<br>
+          &#10003; Pagina installazione v2: Luminous Glow, Inter, sezione desktop<br>
+          &#10003; Consulenti: N. Imprese + N. Contratti separati, checkbox selezione, Excel multi-foglio<br>
+          &#10003; KPI cards rimosse da tab Consulenti, fix crash e loop updateUIPermissions
         </div>
       </div>
 
