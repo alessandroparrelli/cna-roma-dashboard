@@ -55,9 +55,13 @@ async function openAnagraficaModal(anaIdx) {
   showLoad('Caricamento scheda…');
 
   // ── Carica tutti i dati in parallelo ──────────────────────────────
-  var [cciaaRes, direttiRes, contrattiRes, incassiRes] = await Promise.allSettled([
-    // CCIAA
-    fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), { headers: H() }),
+  // CCIAA: prima legge dalla mappa già caricata in anaLoad, poi fallback fetch diretto
+  var cachedCCIAA = null;
+  if (typeof anaCCIAAMap !== 'undefined' && ana.partitaiva) {
+    cachedCCIAA = anaCCIAAMap[String(ana.partitaiva).trim()] || null;
+  }
+
+  var [direttiRes, contrattiRes, incassiRes] = await Promise.allSettled([
     // Diretti (tesseramento)
     fetch(SB + '/rest/v1/diretti?codiceanagrafica=eq.' + encodeURIComponent(ana.codiceanagrafica), { headers: H() }),
     // Contratti servizio attivi
@@ -70,13 +74,17 @@ async function openAnagraficaModal(anaIdx) {
   ]);
 
   // Estrai dati
-  currentCCIAAData = null;
-  try {
-    if (cciaaRes.status === 'fulfilled' && cciaaRes.value.ok) {
-      var cciaaArr = await cciaaRes.value.json();
-      if (cciaaArr && cciaaArr.length > 0) currentCCIAAData = cciaaArr[0];
-    }
-  } catch(e) {}
+  // CCIAA: usa la cache dalla mappa, se mancante fa fetch diretto (fallback)
+  currentCCIAAData = cachedCCIAA;
+  if (!currentCCIAAData && ana.partitaiva) {
+    try {
+      var cciaaFb = await fetch(SB + '/rest/v1/cciaa?partita_iva=eq.' + encodeURIComponent(ana.partitaiva), { headers: H() });
+      if (cciaaFb.ok) {
+        var cciaaArr = await cciaaFb.json();
+        if (cciaaArr && cciaaArr.length > 0) currentCCIAAData = cciaaArr[0];
+      }
+    } catch(e) {}
+  }
 
   var diretti = [];
   try {
@@ -104,6 +112,33 @@ async function openAnagraficaModal(anaIdx) {
   var cciaa = currentCCIAAData;
 
   // ── Helpers ──────────────────────────────────────────────────────
+  // Riga tabella dati: <tr><td label><td value>
+  function trow(label, value, opts) {
+    if (!value && value !== 0) return '';
+    opts = opts || {};
+    var val = '';
+    if (opts.tel)       val = '<a href="tel:' + value + '" style="color:#005CA9;text-decoration:none">📞 ' + value + '</a>';
+    else if (opts.mail) val = '<a href="mailto:' + value + '" style="color:#005CA9;text-decoration:none">✉ ' + value + '</a>';
+    else                val = String(value);
+    if (opts.bold)      val = '<strong>' + val + '</strong>';
+    if (opts.color)     val = '<span style="color:' + opts.color + ';font-weight:700">' + val + '</span>';
+    return '<tr><td class="sdt-label">' + label + '</td><td class="sdt-value">' + val + '</td></tr>';
+  }
+
+  function dtable(rows) {
+    return '<table class="scheda-dt">' + rows + '</table>';
+  }
+
+  function fmtDate(d) {
+    if (!d) return '—';
+    return String(d).substring(0,10).split('-').reverse().join('/');
+  }
+
+  function fmtEur(n) {
+    return '€\u00a0' + Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+  }
+
+  // Compatibilità backward per field() (usata nelle sezioni contratti/pagamenti)
   function field(label, value, opts) {
     if (!value && !opts) return '';
     opts = opts || {};
@@ -118,21 +153,18 @@ async function openAnagraficaModal(anaIdx) {
     '</div>';
   }
 
-  function fmtDate(d) {
-    if (!d) return '—';
-    return String(d).substring(0,10).split('-').reverse().join('/');
-  }
-
-  function fmtEur(n) {
-    return '€\u00a0' + Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
-  }
-
-  // Header sezione colorato — bg pieno, testo e icona bianchi
+  // Header sezione colorato
   function secHdr(bgColor, svgPath, label) {
-    return '<div style="display:flex;align-items:center;gap:8px;background:' + bgColor + ';margin:-16px -18px 14px -18px;padding:10px 18px;border-radius:12px 12px 0 0">' +
-      '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + svgPath + '</svg>' +
-      '<span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:white">' + label + '</span>' +
+    return '<div class="scheda-sec-hdr" style="background:' + bgColor + '">' +
+      '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + svgPath + '</svg>' +
+      '<span>' + label + '</span>' +
     '</div>';
+  }
+
+  // Badge inline
+  function badge(text, bg, fg) {
+    fg = fg || 'white';
+    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:' + bg + ';color:' + fg + ';font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase">' + text + '</span>';
   }
 
   // SVG paths per ogni sezione
@@ -162,87 +194,87 @@ async function openAnagraficaModal(anaIdx) {
   body += '<div class="scheda-section">';
   body += secHdr('#005CA9', P.person, 'Dati Anagrafici');
 
-  // Badge stato + tipo impresa + iscritto
-  body += '<div class="scheda-status-row" style="margin-bottom:14px">';
-
+  // Badge stato — riga di badge compatta in cima
+  var badgeRow = '';
   if (cciaa && cciaa.stato_attivita !== null && cciaa.stato_attivita !== undefined) {
     var statoInfo = traduciStatoAttivita(cciaa.stato_attivita);
-    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:10px;background:' + statoInfo.color + ';min-width:80px">' +
-      '<svg width="16" height="16" viewBox="0 0 8 8" style="margin-bottom:3px"><circle cx="4" cy="4" r="4" fill="white" opacity=".9"/></svg>' +
-      '<span style="font-size:10px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">' + statoInfo.testo + '</span>' +
-    '</div>';
+    badgeRow += badge(statoInfo.testo, statoInfo.color);
   }
   if (cciaa && cciaa.art_com_tur) {
     var tipoInfo = traduciTipoImpresa(cciaa.art_com_tur);
-    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:10px;background:' + tipoInfo.bgColor + ';min-width:80px">' +
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="' + tipoInfo.textColor + '" stroke-width="2.5" style="margin-bottom:3px"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>' +
-      '<span style="font-size:10px;font-weight:800;color:' + tipoInfo.textColor + ';letter-spacing:.04em;text-transform:uppercase">' + tipoInfo.testo + '</span>' +
-    '</div>';
+    badgeRow += ' ' + badge(tipoInfo.testo, tipoInfo.bgColor, tipoInfo.textColor);
   }
-  if (isIscritto) {
-    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:10px;background:#059669;min-width:80px">' +
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="margin-bottom:3px"><polyline points="20 6 9 17 4 12"/></svg>' +
-      '<span style="font-size:10px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">Iscritto</span>' +
-    '</div>';
-  }
-  if (isInps) {
-    body += '<div style="display:flex;flex-direction:column;align-items:center;padding:8px 16px;border-radius:10px;background:#0284C7;min-width:80px">' +
-      '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" style="margin-bottom:3px"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>' +
-      '<span style="font-size:10px;font-weight:800;color:white;letter-spacing:.04em;text-transform:uppercase">INPS</span>' +
-    '</div>';
-  }
-  body += '</div>';
+  if (isIscritto) badgeRow += ' ' + badge('✓ Iscritto CNA', '#059669');
+  if (isInps)     badgeRow += ' ' + badge('INPS', '#0284C7');
 
-  // Titolare
+  if (badgeRow) {
+    body += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">' + badgeRow + '</div>';
+  }
+
+  // Tabella dati anagrafici (layout 2-colonne label/valore)
   var nomeCompleto = [ana.nometitolare, ana.cognometitolare].filter(Boolean).join(' ');
-  if (nomeCompleto) {
-    body += '<div style="padding:9px 12px;background:rgba(0,92,169,.06);border-left:3px solid rgba(0,92,169,.3);border-radius:6px;margin-bottom:12px">';
-    body += '<div class="scheda-field-label">Titolare</div>';
-    body += '<div style="font-size:14px;font-weight:700;color:#005CA9">' + nomeCompleto + '</div>';
-    body += '</div>';
-  }
+  var indirizzoCompleto = [ana.indirizzo, ana.cap, ana.comune, ana.provincia ? '(' + ana.provincia + ')' : ''].filter(Boolean).join(', ');
 
-  body += '<div class="scheda-grid">';
-  body += field('Codice', ana.codiceanagrafica);
-  body += field('Partita IVA', ana.partitaiva);
-  body += field('Indirizzo', ana.indirizzo, {wide:true});
-  body += field('CAP', ana.cap);
-  body += field('Comune', ana.comune);
-  body += field('Provincia', ana.provincia);
-  body += field('Email', ana.email, {mail:true});
-  body += field('Telefono', ana.telefono, {tel:true});
-  body += field('Cellulare', ana.cellulare, {tel:true});
-  body += '</div></div>';
+  body += dtable(
+    trow('Codice cliente',   ana.codiceanagrafica) +
+    trow('Partita IVA',      ana.partitaiva) +
+    trow('Codice fiscale',   ana.codicefiscale) +
+    (nomeCompleto ? trow('Titolare', nomeCompleto, {bold:true, color:'#005CA9'}) : '') +
+    trow('Indirizzo',        indirizzoCompleto) +
+    trow('Email',            ana.email,     {mail:true}) +
+    trow('Telefono',         ana.telefono,  {tel:true}) +
+    trow('Cellulare',        ana.cellulare, {tel:true})
+  );
+  body += '</div>'; // fine scheda-section
 
   // ══════════════════════════════════════════════════════
-  // SEZIONE 2 — ADDETTI  (header: grigio ardesia)
+  // SEZIONE 2 — CAMERA DI COMMERCIO  (header: grigio ardesia)
   // ══════════════════════════════════════════════════════
-  if (cciaa && (cciaa.num_addetti_sub || cciaa.num_addetti_fam_ul)) {
+  if (cciaa) {
     var addSub = parseInt(cciaa.num_addetti_sub) || 0;
     var addFam = parseInt(cciaa.num_addetti_fam_ul) || 0;
+    var addTot = addSub + addFam;
+
     body += '<div class="scheda-section">';
-    body += secHdr('#475569', P.users, 'Addetti e Dipendenti');
-    body += '<div class="scheda-addetti">';
-    body += '<div class="scheda-addetti-card"><div class="scheda-addetti-val">' + addSub + '</div><div class="scheda-addetti-lbl">Subordinati</div></div>';
-    body += '<div class="scheda-addetti-card"><div class="scheda-addetti-val">' + addFam + '</div><div class="scheda-addetti-lbl">Familiari</div></div>';
-    body += '<div class="scheda-addetti-card tot"><div class="scheda-addetti-val">' + (addSub+addFam) + '</div><div class="scheda-addetti-lbl">Totale</div></div>';
-    body += '</div></div>';
+    body += secHdr('#475569', P.users, 'Camera di Commercio · CCIAA');
+
+    var cciaaRows = '';
+    if (cciaa.stato_attivita !== null && cciaa.stato_attivita !== undefined) {
+      var si = traduciStatoAttivita(cciaa.stato_attivita);
+      cciaaRows += trow('Stato attività', si.testo, {color: si.color});
+    }
+    if (cciaa.art_com_tur) {
+      var ti = traduciTipoImpresa(cciaa.art_com_tur);
+      cciaaRows += trow('Tipo impresa', ti.testo, {color: ti.bgColor === '#EF4444' ? '#EF4444' : '#B45309'});
+    }
+    if (addTot > 0 || addSub > 0 || addFam > 0) {
+      cciaaRows += trow('Dipendenti subordinati', addSub > 0 ? addSub : '0');
+      cciaaRows += trow('Collaboratori familiari', addFam > 0 ? addFam : '0');
+      cciaaRows += trow('Totale addetti', addTot > 0 ? '<strong>' + addTot + '</strong>' : '0');
+    }
+    if (cciaa.ateco2007) cciaaRows += trow('ATECO 2007 (CCIAA)', cciaa.ateco2007);
+
+    if (cciaaRows) {
+      body += dtable(cciaaRows);
+    } else {
+      body += '<div style="color:var(--text-dim);font-size:13px;font-style:italic">Nessun dato CCIAA disponibile.</div>';
+    }
+    body += '</div>';
   }
 
   // ══════════════════════════════════════════════════════
   // SEZIONE 3 — CATEGORIA PROFESSIONALE  (header: viola)
   // ══════════════════════════════════════════════════════
-  if (ana.mestiere || ana.codicemestiere || ana.unione) {
+  if (ana.mestiere || ana.unione || ana.codiceateco) {
     body += '<div class="scheda-section">';
     body += secHdr('#7C3AED', P.briefc, 'Categoria Professionale');
-    body += '<div class="scheda-grid">';
-    body += field('Mestiere', ana.mestiere, {wide:true});
-    body += field('Codice Mestiere', ana.codicemestiere);
-    body += field('Unione', ana.unione);
-    body += field('Settore', ana.settore);
-    body += field('Ateco 2025', ana['Ateco 2025'] || ana.codiceateco);
-    body += field('Ateco 2007', ana['Ateco 2007']);
-    body += '</div></div>';
+    body += dtable(
+      trow('Unione',       ana.unione) +
+      trow('Settore',      ana.settore) +
+      trow('Mestiere',     ana.mestiere, {bold:true}) +
+      trow('Codice ATECO', ana.codiceateco)
+    );
+    body += '</div>';
   }
 
   // ══════════════════════════════════════════════════════
@@ -383,22 +415,26 @@ async function openAnagraficaModal(anaIdx) {
   overlay.id = 'modal-scheda-bg';
 
   overlay.innerHTML =
-    // Topbar con logo CNA + nome impresa
-    '<div class="scheda-topbar" style="background:white;border-bottom:1px solid #e2e8f0">' +
-      '<button class="scheda-topbar-back" style="background:rgba(0,92,169,.08);color:#005CA9;border:1px solid rgba(0,92,169,.2)" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>' +
-        'Indietro' +
-      '</button>' +
-      '<div style="flex:1;display:flex;align-items:center;justify-content:center;gap:12px;min-width:0;overflow:hidden">' +
+    // Topbar con logo CNA a sinistra + nome impresa a destra
+    '<div class="scheda-topbar">' +
+      // Sinistra: logo allineato con header tabelle
+      '<div class="scheda-topbar-left">' +
+        '<button class="scheda-topbar-back" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
+          '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>' +
+          'Indietro' +
+        '</button>' +
+        '<div class="scheda-topbar-divider"></div>' +
         '<img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/main/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png" ' +
-          'style="height:48px;width:auto;flex-shrink:0;object-fit:contain" alt="CNA Roma" ' +
-          'onerror="this.style.display=\'none\'">' +
-        '<div style="width:1px;height:24px;background:#cbd5e1;flex-shrink:0"></div>' +
-        '<span style="color:#1e293b;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' +
-          (ana.ragionesociale || '—') +
-        '</span>' +
+          'class="scheda-topbar-logo" alt="CNA Roma" onerror="this.style.display=\'none\'">' +
       '</div>' +
-      '<button class="scheda-topbar-close" style="background:rgba(0,0,0,.06);color:#475569" onclick="document.getElementById(\'modal-scheda-bg\').remove()">×</button>' +
+      // Destra: ragione sociale
+      '<div class="scheda-topbar-right">' +
+        '<div class="scheda-topbar-company">' +
+          '<span class="scheda-topbar-company-label">Scheda Impresa</span>' +
+          '<span class="scheda-topbar-company-name">' + (ana.ragionesociale || '—') + '</span>' +
+        '</div>' +
+        '<button class="scheda-topbar-close" onclick="document.getElementById(\'modal-scheda-bg\').remove()">×</button>' +
+      '</div>' +
     '</div>' +
     // Corpo
     '<div class="scheda-body">' + body + '</div>' +

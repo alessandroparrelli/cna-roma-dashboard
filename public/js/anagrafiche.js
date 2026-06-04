@@ -126,7 +126,7 @@ async function anaLoad(force){
       var batches = [];
       for (var b = 0; b < pivaList.length; b += batchSize) batches.push(pivaList.slice(b, b + batchSize));
       fetchCciaa = Promise.all(batches.map(function(batch){
-        return fetch(SB+'/rest/v1/cciaa?select=partita_iva,num_addetti_sub,num_addetti_fam_ul&partita_iva=in.('+batch.join(',')+')', {headers:H()})
+        return fetch(SB+'/rest/v1/cciaa?select=partita_iva,num_addetti_sub,num_addetti_fam_ul,stato_attivita,art_com_tur&partita_iva=in.('+batch.join(',')+')', {headers:H()})
           .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
       })).then(function(results){ return results.reduce(function(acc,r){ return acc.concat(r); }, []); });
     }

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.31 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.32 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2193,18 +2193,47 @@ body.dark-mode .app-footer-copy {
 .scheda-topbar {
   flex-shrink: 0;
   background: white;
-  border-bottom: 1px solid #e2e8f0;
-  padding: 0 16px;
-  height: 56px;
+  border-bottom: 2px solid #005CA9;
+  padding: 0 20px;
+  height: 60px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  box-shadow: 0 1px 6px rgba(0,0,0,.08);
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 8px rgba(0,92,169,.12);
 }
 body.dark-mode .scheda-topbar {
   background: #1e293b;
-  border-bottom-color: rgba(255,255,255,.08);
+  border-bottom-color: #3b82f6;
 }
+/* Sinistra: bottone + divisore + logo */
+.scheda-topbar-left {
+  display: flex; align-items: center; gap: 12px; flex-shrink: 0;
+}
+.scheda-topbar-logo {
+  height: 44px; width: auto; object-fit: contain; flex-shrink: 0;
+}
+.scheda-topbar-divider {
+  width: 1px; height: 28px; background: #cbd5e1; flex-shrink: 0;
+}
+/* Destra: nome impresa + tasto chiudi */
+.scheda-topbar-right {
+  display: flex; align-items: center; gap: 12px; min-width: 0;
+}
+.scheda-topbar-company {
+  display: flex; flex-direction: column; align-items: flex-end; min-width: 0;
+}
+.scheda-topbar-company-label {
+  font-size: 10px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .06em; color: #94a3b8;
+}
+.scheda-topbar-company-name {
+  font-size: 15px; font-weight: 800; color: #1e293b;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: min(420px, 40vw);
+}
+body.dark-mode .scheda-topbar-company-name { color: white; }
+body.dark-mode .scheda-topbar-company-label { color: #64748b; }
 .scheda-topbar-back {
   display: flex; align-items: center; gap: 6px;
   background: rgba(0,92,169,.08);
@@ -2223,12 +2252,49 @@ body.dark-mode .scheda-topbar-back { color: #60a5fa; border-color: rgba(96,165,2
 body.dark-mode .scheda-topbar-title { color: white; }
 .scheda-topbar-close {
   background: rgba(0,0,0,.06); border: none; color: #475569;
-  width: 34px; height: 34px; border-radius: 50%; font-size: 18px;
+  width: 34px; height: 34px; border-radius: 50%; font-size: 20px;
   cursor: pointer; display: flex; align-items: center; justify-content: center;
-  transition: background .15s; flex-shrink: 0;
+  transition: background .15s; flex-shrink: 0; line-height: 1;
 }
-.scheda-topbar-close:hover { background: rgba(0,0,0,.12); }
+.scheda-topbar-close:hover { background: rgba(0,0,0,.14); color: #ef4444; }
 body.dark-mode .scheda-topbar-close { background: rgba(255,255,255,.08); color: #94a3b8; }
+
+/* Header sezione colorato */
+.scheda-sec-hdr {
+  display: flex; align-items: center; gap: 8px;
+  margin: -16px -18px 14px -18px;
+  padding: 9px 18px;
+  border-radius: 12px 12px 0 0;
+}
+.scheda-sec-hdr span {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: white;
+}
+
+/* Tabella dati anagrafici — layout documento */
+.scheda-dt {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.scheda-dt .sdt-label {
+  width: 38%;
+  padding: 7px 12px 7px 0;
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: .04em; color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  vertical-align: top; white-space: nowrap;
+}
+.scheda-dt .sdt-value {
+  padding: 7px 0 7px 8px;
+  font-size: 13px; font-weight: 500; color: var(--text);
+  border-bottom: 1px solid var(--border);
+  word-break: break-word;
+}
+.scheda-dt tr:last-child .sdt-label,
+.scheda-dt tr:last-child .sdt-value { border-bottom: none; }
+.scheda-dt tr:hover .sdt-label,
+.scheda-dt tr:hover .sdt-value { background: rgba(0,92,169,.025); }
 
 /* Corpo scrollabile */
 .scheda-body {
