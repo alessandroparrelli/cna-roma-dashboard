@@ -241,7 +241,7 @@ async function trasformaCaricaDB(){
     for(var i=0;i<recs.length;i+=500){ await sbPost(TR, recs.slice(i,i+500), {'Prefer':'return=minimal'}); }
     var data = await sbGetAll(TR);
     allData = data.map(mapRow);
-    G('tabs-bar-wrap').style.display='flex';
+    G('tabs-bar').style.display='flex';
     if(typeof tabsUpdateArrow==='function') setTimeout(tabsUpdateArrow,300);
     G('upload-zone').style.display='none';
     rebuildFilters(); renderOverview(); renderPromoTrend();
