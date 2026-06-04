@@ -415,45 +415,56 @@ async function openAnagraficaModal(anaIdx) {
   overlay.id = 'modal-scheda-bg';
 
   overlay.innerHTML =
-    // Topbar con logo CNA a sinistra + nome impresa a destra, allineati con scheda-body
-    '<div class="scheda-topbar">' +
-      '<div class="scheda-topbar-inner">' +
-        // Sinistra: bottone + divisore + logo
-        '<div class="scheda-topbar-left">' +
-          '<button class="scheda-topbar-back" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
-            '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>' +
-            'Indietro' +
-          '</button>' +
-          '<div class="scheda-topbar-divider"></div>' +
-          '<img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/main/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png" ' +
-            'class="scheda-topbar-logo" alt="CNA Roma" onerror="this.style.display=\'none\'">' +
-        '</div>' +
-        // Destra: ragione sociale + chiudi
-        '<div class="scheda-topbar-right">' +
-          '<div class="scheda-topbar-company">' +
-            '<span class="scheda-topbar-company-label">Scheda Impresa</span>' +
-            '<span class="scheda-topbar-company-name">' + (ana.ragionesociale || '—') + '</span>' +
+    '<div class="scheda-modal">' +
+      // Barra controlli SOPRA l'header (Indietro + X)
+      '<div class="scheda-ctrl-bar">' +
+        '<button class="scheda-topbar-back" onclick="document.getElementById(\'modal-scheda-bg\').remove()">' +
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>' +
+          'Indietro' +
+        '</button>' +
+        '<button class="scheda-ctrl-close" onclick="document.getElementById(\'modal-scheda-bg\').remove()" title="Chiudi">×</button>' +
+      '</div>' +
+      // Header con logo a sinistra e nome impresa a destra
+      '<div class="scheda-topbar">' +
+        '<div class="scheda-topbar-inner">' +
+          '<div class="scheda-topbar-left">' +
+            '<img src="https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/main/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png" ' +
+              'class="scheda-topbar-logo" alt="CNA Roma" onerror="this.style.display=\'none\'">' +
           '</div>' +
-          '<button class="scheda-topbar-close" onclick="document.getElementById(\'modal-scheda-bg\').remove()">×</button>' +
+          '<div class="scheda-topbar-right">' +
+            '<div class="scheda-topbar-company">' +
+              '<span class="scheda-topbar-company-label">Scheda Impresa</span>' +
+              '<span class="scheda-topbar-company-name">' + (ana.ragionesociale || '—') + '</span>' +
+            '</div>' +
+          '</div>' +
         '</div>' +
       '</div>' +
-    '</div>' +
-    // Corpo
-    '<div class="scheda-body">' + body + '</div>' +
-    // Footer
-    '<div class="scheda-footer">' +
-      '<button onclick="exportAnaToExcel(' + anaIdx + ')" class="btn btn-secondary btn-sm">' +
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
-        'Esporta Excel' +
-      '</button>' +
-      '<button onclick="exportSchemaPDF()" class="btn btn-secondary btn-sm">' +
-        '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
-        'PDF' +
-      '</button>' +
-      '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" class="btn btn-primary btn-sm">Chiudi</button>' +
+      // Corpo scrollabile
+      '<div class="scheda-body">' + body + '</div>' +
+      // Footer con azioni
+      '<div class="scheda-footer">' +
+        '<button onclick="exportAnaToExcel(' + anaIdx + ')" class="btn btn-secondary btn-sm">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>' +
+          'Esporta Excel' +
+        '</button>' +
+        '<button onclick="exportSchemaPDF()" class="btn btn-secondary btn-sm">' +
+          '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>' +
+          'PDF' +
+        '</button>' +
+        '<button onclick="document.getElementById(\'modal-scheda-bg\').remove()" class="btn btn-primary btn-sm">Chiudi</button>' +
+      '</div>' +
     '</div>';
 
   document.body.appendChild(overlay);
+
+  // Click sul backdrop (fuori dalla finestra) → chiudi
+  overlay.addEventListener('click', function(e) {
+    if (e.target === overlay) overlay.remove();
+  });
+
+  // Tasto ESC → chiudi
+  function onEsc(e) { if (e.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); } }
+  document.addEventListener('keydown', onEsc);
 
   // Blocca scroll del body quando la scheda è aperta
   document.body.style.overflow = 'hidden';

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.33 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.34 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2178,37 +2178,77 @@ body.dark-mode .app-footer-copy {
 /* ═══════════════════════════════════════════
    SCHEDA ANAGRAFICA — FULLSCREEN
 ═══════════════════════════════════════════ */
+/* ── BACKDROP ── */
 .scheda-overlay {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: var(--bg);
+  background: rgba(15,23,42,.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
   overflow: hidden;
   overscroll-behavior: none;
 }
 
-/* Topbar fissa */
+/* ── FINESTRA POPUP ── */
+.scheda-modal {
+  background: var(--bg);
+  border-radius: 16px;
+  box-shadow: 0 24px 80px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.08);
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 860px;
+  max-height: calc(100vh - 40px);
+  overflow: hidden;
+  animation: schedaIn .18s cubic-bezier(.22,1,.36,1);
+}
+@keyframes schedaIn {
+  from { opacity:0; transform: scale(.96) translateY(12px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+
+/* ── BARRA CONTROLLI sopra header ── */
+.scheda-ctrl-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px 0;
+  flex-shrink: 0;
+}
+.scheda-ctrl-close {
+  background: rgba(0,0,0,.07); border: none; color: #475569;
+  width: 32px; height: 32px; border-radius: 50%; font-size: 19px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s; flex-shrink: 0; line-height: 1;
+}
+.scheda-ctrl-close:hover { background: #fee2e2; color: #ef4444; }
+body.dark-mode .scheda-ctrl-close { background: rgba(255,255,255,.1); color: #94a3b8; }
+
+/* ── TOPBAR con logo e nome ── */
 .scheda-topbar {
   flex-shrink: 0;
   background: white;
   border-bottom: 2px solid #005CA9;
-  height: 60px;
+  height: 58px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 8px rgba(0,92,169,.12);
+  margin: 8px 16px 0;
+  border-radius: 10px 10px 0 0;
 }
 body.dark-mode .scheda-topbar {
-  background: #1e293b;
+  background: #1e2d45;
   border-bottom-color: #3b82f6;
 }
-/* Contenitore interno allineato con scheda-body (max-width 900px, stesso padding) */
+/* Contenitore interno topbar */
 .scheda-topbar-inner {
   width: 100%;
-  max-width: 900px;
-  padding: 0 16px;
+  padding: 0 14px;
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -2305,16 +2345,13 @@ body.dark-mode .scheda-topbar-close { background: rgba(255,255,255,.08); color: 
 .scheda-dt tr:hover .sdt-label,
 .scheda-dt tr:hover .sdt-value { background: rgba(0,92,169,.025); }
 
-/* Corpo scrollabile */
+/* Corpo scrollabile del popup */
 .scheda-body {
   flex: 1;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding: 20px 16px 40px;
-  max-width: 900px;
-  width: 100%;
-  margin: 0 auto;
+  padding: 16px 16px 24px;
   box-sizing: border-box;
 }
 
@@ -2419,9 +2456,10 @@ body.dark-mode .scheda-topbar-close { background: rgba(255,255,255,.08); color: 
 /* Footer azioni */
 .scheda-footer {
   flex-shrink: 0;
-  padding: 10px 16px;
+  padding: 10px 16px 14px;
   background: var(--surface);
   border-top: 1px solid var(--border);
+  border-radius: 0 0 16px 16px;
   display: flex; gap: 8px; justify-content: flex-end;
   box-shadow: 0 -2px 8px rgba(0,0,0,.06);
 }
