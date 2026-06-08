@@ -10,6 +10,10 @@ var consulentiExpandedRow = null;
 var consulentiSortKey = 'numContratti';
 var consulentiSortDir = -1; // -1 desc, +1 asc
 
+// Dati globali per cross-service export
+var consulentiAllContratti = [];          // tutti i contratti attivi
+var consulentiContrattiByCliente = {};    // codicecliente → [contratti attivi]
+
 // ---------- Stili iniettati una volta ----------
 (function() {
   if (document.getElementById('consulenti-styles')) return;
@@ -87,6 +91,16 @@ async function consulentiLoad(force) {
     consulentiSetProgress(5, 'Caricamento contratti attivi…'); consulentiSetStatus('contratti','Caricamento…');
     var contratti = await consulentiFetchAll('contrattiservizio?datadisdetta=is.null&tipocontratto=not.eq.SERVIZIO 730&tipocontratto=not.eq.PEC');
     consulentiSetStatus('contratti', contratti.length + ' caricati');
+
+    // Salva tutti i contratti attivi per l'export cross-service
+    consulentiAllContratti = contratti;
+    consulentiContrattiByCliente = {};
+    contratti.forEach(function(c) {
+      var k = c.codicecliente;
+      if (!k) return;
+      if (!consulentiContrattiByCliente[k]) consulentiContrattiByCliente[k] = [];
+      consulentiContrattiByCliente[k].push(c);
+    });
 
     consulentiSetProgress(35, 'Caricamento anagrafiche…'); consulentiSetStatus('anagrafiche','Caricamento…');
     var anagrafiche = await consulentiFetchAll('Anagrafiche');
@@ -485,7 +499,7 @@ function consulentiExpandContent(consulente) {
   return html;
 }
 
-// ---------- Export Excel per singolo consulente ----------
+// ---------- Export Excel per singolo consulente (con tutti i servizi dell'impresa) ----------
 function consulentiExportExcel(nomeconsulente) {
   var consulente = consulentiAll.find(function(c) { return c.nomeconsulente === nomeconsulente; });
   if (!consulente) { toast('Consulente non trovato', 'error'); return; }
@@ -493,7 +507,30 @@ function consulentiExportExcel(nomeconsulente) {
   var anaMap     = consulente._anaMap;
   var direttiMap = consulente._direttiMap;
 
-  // Costruisci righe: una per ogni contratto attivo del consulente
+  // ── Determina il numero massimo di "altri servizi" tra le imprese di questo consulente ──
+  // Per ogni impresa raccogliamo tutti i contratti attivi escludendo il contratto principale
+  // (quello del consulente corrente + stesso tipocontratto), poi determiniamo quanti slot servono.
+
+  // Prima passata: costruiamo per ogni impresa la lista degli "altri servizi"
+  function getAltriServizi(codicecliente, tipoContrattoProprio) {
+    var tutti = consulentiContrattiByCliente[codicecliente] || [];
+    // Esclude il contratto "proprio" (stesso consulente E stesso tipo)
+    return tutti.filter(function(cc) {
+      return !(cc.nomeconsulente === nomeconsulente && cc.tipocontratto === tipoContrattoProprio);
+    }).sort(function(a, b) {
+      // Ordina per tipo contratto per consistenza
+      return (a.tipocontratto || '').localeCompare(b.tipocontratto || '', 'it');
+    });
+  }
+
+  // Calcola il numero massimo di altri servizi tra tutte le imprese del consulente
+  var maxAltri = 0;
+  consulente._contratti.forEach(function(c) {
+    var n = getAltriServizi(c.codicecliente, c.tipocontratto).length;
+    if (n > maxAltri) maxAltri = n;
+  });
+
+  // ── Costruzione righe ──
   var rows = consulente._contratti.map(function(c) {
     var ana = anaMap[c.codicecliente] || {};
     var dArr = direttiMap[ana.codiceanagrafica] || [];
@@ -504,8 +541,8 @@ function consulentiExportExcel(nomeconsulente) {
                              .map(function(d){ return d.servizio || ''; })
                              .filter(Boolean).join(', ');
 
-    return {
-      'Consulente':          consulente.nomeconsulente,
+    var row = {
+      'Consulente':          nomeconsulente,
       'Codice Cliente':      c.codicecliente          || '',
       'Ragione Sociale':     ana.ragionesociale        || '',
       'Partita IVA':         ana.partitaiva            || '',
@@ -517,7 +554,8 @@ function consulentiExportExcel(nomeconsulente) {
       'Comune':              ana.comune                || '',
       'Provincia':           ana.provincia             || '',
       'Mestiere':            ana.mestiere              || '',
-      'Tipo Contratto':      c.tipocontratto           || '',
+      // ── Servizio proprio ──
+      'Servizio Proprio':    c.tipocontratto           || '',
       'Data Stipula':        c.datastipulacontratto    || '',
       'Sede Erogazione':     c.sedeerogazione          || '',
       'Raggruppamento':      c.raggruppamento          || '',
@@ -526,6 +564,25 @@ function consulentiExportExcel(nomeconsulente) {
       'Stato Associativo':   isAssoc ? 'Associato' : 'Non Associato',
       'Servizi Diretti':     serviziDiretti
     };
+
+    // ── Altri servizi dell'impresa ──
+    var altri = getAltriServizi(c.codicecliente, c.tipocontratto);
+    for (var i = 0; i < maxAltri; i++) {
+      var n = i + 1;
+      if (altri[i]) {
+        row['Altro Servizio ' + n]       = altri[i].tipocontratto    || '';
+        row['Data Stipula Serv. ' + n]   = altri[i].datastipulacontratto || '';
+        row['Consulente Serv. ' + n]     = altri[i].nomeconsulente   || '';
+        row['Sede Serv. ' + n]           = altri[i].sedeerogazione   || '';
+      } else {
+        row['Altro Servizio ' + n]       = '';
+        row['Data Stipula Serv. ' + n]   = '';
+        row['Consulente Serv. ' + n]     = '';
+        row['Sede Serv. ' + n]           = '';
+      }
+    }
+
+    return row;
   });
 
   // Foglio riepilogo statistiche
@@ -552,26 +609,39 @@ function consulentiExportExcel(nomeconsulente) {
 
   var wb = XLSX.utils.book_new();
 
-  // Foglio 1: Dettaglio contratti
+  // Foglio 1: Dettaglio imprese + tutti i servizi
   var ws1 = XLSX.utils.json_to_sheet(rows);
-  // Larghezze colonne
-  ws1['!cols'] = [
+
+  // Larghezze colonne: fisse + 4 colonne per ogni "altro servizio"
+  var baseCols = [
     {wch:22},{wch:14},{wch:30},{wch:14},{wch:16},{wch:14},{wch:26},{wch:28},
-    {wch:7},{wch:18},{wch:10},{wch:22},{wch:24},{wch:14},{wch:20},{wch:18},
-    {wch:16},{wch:18},{wch:16},{wch:30}
+    {wch:7},{wch:18},{wch:10},{wch:22},   // fino a Mestiere
+    {wch:24},{wch:14},{wch:20},{wch:16},{wch:14},{wch:16},{wch:16},{wch:30}  // servizio proprio
   ];
+  var altriCols = [];
+  for (var i = 0; i < maxAltri; i++) {
+    altriCols.push({wch:24},{wch:14},{wch:22},{wch:20});
+  }
+  ws1['!cols'] = baseCols.concat(altriCols);
+
   // Stile header (sfondo blu CNA)
   var hdrRange = XLSX.utils.decode_range(ws1['!ref']);
   for (var C = hdrRange.s.c; C <= hdrRange.e.c; C++) {
     var cellAddr = XLSX.utils.encode_cell({ r: 0, c: C });
     if (!ws1[cellAddr]) continue;
+    // Colonne "Altro Servizio" con sfondo verde scuro per distinguerle
+    var colName = ws1[cellAddr].v || '';
+    var isAltro = colName.toString().indexOf('Altro Servizio') === 0 ||
+                  colName.toString().indexOf('Data Stipula Serv') === 0 ||
+                  colName.toString().indexOf('Consulente Serv') === 0 ||
+                  colName.toString().indexOf('Sede Serv') === 0;
     ws1[cellAddr].s = {
-      font:    { bold: true, color: { rgb: 'FFFFFF' } },
-      fill:    { fgColor: { rgb: '005CA9' } },
+      font:      { bold: true, color: { rgb: 'FFFFFF' } },
+      fill:      { fgColor: { rgb: isAltro ? '1a5c2e' : '005CA9' } },
       alignment: { horizontal: 'center' }
     };
   }
-  XLSX.utils.book_append_sheet(wb, ws1, 'Contratti');
+  XLSX.utils.book_append_sheet(wb, ws1, 'Imprese e Servizi');
 
   // Foglio 2: Riepilogo statistiche
   var ws2 = XLSX.utils.json_to_sheet(riepilogo);
