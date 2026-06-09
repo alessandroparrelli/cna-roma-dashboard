@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.10 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.11 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -959,7 +959,8 @@ body.dark-mode .ana-table tbody tr:nth-child(even) td{background:var(--surface2)
 @media(max-width:768px){
   header{padding:0 16px;}
   .logo-img{height:38px;}
-  .header-title{display:none;}
+  .header-title{font-size:14px;padding-left:10px;}
+  .header-left{gap:10px;}
   .header-right-wrap .user-chip .user-name{display:none;}
   .tabs-bar{padding:8px 12px;}
   .tab-btn{padding:8px 14px;font-size:12px;}
@@ -1362,10 +1363,8 @@ defs {
 .header-title {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'San Francisco', Helvetica, Arial, sans-serif !important;
   font-weight: 900 !important;
-  font-size: 22px !important;
-  color: #000000 !important;
+  color: var(--text) !important; /* segue il dark mode (prima era #000 fisso → invisibile su sfondo scuro) */
   letter-spacing: -0.02em !important;
-  text-align: center;
 }
 
 
