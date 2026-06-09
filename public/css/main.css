@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.09 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.10 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2726,7 +2726,9 @@ body.dark-mode .sb-item.active { background: rgba(0,92,169,.22); }
 /* ════════════════════════════════════════════════════════
    TOP NAV v2 — Menu a gruppi con dropdown (niente scroll)
    ════════════════════════════════════════════════════════ */
-.sb-nav { overflow: visible; justify-content: flex-start; gap: 4px; padding: 6px 10px; }
+/* La barra può scorrere se non c'è spazio (fallback per finestre strette):
+   i pannelli sono in <body> quindi non vengono mai tagliati */
+.sb-nav { justify-content: flex-start; gap: 4px; padding: 6px 10px; }
 #sidebar { overflow: visible; }
 
 .sb-dropdown { position: relative; display: flex; flex-shrink: 0; }
@@ -2759,6 +2761,9 @@ body.dark-mode .sb-dropdown.open .sb-dd-toggle { background: rgba(0,92,169,.25);
   animation: sbDdIn .16s cubic-bezier(0.2,0,0.2,1);
 }
 body.dark-mode .sb-dd-menu { background: #131e35; border-color: rgba(255,255,255,.1); box-shadow: 0 12px 32px rgba(0,0,0,.45); }
+/* Il pannello viene spostato in <body> da nav.js (pattern portal):
+   l'apertura è gestita dalla classe .open sul pannello stesso */
+.sb-dd-menu.open { display: flex; }
 .sb-dropdown.open .sb-dd-menu { display: flex; }
 @keyframes sbDdIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
 
@@ -2775,6 +2780,5 @@ body.dark-mode .sb-dd-menu { background: #131e35; border-color: rgba(255,255,255
 
 /* Su schermi stretti i 5 gruppi possono comunque scorrere, i menu fixed non vengono tagliati */
 @media (max-width: 600px) {
-  .sb-nav { overflow-x: auto; }
   .sb-dd-menu { min-width: 210px; }
 }
