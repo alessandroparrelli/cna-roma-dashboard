@@ -46,9 +46,48 @@ var consulentiContrattiByCliente = {};    // codicecliente → [contratti attivi
     '.btn-consulente-excel { display:inline-flex; align-items:center; gap:4px; background:#16a34a; color:white; border:none; border-radius:5px; padding:4px 9px; font-size:11px; font-weight:700; cursor:pointer; transition:background 0.15s, transform 0.1s; white-space:nowrap; }',
     '.btn-consulente-excel:hover { background:#15803d; transform: scale(1.05); }',
     '.btn-consulente-excel:active { transform: scale(0.97); }',
+    /* v3 — Tabella migliorata */
+    '#tab-consulenti tbody .consulenti-row td { padding: 10px 12px; border-bottom: 1px solid #eef2f7; vertical-align: middle; }',
+    'body.dark-mode #tab-consulenti tbody .consulenti-row td { border-bottom-color: rgba(255,255,255,0.06); }',
+    '.consulenti-row-alt { background: #f8fafc; }',
+    'body.dark-mode .consulenti-row-alt { background: rgba(255,255,255,0.03); }',
+    '.consulenti-avatar { width:32px; height:32px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; color:#fff; flex-shrink:0; letter-spacing:0.5px; box-shadow: 0 1px 3px rgba(15,23,42,0.18); }',
+    '.consulenti-nome { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; display:inline-block; }',
   ].join('\n');
   document.head.appendChild(s);
 })();
+
+// ---------- Normalizzazione nomi consulenti ----------
+// Uniforma maiuscole/minuscole, spazi doppi e apostrofi:
+// "BAIANI ELEONORA" → "Baiani Eleonora", "Durante  Sonia" → "Durante Sonia",
+// "LOMBARDI M. ROSARIA" → "Lombardi M. Rosaria", "D'ANGELO" → "D'Angelo"
+function consulentiNormalizzaNome(raw) {
+  if (raw === null || raw === undefined) return '— Non assegnato —';
+  var s = String(raw).replace(/\s+/g, ' ').trim();
+  if (!s) return '— Non assegnato —';
+  s = s.toLowerCase().replace(/(^|[\s\-'.])([a-zàèéìíòóùú])/g, function (m, sep, ch) {
+    return sep + ch.toUpperCase();
+  });
+  return s;
+}
+
+// Iniziali per l'avatar (max 2 lettere)
+function consulentiIniziali(nome) {
+  if (!nome || nome.indexOf('Non assegnato') !== -1) return '?';
+  var parts = nome.split(/[\s\-]+/).filter(function (p) { return /^[A-Za-zÀ-ÿ]/.test(p); });
+  if (parts.length === 0) return '?';
+  if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
+
+// Colore avatar deterministico dal nome (palette CNA + tinte coordinate)
+var CONSULENTI_AVATAR_COLORS = ['#005CA9', '#8E001A', '#7C3AED', '#0D9488', '#D97706', '#DB2777', '#059669', '#4F46E5', '#B45309', '#0E7490'];
+function consulentiAvatarColor(nome) {
+  if (!nome || nome.indexOf('Non assegnato') !== -1) return '#94a3b8';
+  var h = 0;
+  for (var i = 0; i < nome.length; i++) h = (h * 31 + nome.charCodeAt(i)) >>> 0;
+  return CONSULENTI_AVATAR_COLORS[h % CONSULENTI_AVATAR_COLORS.length];
+}
 
 // ---------- Progress / Status ----------
 function consulentiSetProgress(pct, msg) {
@@ -126,7 +165,7 @@ async function consulentiLoad(force) {
     var consulentiMap = {};
 
     contratti.forEach(function(c) {
-      var nome = (c.nomeconsulente || '— Non assegnato —').trim();
+      var nome = consulentiNormalizzaNome(c.nomeconsulente);
       if (!consulentiMap[nome]) {
         consulentiMap[nome] = { nomeconsulente: nome, imprese: new Set(), tipiContratto: {}, sediErogazione: {}, raggruppamenti: {}, zone: {}, contratti: [] };
       }
@@ -303,7 +342,7 @@ function consulentiRender() {
     return;
   }
 
-  consulentiFiltered.forEach(function(c) {
+  consulentiFiltered.forEach(function(c, cIdx) {
     var tipiHtml = Object.keys(c.tipiContratto).sort().map(function(t) {
       return '<span class="consulenti-badge" style="background:#EFF6FF;color:#005CA9">' +
         escHtml(t) + ' <b style="font-size:12px">' + c.tipiContratto[t] + '</b></span>';
@@ -313,16 +352,17 @@ function consulentiRender() {
     var nonAssocPct = c.numImprese > 0 ? Math.round((c.nNonAssociati / c.numImprese) * 100) : 0;
 
     var tr = document.createElement('tr');
-    tr.className = 'consulenti-row';
+    tr.className = 'consulenti-row' + (cIdx % 2 === 1 ? ' consulenti-row-alt' : '');
     tr.setAttribute('data-consulente', c.nomeconsulente);
     tr.style.cssText = 'cursor:pointer;transition:background 0.15s;';
 
     tr.innerHTML =
       '<td class="col-check" onclick="event.stopPropagation()"><input type="checkbox" class="consulenti-chk" data-nome="' + escHtml(c.nomeconsulente) + '" onchange="consulentiUpdateSelCount()"></td>' +
-      '<td style="min-width:160px;max-width:220px">' +
-        '<div style="display:flex;align-items:center;gap:8px">' +
+      '<td style="min-width:200px;max-width:260px">' +
+        '<div style="display:flex;align-items:center;gap:9px">' +
           '<span class="consulenti-toggle-icon" style="font-size:11px;color:#005CA9;flex-shrink:0">▶</span>' +
-          '<span class="consulenti-nome" style="font-weight:700;color:#005CA9;font-size:13px;transition:color 0.15s">' + escHtml(c.nomeconsulente) + '</span>' +
+          '<span class="consulenti-avatar" style="background:' + consulentiAvatarColor(c.nomeconsulente) + '">' + consulentiIniziali(c.nomeconsulente) + '</span>' +
+          '<span class="consulenti-nome" title="' + escHtml(c.nomeconsulente) + '" style="font-weight:700;color:#005CA9;font-size:13px;transition:color 0.15s">' + escHtml(c.nomeconsulente) + '</span>' +
         '</div>' +
       '</td>' +
       '<td style="text-align:center;width:80px">' +

@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.08 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.09 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2721,4 +2721,60 @@ body.dark-mode .sb-item.active { background: rgba(0,92,169,.22); }
   .sb-icon { width: 26px; height: 26px; border-radius: 7px; }
   .sb-arrow { width: 34px; }
   .sb-group-label { display: none; }
+}
+
+/* ════════════════════════════════════════════════════════
+   TOP NAV v2 — Menu a gruppi con dropdown (niente scroll)
+   ════════════════════════════════════════════════════════ */
+.sb-nav { overflow: visible; justify-content: flex-start; gap: 4px; padding: 6px 10px; }
+#sidebar { overflow: visible; }
+
+.sb-dropdown { position: relative; display: flex; flex-shrink: 0; }
+
+.sb-dd-toggle { gap: 6px; }
+.sb-dd-caret { color: #94a3b8; transition: transform .2s, color .15s; flex-shrink: 0; }
+.sb-dd-toggle:hover .sb-dd-caret { color: var(--blue, #005CA9); }
+.sb-dropdown.open .sb-dd-caret { transform: rotate(180deg); color: var(--blue, #005CA9); }
+.sb-dropdown.open .sb-dd-toggle { background: rgba(0,92,169,.1); }
+body.dark-mode .sb-dropdown.open .sb-dd-toggle { background: rgba(0,92,169,.25); }
+/* Toggle "attivo" quando il gruppo contiene il tab corrente */
+.sb-dd-toggle.active .sb-label { font-weight: 700; color: var(--blue, #005CA9); }
+
+/* Pannello dropdown — position:fixed così non viene mai tagliato */
+.sb-dd-menu {
+  position: fixed;
+  top: 0; left: 0;            /* posizionato via JS */
+  display: none;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 230px;
+  max-height: calc(100vh - 140px);
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(15,23,42,.14), 0 2px 8px rgba(15,23,42,.08);
+  padding: 6px;
+  z-index: 400;
+  animation: sbDdIn .16s cubic-bezier(0.2,0,0.2,1);
+}
+body.dark-mode .sb-dd-menu { background: #131e35; border-color: rgba(255,255,255,.1); box-shadow: 0 12px 32px rgba(0,0,0,.45); }
+.sb-dropdown.open .sb-dd-menu { display: flex; }
+@keyframes sbDdIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Voci dentro il dropdown: righe a tutta larghezza, accent a sinistra */
+.sb-dd-menu .sb-item { width: 100%; justify-content: flex-start; padding: 8px 12px; border-radius: 8px; }
+.sb-dd-menu .sb-item::before {
+  bottom: auto; left: 0; right: auto; top: 6px;
+  width: 3px; height: calc(100% - 12px);
+  border-radius: 0 3px 3px 0;
+  transform: scaleY(0);
+}
+.sb-dd-menu .sb-item:hover::before,
+.sb-dd-menu .sb-item.active::before { transform: scaleY(1); }
+
+/* Su schermi stretti i 5 gruppi possono comunque scorrere, i menu fixed non vengono tagliati */
+@media (max-width: 600px) {
+  .sb-nav { overflow-x: auto; }
+  .sb-dd-menu { min-width: 210px; }
 }
