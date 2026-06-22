@@ -1,42 +1,59 @@
 {
   "buildCommand": "echo 'Static site'",
   "outputDirectory": "public",
-  "public": true,
   "headers": [
     {
       "source": "/js/(.*)",
       "headers": [
-        { "key": "Content-Type", "value": "application/javascript" }
+        {
+          "key": "Content-Type",
+          "value": "application/javascript"
+        }
       ]
     },
     {
       "source": "/css/(.*)",
       "headers": [
-        { "key": "Content-Type", "value": "text/css" }
+        {
+          "key": "Content-Type",
+          "value": "text/css"
+        }
       ]
     },
     {
       "source": "/manifest.json",
       "headers": [
-        { "key": "Content-Type", "value": "application/manifest+json" }
+        {
+          "key": "Content-Type",
+          "value": "application/manifest+json"
+        }
       ]
     },
     {
       "source": "/(.*).ico",
       "headers": [
-        { "key": "Content-Type", "value": "image/x-icon" }
+        {
+          "key": "Content-Type",
+          "value": "image/x-icon"
+        }
       ]
     },
     {
       "source": "/(.*).png",
       "headers": [
-        { "key": "Content-Type", "value": "image/png" }
+        {
+          "key": "Content-Type",
+          "value": "image/png"
+        }
       ]
     },
     {
       "source": "/(.*).svg",
       "headers": [
-        { "key": "Content-Type", "value": "image/svg+xml" }
+        {
+          "key": "Content-Type",
+          "value": "image/svg+xml"
+        }
       ]
     }
   ]
