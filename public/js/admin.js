@@ -1,5 +1,15 @@
 function showAdminPanel(){
-  document.body.classList.add('admin-open');
+  // Nascondi sidebar (style inline sovrascrive CSS, va fatto esplicitamente)
+  var nav = document.getElementById('sidebar');
+  if (nav) nav.style.display = 'none';
+  // Nascondi tutte le page
+  document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
+  document.getElementById('upload-zone').style.display = 'none';
+  // Mostra admin panel
+  var ap = document.getElementById('admin-panel');
+  ap.style.display = 'block';
+  ap.style.marginTop = '0';
+  ap.style.paddingTop = '28px';
   loadUsers();
   loadLogs();
 }
