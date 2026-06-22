@@ -289,8 +289,8 @@ function repHeader(titoloPagina, anno, mese) {
 function repFooter(n) {
   // n = numero pagina assoluto (1=copertina, 2=pag1 dati, ecc.)
   // __TOTPAG__ viene sostituito dopo il conteggio in repBuildAllPages
-  return '<div style="padding:6px 28px;background:white;display:flex;justify-content:space-between;align-items:center;min-height:28px;border-top:1px solid #e2e8f0">'
-    + '<span style="font-size:9px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1;font-style:italic">© ERP CNA di Roma &nbsp;|&nbsp; Documento realizzato dal sistema centralizzato di gestione ERP sviluppato dall\'Ufficio soci</span>'
+  return '<div style="padding:6px 28px;background:white;display:flex;justify-content:space-between;align-items:center;min-height:28px">'
+    + '<span style="display:flex;align-items:center;gap:6px"><img src="' + LOGO_URL + '" style="height:14px;width:auto;object-fit:contain" crossorigin="anonymous" /><span style="font-size:9px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1;font-style:normal;font-weight:400">© ERP CNA di Roma &nbsp;|&nbsp; Documento realizzato dal sistema centralizzato di gestione ERP sviluppato dall\'Ufficio soci</span></span>'
     + '<span style="font-size:9px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">Pagina ' + parseInt(n) + ' di __TOTPAG__</span></div>';
 }
 
