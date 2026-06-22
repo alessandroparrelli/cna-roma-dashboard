@@ -1,5 +1,21 @@
+
+/* ════════════ TOPBAR — contenitore fixed unico per header+nav ════════════ */
+#topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+}
+#topbar-spacer {
+  flex-shrink: 0;
+  height: calc(var(--header-h) + var(--topnav-h));
+}
+body.admin-open #topbar-spacer {
+  height: var(--header-h);
+}
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.19 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.20 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -232,7 +248,7 @@ header{
   -webkit-backdrop-filter:blur(20px) saturate(180%);
   padding:0 32px;height:var(--header-h);
   display:flex;align-items:center;justify-content:space-between;
-  position:fixed;top:0;left:0;right:0;z-index:200;
+  position:relative;z-index:200;
   border-bottom:1px solid rgba(255,255,255,.5);
   box-shadow:0 1px 3px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.03);
 }
@@ -2544,10 +2560,7 @@ img, svg, canvas, video { max-width: 100%; }
 
 /* ── Contenitore principale ── */
 #sidebar {
-  position: fixed;
-  top: var(--header-h);
-  left: 0;
-  right: 0;
+  position: relative;
   width: 100%;
   height: var(--topnav-h);
   background: #fff;
@@ -2707,7 +2720,7 @@ body.dark-mode .sb-item.active { background: rgba(0,92,169,.22); }
 #upload-zone,
 #app-footer {
   margin-left: 0 !important;
-  margin-top: var(--topnav-h);
+  margin-top: 0;
   transition: none;
 }
 .page { max-width: none; }

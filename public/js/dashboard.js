@@ -810,10 +810,10 @@ function renderPromoCards(data, anni, matrix, totAnno, sortedPromo) {
 
 // PANELS
 function showDashboard(){
+  document.body.classList.remove('admin-open');
   G('admin-panel').style.display = 'none';
   G('upload-zone').style.display = 'none';
   G('sidebar').style.display = 'flex';
-  // Ripristina display delle page (showAdminPanel le nasconde via style inline)
   document.querySelectorAll('.page').forEach(function(p){ p.style.display = ''; p.classList.remove('active'); });
   G('tab-overview').classList.add('active');
 }

@@ -1,15 +1,10 @@
 function showAdminPanel(){
-  // Nascondi sidebar (style inline sovrascrive CSS, va fatto esplicitamente)
+  document.body.classList.add('admin-open');
   var nav = document.getElementById('sidebar');
   if (nav) nav.style.display = 'none';
-  // Nascondi tutte le page
   document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
   document.getElementById('upload-zone').style.display = 'none';
-  // Mostra admin panel
-  var ap = document.getElementById('admin-panel');
-  ap.style.display = 'block';
-  ap.style.marginTop = '0';
-  ap.style.paddingTop = '28px';
+  document.getElementById('admin-panel').style.display = 'block';
   loadUsers();
   loadLogs();
 }
