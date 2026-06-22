@@ -858,7 +858,7 @@ async function resetTesseramentoDB(){
 }
 G('btn-reset').addEventListener('click',resetTesseramentoDB);
 G('btn-go-admin').addEventListener('click',showAdminPanel);
-G('btn-back').addEventListener('click',function(){if(allData.length)showDashboard();else{G('admin-panel').style.display='none';var sb=document.getElementById('sidebar');if(sb)sb.style.display='flex';G('upload-zone').style.display='flex';}});
+G('btn-back').addEventListener('click',function(){if(allData.length)showDashboard();else{document.body.classList.remove('admin-open');G('sidebar').style.display='flex';G('upload-zone').style.display='flex';}});
 // IMPORT EVENTS - Drag and Drop + Click
 var uploadDirettiDrop = G('upload-diretti-drop');
 var uploadAnagraficheDrop = G('upload-anagrafiche-drop');

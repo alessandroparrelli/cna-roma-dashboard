@@ -810,8 +810,8 @@ function renderPromoCards(data, anni, matrix, totAnno, sortedPromo) {
 
 // PANELS
 function showDashboard(){
+  document.body.classList.remove('admin-open');
   G('upload-zone').style.display='none';
-  G('admin-panel').style.display='none';
   G('sidebar').style.display='flex';
   // Show active tab
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});

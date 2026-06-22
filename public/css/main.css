@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.16 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.17 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2782,3 +2782,9 @@ body.dark-mode .sb-dd-menu { background: #131e35; border-color: rgba(255,255,255
 @media (max-width: 600px) {
   .sb-dd-menu { min-width: 210px; }
 }
+
+/* ════════════ ADMIN PANEL — nasconde sidebar ════════════ */
+body.admin-open #sidebar { display: none !important; }
+body.admin-open .page { display: none !important; }
+body.admin-open #upload-zone { display: none !important; }
+body.admin-open #admin-panel { display: block !important; margin-top: 0 !important; padding-top: 28px; }
