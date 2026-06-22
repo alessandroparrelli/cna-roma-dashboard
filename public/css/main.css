@@ -276,6 +276,12 @@ body.dark-mode header{
   font-size:22px;font-weight:900;letter-spacing:-0.02em;
   white-space:nowrap;color:var(--text);font-family:var(--font-display);
   padding-left:18px;border-left:1px solid var(--border);
+  display:flex;flex-direction:column;gap:1px;line-height:1.1;
+}
+.header-subtitle{
+  font-size:9px;font-weight:400;font-style:italic;letter-spacing:0.01em;
+  color:var(--text-secondary);font-family:'Inter',var(--font-display);
+  white-space:nowrap;
 }
 .header-right-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0;}
 .header-divider{width:1px;height:24px;background:var(--border);flex-shrink:0;margin:0 4px;}
