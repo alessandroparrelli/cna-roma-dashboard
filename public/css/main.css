@@ -7,15 +7,27 @@
   display: flex;
   flex-direction: column;
 }
+/* Lo spacer ha esattamente l'altezza del topbar (header + sidebar nav) */
 #topbar-spacer {
-  flex-shrink: 0;
   height: calc(var(--header-h) + var(--topnav-h));
+  flex-shrink: 0;
 }
+/* Quando il sidebar è nascosto (admin panel), lo spacer si riduce */
 body.admin-open #topbar-spacer {
   height: var(--header-h);
 }
+/* Header senza position propria — è dentro #topbar che è fixed */
+header {
+  position: relative !important;
+  top: auto !important;
+}
+/* Sidebar senza position propria — è dentro #topbar che è fixed */
+#sidebar {
+  position: relative !important;
+  top: auto !important;
+}
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.20 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.21 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
