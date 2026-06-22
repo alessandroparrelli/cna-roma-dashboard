@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.14 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.15 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -672,7 +672,7 @@ body.dark-mode .promo-card{background:var(--surface);}
 
 /* ════════════ ADMIN PANEL ════════════ */
 /* ════════════ ADMIN PANEL ════════════ */
-#admin-panel{display:none;padding:28px 32px;padding-top:calc(var(--header-h) + 28px);max-width:1600px;margin:0 auto;}
+#admin-panel{display:none;padding:28px 32px;max-width:1600px;margin:0 auto;}
 
 /* Header rinnovato */
 .admin-header-new{
@@ -964,7 +964,7 @@ body.dark-mode .ana-table tbody tr:nth-child(even) td{background:var(--surface2)
   .header-right-wrap .user-chip .user-name{display:none;}
   .tabs-bar{padding:8px 12px;}
   .tab-btn{padding:8px 14px;font-size:12px;}
-  .page{padding:16px;}#admin-panel{padding:16px;padding-top:calc(var(--header-h) + 16px);}
+  .page{padding:16px;}#admin-panel{padding:16px;}
   .filters-bar{gap:10px;padding:14px 16px;border-radius:var(--radius-lg);}
   .filter-group{min-width:120px;max-width:none;flex:1 1 calc(50% - 10px);}
   .filter-actions{width:100%;justify-content:flex-end;}

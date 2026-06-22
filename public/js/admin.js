@@ -3,6 +3,7 @@ function showAdminPanel(){
   G('upload-zone').style.display='none';
   G('admin-panel').style.display='block';
   G('tabs-bar').style.display='none';
+  var sb=document.getElementById('sidebar');if(sb)sb.style.display='none';
   loadUsers();
   loadLogs();
 }
