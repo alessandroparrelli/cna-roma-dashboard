@@ -1,5 +1,5 @@
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.15 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.16 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2711,6 +2711,7 @@ body.dark-mode .sb-item.active { background: rgba(0,92,169,.22); }
   transition: none;
 }
 .page { max-width: none; }
+#admin-panel { margin-top: 0 !important; }
 
 /* Su mobile: mantiene label visibili, icone leggermente ridotte */
 @media (max-width: 600px) {
