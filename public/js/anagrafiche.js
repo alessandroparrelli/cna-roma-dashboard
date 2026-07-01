@@ -13,7 +13,7 @@ async function anaFetchAll(table){
     all=all.concat(rows);
     offset+=size;
     if(rows.length<size){ anaSetStatus(table, all.length, 'done'); break; }
-    await new Promise(function(res){setTimeout(res,150);});
+    await new Promise(function(res){setTimeout(res,50);});
   }
   return all;
 }
@@ -104,13 +104,17 @@ async function anaLoad(force){
   ['anagrafiche','diretti','codiciateco','join'].forEach(function(t){ anaSetStatus(t,0,null); });
   anaSetProgress(0, 'Connessione a Supabase…');
   try{
-    anaSetProgress(5, 'Caricamento Anagrafiche…');
-    var ana = await anaFetchAll('Anagrafiche');
-    anaSetProgress(25, 'Caricamento Diretti…');
-    var dir = await anaFetchAll('diretti');
+    // ── FASE 1: Caricamento parallelo delle 3 tabelle principali ──
+    anaSetProgress(5, 'Caricamento Anagrafiche, Diretti e ATECO…');
+    var phase1 = await Promise.all([
+      anaFetchAll('Anagrafiche'),
+      anaFetchAll('diretti'),
+      anaFetchAll('codiciateco')
+    ]);
+    var ana = phase1[0];
+    var dir = phase1[1];
     allDiretti = dir; // Salva per schede anagrafiche
-    anaSetProgress(45, 'Caricamento Codici ATECO…');
-    var cod = await anaFetchAll('codiciateco');
+    var cod = phase1[2];
 
     // Calcola partite IVA uniche per il fetch CCIAA
     var pivaSet = {};
@@ -119,24 +123,29 @@ async function anaLoad(force){
 
     anaSetProgress(55, 'Caricamento CCIAA e Contratti…');
 
-    // Fetch CCIAA a batch di 50 (partite IVA)
-    var fetchCciaa = Promise.resolve([]);
-    if (pivaList.length > 0) {
-      var batchSize = 50;
-      var batches = [];
-      for (var b = 0; b < pivaList.length; b += batchSize) batches.push(pivaList.slice(b, b + batchSize));
-      fetchCciaa = Promise.all(batches.map(function(batch){
-        return fetch(SB+'/rest/v1/cciaa?select=partita_iva,num_addetti_sub,num_addetti_fam_ul,stato_attivita,art_com_tur&partita_iva=in.('+batch.join(',')+')', {headers:H()})
-          .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
-      })).then(function(results){ return results.reduce(function(acc,r){ return acc.concat(r); }, []); });
-    }
-
-    // Fetch contratti servizio attivi (datadisdetta IS NULL)
+    // ── FASE 2: CCIAA (batch da 200, concorrenza max 10) + Contratti in parallelo ──
+    // Avvia subito il fetch contratti così procede in parallelo con CCIAA
     var fetchContratti = anaFetchAllFiltered('contrattiservizio', 'select=codicecliente,tipocontratto,datastipulacontratto,nomeconsulente&datadisdetta=is.null');
 
-    var extras = await Promise.all([fetchCciaa, fetchContratti]);
-    var cciaaRows = extras[0];
-    var contrattiRows = extras[1];
+    var cciaaRows = [];
+    if (pivaList.length > 0) {
+      var batchSize = 200;
+      var batches = [];
+      for (var b = 0; b < pivaList.length; b += batchSize) batches.push(pivaList.slice(b, b + batchSize));
+      // Esegui batch con concorrenza limitata a 10 per non sovraccaricare Supabase
+      var concurrency = 10;
+      for (var ci = 0; ci < batches.length; ci += concurrency) {
+        var chunk = batches.slice(ci, ci + concurrency);
+        var chunkResults = await Promise.all(chunk.map(function(batch){
+          return fetch(SB+'/rest/v1/cciaa?select=partita_iva,num_addetti_sub,num_addetti_fam_ul,stato_attivita,art_com_tur&partita_iva=in.('+batch.join(',')+')', {headers:H()})
+            .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
+        }));
+        chunkResults.forEach(function(r){ cciaaRows = cciaaRows.concat(r); });
+      }
+    }
+
+    // Aspetta i contratti (probabilmente già completati durante i batch CCIAA)
+    var contrattiRows = await fetchContratti;
 
     // Costruisci mappa CCIAA: partita_iva → {sub, fam}
     anaCCIAAMap = {};
@@ -257,7 +266,7 @@ async function anaFetchAllFiltered(tableName, filterQuery){
     all = all.concat(rows);
     offset += size;
     if(rows.length < size) break;
-    await new Promise(function(res){setTimeout(res,150);});
+    await new Promise(function(res){setTimeout(res,50);});
   }
   return all;
 }
