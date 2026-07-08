@@ -1396,7 +1396,7 @@ defs {
 .header-title {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'San Francisco', Helvetica, Arial, sans-serif !important;
   font-weight: 900 !important;
-  color: var(--text) !important; /* segue il dark mode (prima era #000 fisso → invisibile su sfondo scuro) */
+  color: #ffffff !important;
   letter-spacing: -0.02em !important;
 }
 
