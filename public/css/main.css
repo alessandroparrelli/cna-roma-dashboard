@@ -27,7 +27,7 @@ header {
   top: auto !important;
 }
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.31 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.32 "Luminous Workspace"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -256,14 +256,12 @@ h1,h2,h3,h4,h5,h6{font-family:var(--font-display);font-weight:700;letter-spacing
 
 /* ════════════ HEADER (frosted glass, light) ════════════ */
 header{
-  background:rgba(255,255,255,.72);
-  backdrop-filter:blur(20px) saturate(180%);
-  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  background:linear-gradient(135deg,#0A1628 0%,#0D2247 40%,#0A3366 100%);
   padding:0 32px;height:var(--header-h);
   display:flex;align-items:center;justify-content:space-between;
   position:relative;z-index:200;
-  border-bottom:1px solid rgba(255,255,255,.5);
-  box-shadow:0 1px 3px rgba(15,23,42,.04), 0 8px 24px rgba(15,23,42,.03);
+  border-bottom:1px solid rgba(255,255,255,.12);
+  box-shadow:0 2px 16px rgba(0,0,0,.35);
 }
 body.dark-mode header{
   background:rgba(17,26,46,.7);
@@ -274,13 +272,13 @@ body.dark-mode header{
 .logo-fallback{display:none;background:var(--primary);color:#fff;font-weight:800;font-size:13px;padding:6px 12px;border-radius:var(--radius-sm);flex-shrink:0;letter-spacing:.02em;}
 .header-title{
   font-size:22px;font-weight:900;letter-spacing:-0.02em;
-  white-space:nowrap;color:var(--text);font-family:var(--font-display);
-  padding-left:18px;border-left:1px solid var(--border);
+  white-space:nowrap;color:#ffffff;font-family:var(--font-display);
+  padding-left:18px;border-left:1px solid rgba(255,255,255,.3);
   display:flex;flex-direction:column;gap:1px;line-height:1.1;
 }
 .header-subtitle{
   font-size:9px;font-weight:400;font-style:italic;letter-spacing:0.01em;
-  color:var(--text-secondary);font-family:'Inter',var(--font-display);
+  color:rgba(255,255,255,.75);font-family:'Inter',var(--font-display);
   white-space:nowrap;
 }
 .header-right-wrap{display:flex;align-items:center;gap:8px;flex-shrink:0;}
@@ -288,13 +286,13 @@ body.dark-mode header{
 
 /* User chip — pill */
 .user-chip{
-  display:flex;align-items:center;gap:8px;padding:5px 14px 5px 5px;
-  background:linear-gradient(135deg,rgba(16,185,129,0.15),rgba(16,185,129,0.08));border:1px solid rgba(16,185,129,0.3);
-  border-radius:var(--radius-pill);font-size:13px;font-weight:600;color:var(--text);
-  white-space:nowrap;box-shadow:var(--shadow-pill);transition:var(--transition);
+  display:flex;align-items:center;gap:8px;padding:4px 14px 4px 4px;
+  background:#ffffff;border:1px solid rgba(255,255,255,.8);
+  border-radius:var(--radius-pill);font-size:13px;font-weight:600;color:#0A1628;
+  white-space:nowrap;box-shadow:0 2px 12px rgba(0,0,0,.2);transition:var(--transition);
 }
-.user-chip:hover{background:linear-gradient(135deg,rgba(16,185,129,0.25),rgba(16,185,129,0.15));border-color:rgba(16,185,129,0.5);transform:translateY(-1px);box-shadow:var(--shadow-md);}
-body.dark-mode .user-chip{background:linear-gradient(135deg,rgba(16,185,129,0.2),rgba(16,185,129,0.1));border-color:rgba(16,185,129,0.4);}
+.user-chip:hover{background:#f0f4ff;transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,.25);}
+body.dark-mode .user-chip{background:#ffffff;border-color:rgba(255,255,255,.8);color:#0A1628;}
 .user-dot{width:7px;height:7px;border-radius:50%;background:var(--success);flex-shrink:0;box-shadow:0 0 8px var(--success);}
 
 /* ── HAMBURGER ── */

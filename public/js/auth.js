@@ -141,7 +141,7 @@ function showApp(){
   G('login-page').style.display='none';
   G('app').style.display='block';
   
-  G('chip-name').textContent=session.nome+' '+session.cognome;
+  G('chip-name').textContent=session.nome||session.cognome||'–';
   
   // Avatar nel chip
   updateChipAvatar();
