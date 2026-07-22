@@ -976,7 +976,7 @@ G('ana-selall').addEventListener('change', anaToggleAll);
   G(id).addEventListener('keypress', function(e){ if(e.key==='Enter') anaApply(); });
 });
 // Cambio di un select = applica immediatamente
-['ana-f-comune','ana-f-sesso','ana-f-ateco','ana-f-servizio','ana-f-anno','ana-f-raggr','ana-f-sede','ana-f-acuradi','ana-f-motivo','ana-f-unione','ana-f-settore','ana-f-mestiere'].forEach(function(id){
+['ana-f-comune','ana-f-sesso','ana-f-ateco','ana-f-servizio','ana-f-anno','ana-f-raggr','ana-f-sede','ana-f-acuradi','ana-f-motivo','ana-f-unione','ana-f-settore','ana-f-mestiere','ana-f-raggr-analisi'].forEach(function(id){
   G(id).addEventListener('change', anaApply);
 });
 // Delegate checkbox clicks on tbody

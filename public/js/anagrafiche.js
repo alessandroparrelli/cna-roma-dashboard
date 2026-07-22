@@ -60,6 +60,36 @@ function anaJoin(ana, dir, cod){
     serviziTutti.forEach(function(s){ serviziTuttiUniq[s] = true; });
     serviziTutti = Object.keys(serviziTuttiUniq);
 
+    // ── Derive raggruppamento analisi flags (stessa logica di raggruppamenti.js) ──
+    var atecoNorm = String(a.codiceateco||'').trim().replace(/\./g,'').replace(/\s/g,'');
+    var fAteco = parseFloat(atecoNorm);
+    if(!isNaN(fAteco) && String(fAteco)===atecoNorm) atecoNorm = String(Math.round(fAteco));
+    var _isCommercio = atecoNorm.startsWith('46') || atecoNorm.startsWith('47');
+    var _isTurismo   = atecoNorm.startsWith('55') || atecoNorm.startsWith('56') || atecoNorm.startsWith('79');
+    var _isCinema    = atecoNorm.startsWith('591') || atecoNorm.startsWith('592');
+    var _isDonna     = String(a.sesso||'').trim().toUpperCase() === 'F';
+    var cfTit = String(a.cftitolare||'').trim().toUpperCase();
+    var _isStraniero = (cfTit.length >= 12 && cfTit.charAt(11) === 'Z');
+    var _isGiovane   = false;
+    var ANNO_CORR = new Date().getFullYear();
+    if(cfTit.length === 16){
+      var a2 = cfTit.substring(6,8);
+      if(/^\d{2}$/.test(a2)){
+        var y2 = parseInt(a2,10);
+        var threshold = ANNO_CORR - 2000;
+        var annoNasc = y2 <= threshold ? 2000+y2 : 1900+y2;
+        _isGiovane = (ANNO_CORR - annoNasc) <= 40;
+      }
+    }
+    // Build raggruppamenti analisi array
+    var raggAnalisi = [];
+    if(_isCommercio) raggAnalisi.push('Commercio');
+    if(_isTurismo)   raggAnalisi.push('Turismo');
+    if(_isCinema)    raggAnalisi.push('Cinema e Audiovisivo');
+    if(_isDonna)     raggAnalisi.push('Donne');
+    if(_isStraniero) raggAnalisi.push('Stranieri');
+    if(_isGiovane)   raggAnalisi.push('Giovani ≤40');
+
     res.push({
       codiceanagrafica: a.codiceanagrafica,
       partitaiva:a.partitaiva, codicefiscale:a.codicefiscale, ragionesociale:a.ragionesociale,
@@ -67,11 +97,16 @@ function anaJoin(ana, dir, cod){
       indirizzo:a.indirizzo, cap:a.cap, comune:a.comune, sesso:a.sesso,
       cognometitolare:a.cognometitolare, nometitolare:a.nometitolare,
       datanascita:a.datanascita, luogonascita:a.luogonascita, codiceateco:a.codiceateco,
+      cftitolare:a.cftitolare,
       servizio:d.servizio, datastipula:d.datastipula, datadisdetta:d.datadisdetta,
       raggruppamento:d.raggruppamento, sedeerogazione:d.sedeerogazione,
       acuradi:d.acuradi, motivoinizio:d.motivoinizio, importo:d.importo,
       unione:c.unione, settore:c.settore, mestiere:c.mestiere,
-      servizi_tutti: serviziTutti   // tutti i servizi diretti, usato dal filtro
+      servizi_tutti: serviziTutti,
+      // Raggruppamento analisi flags
+      _isCommercio:_isCommercio, _isTurismo:_isTurismo, _isCinema:_isCinema,
+      _isDonna:_isDonna, _isStraniero:_isStraniero, _isGiovane:_isGiovane,
+      raggAnalisi: raggAnalisi
     });
     
     if(idx%5000===0) anaSetStatus('join', res.length, 'loading');
@@ -337,6 +372,7 @@ function anaApply(){
   var fMes=G('ana-f-mestiere').value;
   var fDis=G('ana-f-disdetta-status').value;
   var fTipo=G('ana-f-tipo').value;
+  var fRaggA=G('ana-f-raggr-analisi').value;
 
   anaFiltered = anaAll.filter(function(r){
     if(fRs && !(r.ragionesociale||'').toLowerCase().includes(fRs)) return false;
@@ -359,6 +395,14 @@ function anaApply(){
     if(fSet && r.settore!==fSet) return false;
     if(fMes && r.mestiere!==fMes) return false;
     if(fTipo && r.tipoimpresa!==fTipo) return false;
+    if(fRaggA){
+      if(fRaggA==='commercio' && !r._isCommercio) return false;
+      if(fRaggA==='turismo' && !r._isTurismo) return false;
+      if(fRaggA==='cinema' && !r._isCinema) return false;
+      if(fRaggA==='donne' && !r._isDonna) return false;
+      if(fRaggA==='stranieri' && !r._isStraniero) return false;
+      if(fRaggA==='giovani' && !r._isGiovane) return false;
+    }
     if(fDis==='present' && (!r.datadisdetta || String(r.datadisdetta).trim()==='')) return false;
     if(fDis==='empty' && r.datadisdetta && String(r.datadisdetta).trim()!=='') return false;
     return true;
@@ -370,7 +414,7 @@ function anaApply(){
 }
 
 function anaReset(){
-  ['ana-f-rs','ana-f-piva','ana-f-cf','ana-f-cap','ana-f-comune','ana-f-sesso','ana-f-ateco','ana-f-servizio','ana-f-anno','ana-f-raggr','ana-f-sede','ana-f-acuradi','ana-f-motivo','ana-f-unione','ana-f-settore','ana-f-mestiere','ana-f-tipo','ana-f-disdetta-status']
+  ['ana-f-rs','ana-f-piva','ana-f-cf','ana-f-cap','ana-f-comune','ana-f-sesso','ana-f-ateco','ana-f-servizio','ana-f-anno','ana-f-raggr','ana-f-sede','ana-f-acuradi','ana-f-motivo','ana-f-unione','ana-f-settore','ana-f-mestiere','ana-f-tipo','ana-f-raggr-analisi','ana-f-disdetta-status']
     .forEach(function(id){ var el=G(id); if(el) el.value=''; });
   anaFiltered = anaAll.slice();
   anaSelected.clear();
@@ -673,7 +717,7 @@ function anaExport(){
       'INDIRIZZO','CAP','COMUNE','SESSO','COGNOME','NOME','DATA NASCITA','LUOGO NASCITA',
       'COD. ATECO','SERVIZIO','DATA STIPULA','DATA DISDETTA','RAGGRUPPAMENTO',
       'SEDE EROGAZIONE','A CURA DI','MOTIVO INIZIO','IMPORTO','UNIONE','SETTORE','MESTIERE',
-      'TIPO IMPRESA',
+      'TIPO IMPRESA','RAGGR. ANALISI',
       'ISCRITTO','DATA STIPULA ISCRITTO','CONSULENTE ISCRITTO',
       'DIP. SUBORDINATI','DIP. FAMILIARI','TOT. DIPENDENTI'
     ];
@@ -698,7 +742,7 @@ function anaExport(){
         r.servizio||'', r.datastipula||'', r.datadisdetta||'',
         r.raggruppamento||'', r.sedeerogazione||'', r.acuradi||'',
         r.motivoinizio||'', r.importo||'', r.unione||'', r.settore||'', r.mestiere||'',
-        r.tipoimpresa||'',
+        r.tipoimpresa||'', (r.raggAnalisi||[]).join(', '),
         r.iscritto_data ? 'Attivo' : '', iscDataStr, r.iscritto_consulente||'',
         r.addetti_sub > 0 ? r.addetti_sub : '', r.addetti_fam > 0 ? r.addetti_fam : '', r.totale_addetti > 0 ? r.totale_addetti : ''
       ];
@@ -720,7 +764,7 @@ function anaExport(){
     ws['!merges'] = [{s:{r:0,c:0}, e:{r:0,c:colCount-1}}];
 
     // ── LARGHEZZE COLONNE ──
-    var colWidths = [13,14,50,13,32,13,35,7,18,6,18,14,11,16,10,20,12,12,18,18,18,16,10,18,18,20,16];
+    var colWidths = [13,14,50,13,32,13,35,7,18,6,18,14,11,16,10,20,12,12,18,18,18,16,10,18,18,20,16,30];
     // iscritto+dip
     colWidths.push(10,14,25,13,12,13);
     servizi.forEach(function(){ colWidths.push(22,13,25); });
