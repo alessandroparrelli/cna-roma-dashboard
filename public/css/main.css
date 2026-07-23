@@ -27,19 +27,19 @@ header {
   top: auto !important;
 }
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.32 "Luminous Workspace"
+   CNA ROMA DASHBOARD — v2026.33 "cnaflow Design System"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
 ══════════════════════════════════════════════════════════════ */
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
 
 :root{
-  /* ── Brand ─────────────────────────────────────── */
-  --primary:#005CA9;
-  --primary-dark:#00427A;
-  --primary-light:#1E78C8;
-  --primary-glow:rgba(0,92,169,.18);
+  /* ── Brand · cnaflow palette ────────────────────── */
+  --primary:#2563EB;
+  --primary-dark:#1D4ED8;
+  --primary-light:#60A5FA;
+  --primary-glow:rgba(37,99,235,.15);
 
   /* Accent secondari (usati per categorie/badge) */
   --accent:#EC4899;
@@ -58,12 +58,12 @@ header {
   --orange:#F97316;
   --orange-light:#FB923C;
 
-  /* ── Canvas (slate-based, frosted) ─────────────── */
-  --bg:#F1F5F9;            /* slate-100 */
-  --bg2:#E2E8F0;           /* slate-200 */
+  /* ── Canvas · cnaflow ──────────────────────────── */
+  --bg:#F8FAFC;            /* cnaflow bg-light */
+  --bg2:#EFF6FF;           /* cnaflow bg-light-subtle */
   --surface:#FFFFFF;
-  --surface2:#F8FAFC;      /* slate-50 */
-  --surface3:#F1F5F9;
+  --surface2:#F8FAFC;
+  --surface3:#EFF6FF;
   --surface-glass:rgba(255,255,255,.72);
 
   /* ── Borders / strokes ─────────────────────────── */
@@ -77,23 +77,23 @@ header {
   --text-tertiary:#94A3B8;           /* slate-400 */
   --text-hint:#CBD5E1;               /* slate-300 */
 
-  /* ── Typography ────────────────────────────────── */
-  --font-display:'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-body:'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* ── Typography · cnaflow (Outfit) ─────────────── */
+  --font-display:'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-body:'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono:'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
 
-  /* ── Shadows soft & dimensional ────────────────── */
-  --shadow-xs:0 1px 2px rgba(15,23,42,.04);
-  --shadow-sm:0 2px 8px rgba(15,23,42,.04);
-  --shadow-md:0 8px 24px rgba(15,23,42,.06);
-  --shadow-lg:0 16px 40px rgba(15,23,42,.08);
-  --shadow-xl:0 24px 60px rgba(15,23,42,.12);
-  --shadow-color:0 8px 24px rgba(0,92,169,.22);
-  --shadow-glass:0 1px 3px rgba(15,23,42,.02), 0 8px 30px rgba(15,23,42,.04);
-  --shadow-pill:0 2px 12px rgba(15,23,42,.04);
+  /* ── Shadows · cnaflow ──────────────────────────── */
+  --shadow-xs:0 1px 4px rgba(37,99,235,.06);
+  --shadow-sm:0 2px 8px rgba(37,99,235,.08);
+  --shadow-md:0 4px 16px rgba(37,99,235,.13);
+  --shadow-lg:0 8px 32px rgba(37,99,235,.18);
+  --shadow-xl:0 16px 48px rgba(37,99,235,.22);
+  --shadow-color:0 8px 24px rgba(37,99,235,.28);
+  --shadow-glass:0 1px 4px rgba(37,99,235,.06), 0 8px 30px rgba(37,99,235,.08);
+  --shadow-pill:0 2px 12px rgba(37,99,235,.08);
 
   /* ── Gradients (più sobri) ─────────────────────── */
-  --grad-primary:linear-gradient(135deg,#005CA9 0%,#0073C8 100%);
+  --grad-primary:linear-gradient(135deg,#2563EB 0%,#1D4ED8 100%);
   --grad-accent:linear-gradient(135deg,#EC4899 0%,#F472B6 100%);
   --grad-success:linear-gradient(135deg,#10B981 0%,#34D399 100%);
   --grad-warning:linear-gradient(135deg,#F59E0B 0%,#FBBF24 100%);
@@ -101,7 +101,7 @@ header {
   --grad-purple:linear-gradient(135deg,#8B5CF6 0%,#A78BFA 100%);
   --grad-orange:linear-gradient(135deg,#F97316 0%,#FB923C 100%);
   --grad-rainbow:linear-gradient(135deg,#005CA9 0%,#06B6D4 50%,#8B5CF6 100%);
-  --grad-ocean:linear-gradient(135deg,#005CA9 0%,#00427A 100%);
+  --grad-ocean:linear-gradient(135deg,#1E40AF 0%,#1D4ED8 100%);
 
   /* ── Spacing & radius (più rotondo) ────────────── */
   --radius-sm:10px;
@@ -122,22 +122,22 @@ header {
 
 /* ── Dark Mode ─────────────────────────────────── */
 body.dark-mode{
-  --bg:#0B1220;
-  --bg2:#0F172A;
-  --surface:#111A2E;
-  --surface2:#162038;
-  --surface3:#1E2A45;
+  --bg:#0A0F1E;
+  --bg2:#111827;
+  --surface:#111827;
+  --surface2:#1E2940;
+  --surface3:#1E2940;
   --surface-glass:rgba(17,26,46,.72);
   --border:rgba(51,65,85,.6);
   --border-strong:#334155;
   --border-soft:rgba(255,255,255,.05);
-  --text:#F8FAFC;
-  --text-secondary:#CBD5E1;
-  --text-tertiary:#94A3B8;
-  --text-hint:#475569;
+  --text:#FFFFFF;
+  --text-secondary:#BFDBFE;
+  --text-tertiary:#93C5FD;
+  --text-hint:#4B6CB7;
   --shadow-glass:0 1px 3px rgba(0,0,0,.4),0 8px 30px rgba(0,0,0,.3);
 }
-body.dark-mode header{background:linear-gradient(135deg,#0F1B33 0%,#1A2847 100%);}
+body.dark-mode header{background:rgba(10,15,30,.8);border-bottom-color:#1E2940;}
 
 /* ── Alias retro-compatibili (per non rompere markup esistente) ─ */
 :root{
@@ -497,13 +497,12 @@ body.dark-mode .kpi-card{background:var(--surface);}
 .kpi-card.c4::after{background:radial-gradient(circle,var(--accent),transparent 70%);}
 
 .kpi-label{
-  font-size:13px;font-weight:600;color:var(--text-secondary);
-  letter-spacing:.005em;text-transform:none;margin-bottom:0;
+  font-size:10px;font-weight:700;color:var(--text-tertiary);
+  letter-spacing:.18em;text-transform:uppercase;margin-bottom:0;
 }
 .kpi-value{
   font-family:var(--font-display);font-size:38px;font-weight:800;line-height:1;
-  font-variant-numeric:tabular-nums;letter-spacing:-0.035em;color:var(--text);
-  /* niente più gradient text: più leggibile e moderno */
+  font-variant-numeric:tabular-nums;letter-spacing:-0.04em;color:var(--primary);
   background:none;-webkit-text-fill-color:initial;background-clip:initial;-webkit-background-clip:initial;
 }
 .kpi-sub{
