@@ -8,6 +8,7 @@ console.log('✅ reportistica.js v2 CARICATO');
 var reportisticaLoading = false;
 var repAllData = [];
 var LOGO_URL = 'https://raw.githubusercontent.com/alessandroparrelli/fileappoggio/17b50df8f22632eb360e1da944d997289a598012/NUOVO-LOGO-CNA-ROMA-SOLO-ROMA.png';
+var LOGO_URL_NEGATIVO = 'https://customer31551.img.musvc2.net/static/31551/images/1/CNARoma%20NEGATIVO%20COLORE%20SOLO%20ROMA.png';
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 function reportisticaInit() {
@@ -41,6 +42,7 @@ function buildReportisticaUI() {
     + '<select id="rep-mese" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px">' + mesiOpt + '</select></div>'
     + '<div><button onclick="repCaricaEAnteprima()" id="rep-btn-carica" style="width:100%;padding:10px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🔄 Carica Dati</button></div>'
     + '<div><button onclick="repGeneraPDF()" id="rep-btn-pdf" style="width:100%;padding:10px 16px;background:#1e293b;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📄 Genera PDF</button></div>'
+    + '<div><button onclick="repApriModaleStampa()" id="rep-btn-stampa" style="width:100%;padding:10px 16px;background:#005CA9;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🖨️ Stampa</button></div>'
     + '</div></div>'
     + '<div id="rep-status" style="display:none;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">'
     + '<span id="rep-status-text" style="font-size:13px;color:var(--text-secondary)">Caricamento…</span></div>'
@@ -226,18 +228,18 @@ function repBuildAllPages(data, anno, mese, storicaData) {
 // ── PAGINA 0: COPERTINA ───────────────────────────────────────────────────────
 function repPag0_Copertina(anno, mese) {
   var meseStr = MESI[mese] + ' ' + anno;
-  return '<div style="background:white;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px;height:740px;display:flex;flex-direction:column">'
+  return '<div style="background:#005CA9;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px;height:740px;display:flex;flex-direction:column">'
     // Contenuto centrato verticalmente — flex:1 occupa lo spazio, footer rimane in fondo
     + '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">'
-    + '<img src="' + LOGO_URL + '" style="height:auto;width:240px;object-fit:contain;object-position:center;margin-bottom:44px" crossorigin="anonymous" />'
-    + '<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:44px;font-weight:800;color:#0f172a;letter-spacing:-1.5px;text-align:center;line-height:1.05">'
+    + '<img src="' + LOGO_URL_NEGATIVO + '" style="height:auto;width:240px;object-fit:contain;object-position:center;margin-bottom:44px" crossorigin="anonymous" />'
+    + '<div style="font-family:Inter,Helvetica,Arial,sans-serif;font-size:44px;font-weight:800;color:#ffffff;letter-spacing:-1.5px;text-align:center;line-height:1.05">'
     +   'Analisi adesioni dirette della<br>'
-    +   '<span style="color:#005CA9">CNA di Roma</span>'
+    +   '<span style="color:#ffffff">CNA di Roma</span>'
     + '</div>'
-    + '<div style="margin-top:10px;font-size:15px;font-weight:500;color:#64748b;text-align:center;letter-spacing:0">Mese di riferimento: <strong style="color:#0f172a;font-weight:700">' + meseStr + '</strong></div>'
+    + '<div style="margin-top:10px;font-size:15px;font-weight:500;color:#ffffff;text-align:center;letter-spacing:0">Mese di riferimento: <strong style="color:#ffffff;font-weight:700">' + meseStr + '</strong></div>'
     + '</div>'
-    // Footer identico alle altre pagine
-    + repFooter('1')
+    // Footer copertina: testo e numero pagina bianchi, logo a contrasto
+    + repFooterCover('1')
     + '</div>';
 }
 
@@ -292,6 +294,13 @@ function repFooter(n) {
   return '<div style="padding:6px 28px;background:white;display:flex;justify-content:space-between;align-items:center;min-height:28px">'
     + '<span style="display:flex;align-items:center;gap:6px"><img src="' + LOGO_URL + '" style="height:14px;width:auto;object-fit:contain" crossorigin="anonymous" /><span style="font-size:9px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1;font-style:normal;font-weight:400">© ERP CNA di Roma &nbsp;|&nbsp; Documento realizzato dal sistema centralizzato di gestione ERP sviluppato dall\'Ufficio soci</span></span>'
     + '<span style="font-size:9px;color:#94a3b8;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">Pagina ' + parseInt(n) + ' di __TOTPAG__</span></div>';
+}
+
+// Footer copertina (pagina 1): sfondo blu CNA, testo e numero pagina bianchi, logo a contrasto
+function repFooterCover(n) {
+  return '<div style="padding:6px 28px;background:#005CA9;display:flex;justify-content:space-between;align-items:center;min-height:28px">'
+    + '<span style="display:flex;align-items:center;gap:6px"><img src="' + LOGO_URL_NEGATIVO + '" style="height:14px;width:auto;object-fit:contain" crossorigin="anonymous" /><span style="font-size:9px;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1;font-style:normal;font-weight:400">© ERP CNA di Roma &nbsp;|&nbsp; Documento realizzato dal sistema centralizzato di gestione ERP sviluppato dall\'Ufficio soci</span></span>'
+    + '<span style="font-size:9px;color:#ffffff;font-family:Inter,Helvetica,Arial,sans-serif;line-height:1">Pagina ' + parseInt(n) + ' di __TOTPAG__</span></div>';
 }
 
 // Landscape A4 a 96dpi ≈ 1122×794px — usiamo 1060×748 con margini
@@ -907,6 +916,175 @@ async function repGeneraPDF() {
     hideLoad();
     btn.disabled=false; btn.textContent='📄 Genera PDF';
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// STAMPA (A4 singola / opuscolo A5 con imposizione a sella)
+// ══════════════════════════════════════════════════════════════════════════════
+function repApriModaleStampa() {
+  if (G('rep-print-modal')) return;
+  var container = G('rep-pages-container');
+  if (!container || !container.querySelector('[data-page]')) {
+    alert('Nessuna pagina da stampare. Clicca prima "Carica Dati".');
+    return;
+  }
+  var overlay = document.createElement('div');
+  overlay.id = 'rep-print-modal';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px';
+  overlay.innerHTML =
+      '<div style="background:var(--surface);color:var(--text);border-radius:14px;padding:28px;max-width:440px;width:100%;box-shadow:0 24px 70px rgba(0,0,0,0.35)">'
+    + '<div style="font-size:17px;font-weight:800;margin-bottom:6px">🖨️ Stampa Report</div>'
+    + '<div style="font-size:12.5px;color:var(--text-secondary);margin-bottom:18px;line-height:1.5">Si aprirà la finestra di stampa del sistema, dove potrai scegliere la stampante installata sul tuo PC.</div>'
+    + '<label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;margin-bottom:6px">Formato</label>'
+    + '<select id="rep-print-formato" onchange="repAggiornaModaleStampa()" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px;margin-bottom:16px">'
+    +   '<option value="a4">A4 — pagina singola</option>'
+    +   '<option value="a5">A5 — Opuscolo (fronte-retro)</option>'
+    + '</select>'
+    + '<div id="rep-print-a5-info" style="display:none;font-size:12px;color:var(--text-secondary);background:rgba(0,92,169,0.08);border:1px solid rgba(0,92,169,0.2);border-radius:8px;padding:10px 12px;margin-bottom:16px;line-height:1.5">'
+    +   'Nella finestra di stampa imposta carta <b>A4 orizzontale</b> e attiva il <b>fronte-retro</b> (capovolgi sul lato corto). Piegando a metà i fogli stampati otterrai l\'opuscolo A5. Se la tua stampante non ha il fronte-retro automatico, usa i due passaggi manuali qui sotto.'
+    + '</div>'
+    + '<div id="rep-print-actions-a4"><button onclick="repEseguiStampa(\'a4\')" style="width:100%;padding:11px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🖨️ Stampa</button></div>'
+    + '<div id="rep-print-actions-a5" style="display:none">'
+    +   '<button onclick="repEseguiStampa(\'a5\',\'auto\')" style="width:100%;padding:11px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;margin-bottom:10px">🖨️ Stampa fronte-retro automatico</button>'
+    +   '<div style="display:flex;gap:8px">'
+    +     '<button onclick="repEseguiStampa(\'a5\',\'fronti\')" style="flex:1;padding:9px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">1. Stampa fronti</button>'
+    +     '<button onclick="repEseguiStampa(\'a5\',\'retri\')" style="flex:1;padding:9px;background:transparent;border:1px solid var(--border);color:var(--text);border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">2. Stampa retri</button>'
+    +   '</div>'
+    + '</div>'
+    + '<button onclick="repChiudiModaleStampa()" style="width:100%;margin-top:14px;padding:9px;background:transparent;border:none;color:var(--text-secondary);font-size:12px;cursor:pointer">Annulla</button>'
+    + '</div>';
+  document.body.appendChild(overlay);
+}
+
+function repAggiornaModaleStampa() {
+  var formato = G('rep-print-formato').value;
+  G('rep-print-a5-info').style.display = formato === 'a5' ? 'block' : 'none';
+  G('rep-print-actions-a4').style.display = formato === 'a4' ? 'block' : 'none';
+  G('rep-print-actions-a5').style.display = formato === 'a5' ? 'block' : 'none';
+}
+
+function repChiudiModaleStampa() {
+  var m = G('rep-print-modal');
+  if (m) document.body.removeChild(m);
+}
+
+// Clona una pagina sostituendo i <canvas> con <img> (cloneNode non copia il contenuto disegnato)
+function repClonaConImmagini(node) {
+  var clone = node.cloneNode(true);
+  var srcCanvases = node.querySelectorAll('canvas');
+  var cloneCanvases = clone.querySelectorAll('canvas');
+  for (var i = 0; i < srcCanvases.length; i++) {
+    var cv = srcCanvases[i];
+    var target = cloneCanvases[i];
+    if (!target || !target.parentNode) continue;
+    var img = document.createElement('img');
+    try { img.src = cv.toDataURL('image/png'); } catch (e) { continue; }
+    var cs = getComputedStyle(cv);
+    img.style.width = cs.width;
+    img.style.height = cs.height;
+    target.parentNode.replaceChild(img, target);
+  }
+  return clone;
+}
+
+// Ridimensiona (ed eventualmente ruota) il contenuto di un foglio/zona di stampa per farlo entrare esattamente nello spazio disponibile
+function repAdattaContenuto(el, ruota) {
+  var content = el.firstElementChild;
+  if (!content) return;
+  var rect = el.getBoundingClientRect();
+  var w = content.scrollWidth || content.offsetWidth || 1060;
+  var h = content.scrollHeight || content.offsetHeight;
+  if (!w || !h || !rect.width || !rect.height) return;
+  var scale = ruota
+    ? Math.min(rect.width / h, rect.height / w)
+    : Math.min(rect.width / w, rect.height / h);
+  content.style.transformOrigin = 'center center';
+  content.style.transform = (ruota ? 'rotate(90deg) ' : '') + 'scale(' + scale + ')';
+}
+
+// Imposizione a sella: dispone le pagine sui fogli A4 in modo che, piegati a metà, formino l'opuscolo A5 nell'ordine corretto
+// parte: undefined/'auto' = fronte+retro alternati (stampa fronte-retro automatica), 'fronti' o 'retri' = solo un lato (stampa manuale in due passaggi)
+function repCostruisciFogliOpuscolo(pagine, parte) {
+  var pag = pagine.slice();
+  while (pag.length % 4 !== 0) pag.push(null); // pagine bianche di riempimento
+  var tot = pag.length;
+  var nFogli = tot / 4;
+  var fogli = [];
+  for (var i = 0; i < nFogli; i++) {
+    var frontLeft  = tot - 2 * i;
+    var frontRight = 1 + 2 * i;
+    var backLeft   = 2 + 2 * i;
+    var backRight  = tot - 1 - 2 * i;
+    if (parte !== 'retri')  fogli.push({ left: pag[frontLeft - 1]  || null, right: pag[frontRight - 1] || null });
+    if (parte !== 'fronti') fogli.push({ left: pag[backLeft - 1]   || null, right: pag[backRight - 1]  || null });
+  }
+  return fogli;
+}
+
+async function repEseguiStampa(formato, parte) {
+  var container = G('rep-pages-container');
+  var pageDivs = container ? Array.prototype.slice.call(container.querySelectorAll('[data-page]')) : [];
+  if (!pageDivs.length) { alert('Nessuna pagina da stampare. Clicca prima "Carica Dati".'); return; }
+  repChiudiModaleStampa();
+
+  var pagineClone = pageDivs.map(function (pd) {
+    var src = pd.firstElementChild || pd;
+    var clone = repClonaConImmagini(src);
+    clone.style.width = '1060px';
+    return clone;
+  });
+
+  var printRoot = document.createElement('div');
+  printRoot.id = 'rep-print-root';
+
+  if (formato === 'a4') {
+    printRoot.className = 'rep-print-a4';
+    pagineClone.forEach(function (clone) {
+      var sheet = document.createElement('div');
+      sheet.className = 'rep-print-sheet-a4';
+      sheet.appendChild(clone);
+      printRoot.appendChild(sheet);
+    });
+  } else {
+    printRoot.className = 'rep-print-a5';
+    var fogli = repCostruisciFogliOpuscolo(pagineClone, parte);
+    fogli.forEach(function (f) {
+      var sheet = document.createElement('div');
+      sheet.className = 'rep-print-sheet-a5';
+      var zL = document.createElement('div'); zL.className = 'rep-print-zone-a5';
+      var zR = document.createElement('div'); zR.className = 'rep-print-zone-a5';
+      if (f.left)  zL.appendChild(f.left);
+      if (f.right) zR.appendChild(f.right);
+      sheet.appendChild(zL);
+      sheet.appendChild(zR);
+      printRoot.appendChild(sheet);
+    });
+  }
+
+  document.body.appendChild(printRoot);
+  document.body.classList.add('rep-printing');
+
+  // Attende il layout prima di calcolare le trasformazioni di adattamento
+  await new Promise(function (r) { setTimeout(r, 80); });
+
+  if (formato === 'a4') {
+    printRoot.querySelectorAll('.rep-print-sheet-a4').forEach(function (s) { repAdattaContenuto(s, false); });
+  } else {
+    printRoot.querySelectorAll('.rep-print-zone-a5').forEach(function (z) { repAdattaContenuto(z, true); });
+  }
+
+  var pulito = false;
+  var pulisci = function () {
+    if (pulito) return;
+    pulito = true;
+    document.body.classList.remove('rep-printing');
+    if (printRoot.parentNode) printRoot.parentNode.removeChild(printRoot);
+    window.removeEventListener('afterprint', pulisci);
+  };
+  window.addEventListener('afterprint', pulisci);
+  setTimeout(pulisci, 120000); // rete di sicurezza se 'afterprint' non scatta
+
+  window.print();
 }
 
 // ── PAGINA 8: PREVISIONE ANNO CORRENTE ───────────────────────────────────────
