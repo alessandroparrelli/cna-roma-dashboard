@@ -46,6 +46,70 @@ async function doLogin(){
 function doLogout(){clearSession();location.reload();}
 
 // ══════════════════════════════════════════════════════════════════════════════
+// RICHIESTA PASSWORD D'ACCESSO (dalla schermata di login)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function openRichiestaAccesso(){
+  G('ra-nome').value='';
+  G('ra-cognome').value='';
+  G('ra-cellulare').value='';
+  G('ra-email').value='';
+  var errEl=G('richiesta-accesso-error');
+  errEl.style.display='none';
+  errEl.textContent='';
+  G('modal-richiesta-accesso-bg').style.display='flex';
+}
+
+function closeRichiestaAccesso(){
+  G('modal-richiesta-accesso-bg').style.display='none';
+}
+
+async function inviaRichiestaAccesso(){
+  var nome=G('ra-nome').value.trim();
+  var cognome=G('ra-cognome').value.trim();
+  var cellulare=G('ra-cellulare').value.trim();
+  var email=G('ra-email').value.trim().toLowerCase();
+  var errEl=G('richiesta-accesso-error');
+  errEl.style.display='none';
+
+  if(!nome||!cognome||!cellulare||!email){
+    errEl.textContent='Compila tutti i campi';
+    errEl.style.display='block';
+    return;
+  }
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    errEl.textContent='Inserisci un indirizzo email valido';
+    errEl.style.display='block';
+    return;
+  }
+
+  var btn=G('btn-invia-richiesta-accesso');
+  btn.disabled=true;
+  btn.textContent='Invio in corso…';
+
+  try{
+    var resp=await fetch(SB+'/functions/v1/send-email',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','apikey':KEY},
+      body:JSON.stringify({type:'richiesta_accesso',nome:nome,cognome:cognome,cellulare:cellulare,email:email})
+    });
+    var result=await resp.json();
+    if(!resp.ok){
+      throw new Error(result.error||'Errore invio richiesta');
+    }
+    closeRichiestaAccesso();
+    toast('Richiesta inviata! Riceverai le credenziali via email.','success');
+  }catch(e){
+    console.error('❌ ERRORE RICHIESTA ACCESSO:',e);
+    errEl.textContent='Errore durante l\'invio. Riprova più tardi.';
+    errEl.style.display='block';
+  }finally{
+    btn.disabled=false;
+    btn.textContent='Invia richiesta';
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
 // GESTIONE PERMESSI (Admin Panel)
 // ══════════════════════════════════════════════════════════════════════════════
 

@@ -249,6 +249,12 @@ h1,h2,h3,h4,h5,h6{font-family:var(--font-display);font-weight:700;letter-spacing
 }
 .btn-login:hover{background:var(--primary-dark);transform:translateY(-1px);box-shadow:0 14px 32px rgba(0,92,169,.4);}
 .btn-login:disabled{opacity:.55;transform:none;cursor:not-allowed;}
+.btn-request-access{
+  display:block;width:100%;text-align:center;background:none;border:none;
+  font-family:var(--font-body);font-size:13px;font-weight:600;color:var(--primary);
+  cursor:pointer;margin-top:16px;padding:8px;text-decoration:underline;text-underline-offset:3px;
+}
+.btn-request-access:hover{color:var(--primary-dark);}
 
 /* ════════════ APP ════════════ */
 #app{display:none;}

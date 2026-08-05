@@ -819,6 +819,12 @@ document.addEventListener('DOMContentLoaded', function() {
       console.log('✅ inp-email listener attaccato');
     }
     
+    var btnOpenRichiesta = document.getElementById('btn-open-richiesta-accesso');
+    if (btnOpenRichiesta) {
+      btnOpenRichiesta.addEventListener('click', openRichiestaAccesso);
+      console.log('✅ btn-open-richiesta-accesso listener attaccato');
+    }
+
     var btnLogout = document.getElementById('btn-logout');
     if (btnLogout) {
       btnLogout.addEventListener('click', doLogout);
