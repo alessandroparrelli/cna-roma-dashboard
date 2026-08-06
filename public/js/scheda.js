@@ -61,16 +61,20 @@ async function openAnagraficaModal(anaIdx) {
     cachedCCIAA = anaCCIAAMap[String(ana.partitaiva).trim()] || null;
   }
 
-  var [direttiRes, contrattiRes, incassiRes] = await Promise.allSettled([
+  var [direttiRes, contrattiRes, incassiRes, pandoraG1Res, pandoraG3Res] = await Promise.allSettled([
     // Diretti (tesseramento)
     fetch(SB + '/rest/v1/diretti?codiceanagrafica=eq.' + encodeURIComponent(ana.codiceanagrafica), { headers: H() }),
     // Contratti servizio attivi
     fetch(SB + '/rest/v1/contrattiservizio?codicecliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&datadisdetta=is.null&order=datastipulacontratto.desc', { headers: H() }),
-    // Incassi ultimi 2 anni
+    // Incassi vecchi (backward compat)
     (function() {
       var d = new Date(); d.setFullYear(d.getFullYear() - 2);
       return fetch(SB + '/rest/v1/incassi?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&data_pagamento=gte.' + d.toISOString().substring(0,10) + '&select=*&order=data_pagamento.desc', { headers: H() });
-    })()
+    })(),
+    // Pandora — CNA Roma (G1000001)
+    fetch(SB + '/rest/v1/incassipandora?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&codice_azienda=eq.G1000001&order=data_fattura.desc&limit=200', { headers: H() }),
+    // Pandora — CNA CAF Lazio (G1000003)
+    fetch(SB + '/rest/v1/incassipandora?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&codice_azienda=eq.G1000003&order=data_fattura.desc&limit=200', { headers: H() })
   ]);
 
   // Estrai dati
@@ -104,6 +108,20 @@ async function openAnagraficaModal(anaIdx) {
   try {
     if (incassiRes.status === 'fulfilled' && incassiRes.value.ok) {
       incassi = await incassiRes.value.json() || [];
+    }
+  } catch(e) {}
+
+  var pandoraG1 = [];
+  try {
+    if (pandoraG1Res.status === 'fulfilled' && pandoraG1Res.value.ok) {
+      pandoraG1 = await pandoraG1Res.value.json() || [];
+    }
+  } catch(e) {}
+
+  var pandoraG3 = [];
+  try {
+    if (pandoraG3Res.status === 'fulfilled' && pandoraG3Res.value.ok) {
+      pandoraG3 = await pandoraG3Res.value.json() || [];
     }
   } catch(e) {}
 
@@ -185,6 +203,14 @@ async function openAnagraficaModal(anaIdx) {
   var iscrittoContratto = contratti.find(function(c){ return c.tipocontratto === 'ISCRITTO'; });
   var serviziContratto = contratti.filter(function(c){ return c.tipocontratto !== 'ISCRITTO'; });
 
+  // ── Badge "Pagante" — ha pagato almeno una quota tessera negli ultimi 3 anni (incluso corrente) ──
+  var annoCorrente = new Date().getFullYear();
+  var isPagante = pandoraG1.some(function(p){
+    if (!p.data_fattura || !p.pagato) return false;
+    var anno = parseInt(p.data_fattura.substring(0,4));
+    return anno >= annoCorrente - 2 && anno <= annoCorrente;
+  });
+
   // ── HTML ──────────────────────────────────────────────────────────
   var body = '';
 
@@ -206,6 +232,7 @@ async function openAnagraficaModal(anaIdx) {
   }
   if (isIscritto) badgeRow += ' ' + badge('✓ Iscritto CNA', '#059669');
   if (isInps)     badgeRow += ' ' + badge('INPS', '#0284C7');
+  if (isPagante)  badgeRow += ' ' + badge('✓ Pagante', '#16A34A');
 
   if (badgeRow) {
     body += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">' + badgeRow + '</div>';
@@ -357,45 +384,74 @@ async function openAnagraficaModal(anaIdx) {
   body += '</div>'; // fine sezione contratti
 
   // ══════════════════════════════════════════════════════
-  // SEZIONE 5 — PAGAMENTI  (header: verde smeraldo)
+  // SEZIONE 5 — PAGAMENTI PANDORA  (header: verde smeraldo)
   // ══════════════════════════════════════════════════════
-  body += '<div class="scheda-section">';
-  body += secHdr('#059669', P.euro, 'Pagamenti ultimi 2 anni');
+  function pandoraBlock(rows, label, accentColor) {
+    if (!rows.length) return '<p style="color:var(--text-dim);font-size:13px;font-style:italic;padding:8px 0">Nessun documento per ' + label + '</p>';
+    var totFat = rows.reduce(function(s,r){ return s+(parseFloat(r.totale_fattura)||0); }, 0);
+    var totSal = rows.reduce(function(s,r){ return s+(parseFloat(r.saldo)||0); }, 0);
+    var nPag   = rows.filter(function(r){ return r.pagato; }).length;
 
-  if (incassi.length === 0) {
-    body += '<div style="color:var(--text-dim);font-size:13px;font-style:italic">Non risultano pagamenti negli ultimi due anni.</div>';
-  } else {
-    var totInc = incassi.reduce(function(s,r){ return s+(r.avere||0); }, 0);
-    var totSepa = incassi.filter(function(r){ return (r.tipo_doc_az||'').toUpperCase()==='RID'; }).reduce(function(s,r){ return s+(r.avere||0); }, 0);
-    var ultimaData = fmtDate(incassi[0].data_pagamento);
-
-    body += '<div class="scheda-pay-kpis">';
-    body += '<div class="scheda-pay-kpi" style="border-left-color:#059669"><div class="scheda-pay-kpi-lbl">Totale</div><div class="scheda-pay-kpi-val">' + fmtEur(totInc) + '</div></div>';
-    body += '<div class="scheda-pay-kpi" style="border-left-color:#0284C7"><div class="scheda-pay-kpi-lbl">SEPA</div><div class="scheda-pay-kpi-val">' + fmtEur(totSepa) + '</div></div>';
-    body += '<div class="scheda-pay-kpi" style="border-left-color:#F59E0B"><div class="scheda-pay-kpi-lbl">Cassa</div><div class="scheda-pay-kpi-val">' + fmtEur(totInc - totSepa) + '</div></div>';
-    body += '<div class="scheda-pay-kpi" style="border-left-color:#7C3AED"><div class="scheda-pay-kpi-lbl">Ultimo</div><div class="scheda-pay-kpi-val" style="font-size:12px">' + ultimaData + '</div></div>';
-    body += '</div>';
-
-    body += '<table class="scheda-pay-table"><thead><tr>';
-    body += '<th>Data</th><th style="text-align:right">Importo</th><th>Metodo</th><th>Sede</th><th>Causale</th>';
-    body += '</tr></thead><tbody>';
-    incassi.slice(0, 8).forEach(function(r) {
-      var metodo = (r.tipo_doc_az||'').toUpperCase()==='RID' ? 'SEPA' : 'Cassa';
-      var mc = metodo === 'SEPA' ? '#0284C7' : '#059669';
-      var causale = (r.compensazione || r.documento || '').substring(0,40);
-      body += '<tr>';
-      body += '<td style="white-space:nowrap">' + fmtDate(r.data_pagamento) + '</td>';
-      body += '<td style="text-align:right;font-weight:700;color:#059669">' + fmtEur(r.avere||0) + '</td>';
-      body += '<td><span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;background:' + mc + '18;color:' + mc + '">' + metodo + '</span></td>';
-      body += '<td style="font-size:11px;color:var(--text-dim)">' + (r.cassa||'').replace(/^CASSA /,'') + '</td>';
-      body += '<td style="font-size:11px;color:var(--text-dim);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (r.compensazione||'').replace(/"/g,'') + '">' + causale + '</td>';
-      body += '</tr>';
-    });
-    body += '</tbody></table>';
-    if (incassi.length > 8) {
-      body += '<div style="text-align:center;padding:8px;font-size:11px;color:var(--text-dim)">+ altri ' + (incassi.length-8) + ' pagamenti</div>';
+    var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">';
+    html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#EFF6FF;color:#2563EB;border:1px solid #BFDBFE">' + rows.length + ' documenti</span>';
+    html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0">✓ ' + nPag + ' pagati</span>';
+    if (totSal > 0) {
+      html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA">⚠ Insoluto € ' + totSal.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</span>';
+    } else {
+      html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0">Tutto saldato</span>';
     }
+    html += '<span style="font-size:12px;font-weight:500;padding:4px 12px;border-radius:6px;background:var(--surface2);color:var(--text-dim)">Fatturato € ' + totFat.toLocaleString('it-IT',{minimumFractionDigits:0,maximumFractionDigits:0}) + '</span>';
+    html += '</div>';
+
+    html += '<table class="scheda-pay-table"><thead><tr>';
+    html += '<th>Data</th><th>Scadenza</th><th>Riferimento</th><th>Tipo</th><th style="text-align:right">Importo</th><th style="text-align:right">Saldo</th><th>Stato</th>';
+    html += '</tr></thead><tbody>';
+    rows.forEach(function(r) {
+      var pagato = r.pagato;
+      var saldo = parseFloat(r.saldo) || 0;
+      var rif = (r.riferimento || '').toLowerCase().replace(/\b\w/g, function(l){ return l; }); // tutto lowercase
+      html += '<tr>';
+      html += '<td style="white-space:nowrap;font-size:12px">' + fmtDate(r.data_fattura) + '</td>';
+      html += '<td style="white-space:nowrap;font-size:12px">' + fmtDate(r.data_scadenza) + '</td>';
+      html += '<td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (r.riferimento||'').replace(/"/g,'') + '">' + rif + '</td>';
+      html += '<td style="font-size:11px;color:var(--text-dim)">' + (r.tipo||'') + '</td>';
+      html += '<td style="text-align:right;font-size:12px;font-weight:600">€ ' + (parseFloat(r.totale_fattura)||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</td>';
+      html += '<td style="text-align:right;font-size:12px;font-weight:700;color:' + (saldo > 0 ? '#DC2626' : '#16A34A') + '">€ ' + saldo.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</td>';
+      html += '<td><span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;' + (pagato ? 'background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0' : 'background:#FEF2F2;color:#DC2626;border:1px solid #FECACA') + '">' + (pagato ? 'PAGATO' : 'APERTO') + '</span></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table>';
+    return html;
   }
+
+  body += '<div class="scheda-section">';
+  body += secHdr('#059669', P.euro, 'Pagamenti');
+
+  // ── CNA Roma ──
+  if (pandoraG1.length > 0 || pandoraG3.length > 0) {
+    // Blocco CNA Roma
+    body += '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#EFF6FF;border-radius:8px;margin-bottom:12px;">';
+    body += '<span style="font-size:15px;">🏛</span>';
+    body += '<span style="font-size:14px;font-weight:700;color:#2563EB;">CNA Roma — Tesseramento</span>';
+    body += '<span style="font-family:monospace;font-size:11px;color:#6B7280;margin-left:auto">G1000001</span>';
+    body += '<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:#DBEAFE;color:#2563EB">' + pandoraG1.length + ' doc</span>';
+    body += '</div>';
+    body += pandoraBlock(pandoraG1, 'CNA Roma', '#2563EB');
+
+    body += '<div style="height:1px;background:var(--border);margin:20px 0"></div>';
+
+    // Blocco CNA CAF Lazio
+    body += '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#FFFBEB;border-radius:8px;margin-bottom:12px;">';
+    body += '<span style="font-size:15px;">📋</span>';
+    body += '<span style="font-size:14px;font-weight:700;color:#D97706;">CNA CAF Lazio — Servizi fiscali</span>';
+    body += '<span style="font-family:monospace;font-size:11px;color:#6B7280;margin-left:auto">G1000003</span>';
+    body += '<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:#FDE68A;color:#92400E">' + pandoraG3.length + ' doc</span>';
+    body += '</div>';
+    body += pandoraBlock(pandoraG3, 'CNA CAF Lazio', '#D97706');
+  } else {
+    body += '<div style="color:var(--text-dim);font-size:13px;font-style:italic">Nessun dato di pagamento disponibile. Esegui l\'import da Pandora per popolare i dati.</div>';
+  }
+
   body += '</div>';
 
   // ── SEZIONE: MAPPA ───────────────────────────────────────────────

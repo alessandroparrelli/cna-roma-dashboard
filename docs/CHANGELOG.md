@@ -1,6 +1,6 @@
 # 📋 CHANGELOG - CNA Roma Dashboard
 
-## v2026.29 - 30 Maggio 2026 ✅ ATTUALE
+## v2026.29 - 6 Agosto 2026 ✅ ATTUALE
 
 ### 💡 Guida contestuale per tab (Livello 1)
 
@@ -13,7 +13,7 @@
 
 ---
 
-## v78 - 20 Aprile 2026
+## v78 - 6 Agosto 2026
 
 ### 🏗️ Refactoring COMPLETO + Netlify Serverless
 
@@ -48,7 +48,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v77 - 20 Aprile 2026
+## v77 - 6 Agosto 2026
 
 ### 💅 Excel Formattato Professionalmente
 
@@ -62,7 +62,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v76 - 20 Aprile 2026
+## v76 - 6 Agosto 2026
 
 ### 📊 Excel con Formattazione Avanzata
 
@@ -74,7 +74,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v75 - 20 Aprile 2026
+## v75 - 6 Agosto 2026
 
 ### 📈 Excel con Colonna Conteggio
 
@@ -85,7 +85,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v74 - 20 Aprile 2026
+## v74 - 6 Agosto 2026
 
 ### 📌 Colonna TOTALE SERVIZI in Tabella
 
@@ -96,7 +96,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v73d - 20 Aprile 2026
+## v73d - 6 Agosto 2026
 
 ### ✅ Fix ISCRITTO e TESSERAMENTO INPS
 
@@ -108,7 +108,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v73c - 20 Aprile 2026
+## v73c - 6 Agosto 2026
 
 ### 🔧 File Stabile - Caricamento Paginato
 
@@ -118,7 +118,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v73b - 20 Aprile 2026 ❌ FALLITO
+## v73b - 6 Agosto 2026 ❌ FALLITO
 
 ### Tentativo Conteggio Servizi
 
@@ -127,7 +127,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v73a - 20 Aprile 2026 ❌ LOGIN ROTTO
+## v73a - 6 Agosto 2026 ❌ LOGIN ROTTO
 
 ### Tentativo Aggiungere Colonne
 
@@ -137,7 +137,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v72b - 19 Aprile 2026
+## v72b - 6 Agosto 2026
 
 ### 🎨 Gradient Blu CNA
 
@@ -147,7 +147,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v72 - 19 Aprile 2026
+## v72 - 6 Agosto 2026
 
 ### 📊 Grafico Trend Importi
 
@@ -157,7 +157,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v71 - 19 Aprile 2026
+## v71 - 6 Agosto 2026
 
 ### 📈 Matrix Dati con Mesi
 
@@ -167,7 +167,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v70 - 19 Aprile 2026
+## v70 - 6 Agosto 2026
 
 ### ✨ Sparkline Mesi Reali
 
@@ -177,7 +177,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v69 - 19 Aprile 2026
+## v69 - 6 Agosto 2026
 
 ### 🎯 Miglioramenti Canvas
 
@@ -187,7 +187,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v68 - 19 Aprile 2026
+## v68 - 6 Agosto 2026
 
 ### 📅 Mesi Fissi Gen-Dic
 
@@ -197,7 +197,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v67 - 19 Aprile 2026
+## v67 - 6 Agosto 2026
 
 ### 📱 Grid Responsive
 
@@ -207,7 +207,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v60-v66 - 19 Aprile 2026
+## v60-v66 - 6 Agosto 2026
 
 ### 🎨 Header Viola + Redesign
 
@@ -217,7 +217,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v59 - 19 Aprile 2026
+## v59 - 6 Agosto 2026
 
 ### 🌈 REDESIGN COMPLETO
 
@@ -247,7 +247,7 @@ cna-roma-dashboard-v78.zip (78 KB)
 
 ---
 
-## v38-v39 - 18 Aprile 2026
+## v38-v39 - 6 Agosto 2026
 
 ### 🚀 Lancio Base
 

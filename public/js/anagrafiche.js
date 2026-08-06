@@ -266,18 +266,25 @@ async function anaLoad(force){
       r.servizi_tutti = Object.keys(svSet);
     });
 
-    anaFiltered = anaAll.slice();
+    anaFiltered = [];  // Parte vuoto: mostra risultati solo dopo ricerca
     anaSelected.clear();
     anaPage=0;
     anaSetProgress(95, 'Popolamento filtri…');
     anaPopulateFilters();
-    anaRender();
+    // NON chiama anaRender() — la tabella parte vuota
     anaSetProgress(100, 'Completato.');
     anaLoaded=true;
     setTimeout(function(){
       G('ana-loader').classList.remove('active');
       G('ana-content').style.display='block';
       if(window.reInitFiltersToggle) reInitFiltersToggle();
+      // Messaggio placeholder nella tabella
+      var tb=G('ana-tbody');
+      if(tb) tb.innerHTML='<tr><td colspan="40" style="text-align:center;padding:48px 24px;color:var(--text-dim);font-size:14px;">'+
+        '🔍 Usa i filtri sopra per cercare le imprese, poi clicca <strong>Applica</strong></td></tr>';
+      // Aggiorna contatori
+      G('ana-count').textContent = '0 record';
+      G('ana-info-text').textContent = 'DB: '+anaAll.length.toLocaleString('it-IT')+' imprese caricate — imposta i filtri e clicca Applica';
     }, 300);
   }catch(e){
     console.error(e);
