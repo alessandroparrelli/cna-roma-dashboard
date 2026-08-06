@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1786028984"></script>
+<script src="js/report-generator.js?v=1786029613"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1786028984">
-<link rel="stylesheet" href="css/assistant.css?v=1786028984">
+<link rel="stylesheet" href="css/main.css?v=1786029613">
+<link rel="stylesheet" href="css/assistant.css?v=1786029613">
 </head>
 <body>
 
@@ -286,7 +286,7 @@
       <p class="hero-desc" style="font-weight:700;font-size:14px;color:var(--text);letter-spacing:-0.01em;line-height:1.35;max-width:680px;margin-top:6px">Il luogo dove analizzare l'andamento associativo della CNA di Roma, l'andamento dei contratti e la gestione dei consulenti. Monitora i dati associativi, le performance dei promotori, l'archivio imprese in tempo reale e la reportistica.</p>
     </div>
     <div class="home-hero-img-wrap">
-      <img src="modulo-adesione.png?v=1786028984" alt="Modulo di adesione CNA" class="home-hero-modulo">
+      <img src="modulo-adesione.png?v=1786029613" alt="Modulo di adesione CNA" class="home-hero-modulo">
     </div>
   </div>
 
@@ -521,59 +521,66 @@
 
 <!-- TAB: ANAGRAFICHE -->
 <div class="page" id="tab-anagrafiche">
-  <div class="tab-hero"><h2 class="tab-hero-title">Archivio Imprese</h2><p class="tab-hero-desc">Registro completo delle imprese associate con scheda anagrafica, dati CCIAA e storico contratti</p></div>
-  <!-- Initial loader shown until data fetched -->
-  <div class="ana-loader active" id="ana-loader">
-    <div class="ana-loader-title">📦 CARICAMENTO ARCHIVIO</div>
+  <div class="tab-hero"><h2 class="tab-hero-title">Archivio Imprese</h2><p class="tab-hero-desc">Imposta i criteri di ricerca e clicca Cerca per trovare le imprese</p></div>
+
+  <!-- Loader (usato durante la ricerca) -->
+  <div class="ana-loader" id="ana-loader" style="display:none">
+    <div class="ana-loader-title">🔍 RICERCA IN CORSO</div>
     <div class="ana-loader-spinner"></div>
-    <div class="ana-loader-msg" id="ana-load-msg">Preparazione…</div>
+    <div class="ana-loader-msg" id="ana-load-msg">Interrogazione archivio…</div>
     <div class="ana-progress-bar"><div class="ana-progress-fill" id="ana-progress"></div></div>
-    <div class="ana-status-table">
-      <div class="ana-status-row" id="ana-status-anagrafiche"><span class="ana-sname">Anagrafiche</span><span class="ana-sval">In attesa…</span></div>
-      <div class="ana-status-row" id="ana-status-diretti"><span class="ana-sname">Diretti</span><span class="ana-sval">In attesa…</span></div>
-      <div class="ana-status-row" id="ana-status-codiciateco"><span class="ana-sname">Codici ATECO</span><span class="ana-sval">In attesa…</span></div>
-      <div class="ana-status-row" id="ana-status-join"><span class="ana-sname">Unificazione</span><span class="ana-sval">In attesa…</span></div>
+  </div>
+
+  <!-- Filtri esplosi — box viola tenue, sempre visibile -->
+  <div id="ana-search-box" style="background:rgba(124,58,237,.06);border:1.5px solid rgba(124,58,237,.18);border-radius:12px;padding:20px 22px;margin-bottom:20px">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span style="font-size:12px;font-weight:700;color:#7C3AED;letter-spacing:.5px;text-transform:uppercase">Criteri di ricerca</span>
+      <span style="font-size:11px;color:#9CA3AF;margin-left:4px">— imposta almeno un criterio, poi clicca Cerca</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px;margin-bottom:16px">
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Ragione Sociale</label><input type="text" id="ana-f-rs" placeholder="Cerca per nome…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Partita IVA</label><input type="text" id="ana-f-piva" placeholder="Partita IVA…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Cod. Fiscale</label><input type="text" id="ana-f-cf" placeholder="Codice fiscale…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Mestiere</label><input type="text" id="ana-f-mestiere-text" placeholder="Es. pastai, idraulici…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Comune</label><input type="text" id="ana-f-comune-text" placeholder="Comune…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">CAP</label><input type="text" id="ana-f-cap" placeholder="CAP…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Sesso</label><select id="ana-f-sesso" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff"><option value="">Tutti…</option><option value="M">M</option><option value="F">F</option></select></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Cod. ATECO</label><input type="text" id="ana-f-ateco-text" placeholder="Es. 43.21…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Sede Erogazione</label><input type="text" id="ana-f-sede-text" placeholder="Es. Colombo…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">A Cura Di</label><input type="text" id="ana-f-acuradi-text" placeholder="Consulente…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Raggruppamento Analisi</label><select id="ana-f-raggr-analisi" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff"><option value="">Tutti…</option><option value="commercio">🛒 Commercio (46/47)</option><option value="turismo">🏨 Turismo (55/56/79)</option><option value="cinema">🎬 Cinema (591/592)</option><option value="donne">👩 Donne</option><option value="stranieri">🌍 Stranieri</option></select></div>
+      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Disdetta</label><select id="ana-f-disdetta-status" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff"><option value="">Tutti…</option><option value="empty">Senza disdetta</option><option value="present">Con disdetta</option></select></div>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-primary" id="ana-btn-apply" style="background:#7C3AED;box-shadow:0 2px 8px rgba(124,58,237,.25)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Cerca
+      </button>
+      <button class="btn btn-secondary btn-sm" id="ana-btn-reset">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Svuota
+      </button>
+      <span id="ana-search-hint" style="font-size:12px;color:#9CA3AF">Premi Cerca o Invio per avviare la ricerca</span>
     </div>
   </div>
 
-  <!-- Content shown after load -->
+  <!-- Risultati — nascosti finché non si cerca -->
   <div id="ana-content" style="display:none">
-    <div class="filters-bar">
-      <div class="filter-group"><label>Ragione Sociale</label><input type="text" id="ana-f-rs" placeholder="Ragione sociale…"></div>
-        <div class="filter-group"><label>Partita IVA</label><input type="text" id="ana-f-piva" placeholder="Partita IVA…"></div>
-        <div class="filter-group"><label>Cod. Fiscale</label><input type="text" id="ana-f-cf" placeholder="Cod. fiscale…"></div>
-        <div class="filter-group"><label>CAP</label><input type="text" id="ana-f-cap" placeholder="CAP"></div>
-        <div class="filter-group"><label>Comune</label><select id="ana-f-comune"><option value="">Comune…</option></select></div>
-        <div class="filter-group"><label>Sesso</label><select id="ana-f-sesso"><option value="">Sesso…</option><option value="M">M</option><option value="F">F</option></select></div>
-        <div class="filter-group"><label>Cod. ATECO</label><select id="ana-f-ateco"><option value="">Cod. ATECO…</option></select></div>
-        <div class="filter-group"><label>Servizio</label><select id="ana-f-servizio"><option value="">Servizio…</option></select></div>
-        <div class="filter-group"><label>Anno Stipula</label><select id="ana-f-anno"><option value="">Anno stipula…</option></select></div>
-        <div class="filter-group"><label>Raggruppamento</label><select id="ana-f-raggr"><option value="">Raggruppamento…</option></select></div>
-        <div class="filter-group"><label>Sede Erogazione</label><select id="ana-f-sede"><option value="">Sede erogazione…</option></select></div>
-        <div class="filter-group"><label>A Cura Di</label><select id="ana-f-acuradi"><option value="">A cura di…</option></select></div>
-        <div class="filter-group"><label>Motivo Inizio</label><select id="ana-f-motivo"><option value="">Motivo inizio…</option></select></div>
-        <div class="filter-group"><label>Unione</label><select id="ana-f-unione"><option value="">Unione…</option></select></div>
-        <div class="filter-group"><label>Settore</label><select id="ana-f-settore"><option value="">Settore…</option></select></div>
-        <div class="filter-group"><label>Mestiere</label><select id="ana-f-mestiere"><option value="">Mestiere…</option></select></div>
-        <div class="filter-group"><label>Tipo Impresa</label><select id="ana-f-tipo"><option value="">Tipo Impresa…</option></select></div>
-        <div class="filter-group"><label>Raggr. Analisi</label><select id="ana-f-raggr-analisi"><option value="">Raggr. Analisi…</option><option value="commercio">🛒 Commercio (ATECO 46/47)</option><option value="turismo">🏨 Turismo (ATECO 55/56/79)</option><option value="cinema">🎬 Cinema e Audiovisivo (591/592)</option><option value="donne">👩 Donne</option><option value="stranieri">🌍 Stranieri</option><option value="giovani">🌱 Giovani ≤40</option></select></div>
-        <div class="filter-group"><label>Data Disdetta</label><select id="ana-f-disdetta-status"><option value="">Data Disdetta…</option><option value="present">Presente</option><option value="empty">Non presente</option></select></div>
-      <div class="filter-actions">
-        <button class="btn btn-sm btn-primary" id="ana-btn-apply">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-          Applica Filtri
-        </button>
-        <button class="btn btn-sm btn-secondary" id="ana-btn-reset">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-          Ripristina
-        </button>
-        <button class="btn btn-sm btn-secondary" id="ana-btn-reload" title="Ricarica dati dal database">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-          Ricarica
-        </button>
-        <div style="flex:1"></div>
-      </div>
-    </div>
+    <!-- hidden inputs per compatibilità col codice esistente -->
+    <input type="hidden" id="ana-f-cf">
+    <input type="hidden" id="ana-f-ateco">
+    <input type="hidden" id="ana-f-comune">
+    <input type="hidden" id="ana-f-servizio">
+    <input type="hidden" id="ana-f-anno">
+    <input type="hidden" id="ana-f-raggr">
+    <input type="hidden" id="ana-f-sede">
+    <input type="hidden" id="ana-f-acuradi">
+    <input type="hidden" id="ana-f-motivo">
+    <input type="hidden" id="ana-f-unione">
+    <input type="hidden" id="ana-f-settore">
+    <input type="hidden" id="ana-f-mestiere">
+    <input type="hidden" id="ana-f-tipo">
 
     <div class="data-info">
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
@@ -593,7 +600,7 @@
       <div class="ana-data-header">
         <div class="ana-data-title">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent2)" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-          Dati Riunificati
+          Risultati Ricerca
         </div>
         <div class="ana-data-meta">
           <span id="ana-limit-info" style="font-size:11px;color:var(--text-dim)"></span>
@@ -604,19 +611,15 @@
           <thead>
             <tr>
               <th class="col-check"><input type="checkbox" id="ana-selall"></th>
-              <th>Partita IVA</th><th>Cod. Fiscale</th><th>Ragione Sociale</th>
-              <th>Telefono</th><th>Email</th><th>Cellulare</th>
-              <th>Indirizzo</th><th>CAP</th><th>Comune</th>
-              <th>Sesso</th><th>Cognome</th><th>Nome</th>
-              <th>Data Nascita</th><th>Luogo Nascita</th><th>Cod ATECO</th>
-              <th>Servizio</th><th>Data Stipula</th><th>Data Disdetta</th>
-              <th>Raggruppamento</th><th>Sede Erogazione</th><th>A Cura Di</th>
-              <th>Motivo Inizio</th><th>Importo</th>
-              <th>Unione</th><th>Settore</th><th>Mestiere</th><th>Tipo Impresa</th>
+              <th>Partita IVA</th><th>Ragione Sociale</th><th>Comune</th>
+              <th>Mestiere</th><th>Tipo Impresa</th><th>Iscritto</th>
+              <th>Sede Erogazione</th><th>A Cura Di</th><th>Data Stipula</th>
             </tr>
           </thead>
           <tbody id="ana-tbody">
-            <tr><td colspan="28" class="ana-empty">Nessun dato</td></tr>
+            <tr><td colspan="10" class="ana-empty" style="padding:52px 24px;text-align:center;color:#9CA3AF">
+              🔍 Imposta i criteri di ricerca sopra e clicca <strong style="color:#7C3AED">Cerca</strong>
+            </td></tr>
           </tbody>
         </table>
       </div>
@@ -625,6 +628,16 @@
         <div style="display:flex;align-items:center;gap:4px" id="ana-pag-buttons"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Reload button nascosto (usato da import.js) -->
+  <button id="ana-btn-reload" style="display:none"></button>
+  <!-- Status table nascosta (usata da anaLoad) -->
+  <div style="display:none">
+    <div id="ana-status-anagrafiche"><span class="ana-sval"></span></div>
+    <div id="ana-status-diretti"><span class="ana-sval"></span></div>
+    <div id="ana-status-codiciateco"><span class="ana-sval"></span></div>
+    <div id="ana-status-join"><span class="ana-sval"></span></div>
   </div>
 </div>
 
@@ -1448,7 +1461,7 @@
     <div style="margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <h3 style="margin:0 0 10px 0;font-size:14px;font-weight:700;color:#333">ERP CNA di Roma</h3>
       <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-        <div><strong>Versione:</strong> v2026.35</div>
+        <div><strong>Versione:</strong> v2026.36</div>
         <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
         <div><strong>Data rilascio:</strong> 06 August 2026</div>
         <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>
@@ -1811,24 +1824,24 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1786028984"></script>
-<script src="js/auth.js?v=1786028984"></script>
-<script src="js/dashboard.js?v=1786028984"></script>
-<script src="js/nav.js?v=1786028984"></script>
-<script src="js/admin.js?v=1786028984"></script>
-<script src="js/anagrafiche.js?v=1786028984"></script>
-<script src="js/contratti.js?v=1786028984"></script>
-<script src="js/consulenti.js?v=1786028984"></script>
-<script src="js/import.js?v=1786028984"></script>
-<script src="js/trasformatore.js?v=1786028984"></script>
-<script src="js/scheda.js?v=1786028984"></script>
-<script src="js/mestieri.js?v=1786028984"></script>
-<script src="js/ateco.js?v=1786028984"></script>
-<script src="js/raggruppamenti.js?v=1786028984"></script>
-<script src="js/storica.js?v=1786028984"></script>
-<script src="js/reportistica.js?v=1786028984"></script>
-<script src="js/incassi.js?v=1786028984"></script>
-<script src="js/assistant.js?v=1786028984"></script>
+<script src="js/config.js?v=1786029613"></script>
+<script src="js/auth.js?v=1786029613"></script>
+<script src="js/dashboard.js?v=1786029613"></script>
+<script src="js/nav.js?v=1786029613"></script>
+<script src="js/admin.js?v=1786029613"></script>
+<script src="js/anagrafiche.js?v=1786029613"></script>
+<script src="js/contratti.js?v=1786029613"></script>
+<script src="js/consulenti.js?v=1786029613"></script>
+<script src="js/import.js?v=1786029613"></script>
+<script src="js/trasformatore.js?v=1786029613"></script>
+<script src="js/scheda.js?v=1786029613"></script>
+<script src="js/mestieri.js?v=1786029613"></script>
+<script src="js/ateco.js?v=1786029613"></script>
+<script src="js/raggruppamenti.js?v=1786029613"></script>
+<script src="js/storica.js?v=1786029613"></script>
+<script src="js/reportistica.js?v=1786029613"></script>
+<script src="js/incassi.js?v=1786029613"></script>
+<script src="js/assistant.js?v=1786029613"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">
