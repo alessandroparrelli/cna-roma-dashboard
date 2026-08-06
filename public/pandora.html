@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pandora — CNA Roma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue:       #2563EB;
+  --blue-dark:  #1D4ED8;
+  --blue-light: #3B82F6;
+  --blue-pale:  #EFF6FF;
+  --blue-mid:   #DBEAFE;
+  --navy:       #0F172A;
+  --text:       #0F172A;
+  --text-2:     #374151;
+  --text-3:     #6B7280;
+  --text-4:     #9CA3AF;
+  --border:     #E5E7EB;
+  --border-2:   #D1D5DB;
+  --bg:         #FFFFFF;
+  --bg-2:       #F9FAFB;
+  --bg-3:       #F3F4F6;
+  --green:      #16A34A;
+  --green-bg:   #F0FDF4;
+  --green-bd:   #BBF7D0;
+  --red:        #DC2626;
+  --red-bg:     #FEF2F2;
+  --red-bd:     #FECACA;
+  --amber:      #D97706;
+  --amber-bg:   #FFFBEB;
+  --amber-bd:   #FDE68A;
+  --mono:       'JetBrains Mono', monospace;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── HEADER ── */
+header {
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+.logo-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 5px);
+  gap: 2px;
+}
+.logo-grid span {
+  width: 5px; height: 5px;
+  background: var(--blue);
+  border-radius: 1px;
+}
+.logo-grid span:nth-child(5) { background: var(--blue-light); opacity: .6; }
+
+.logo-text {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -.4px;
+  color: var(--navy);
+  line-height: 1;
+}
+.logo-text em { color: var(--blue); font-style: normal; }
+
+.logo-slash {
+  width: 1px;
+  height: 20px;
+  background: var(--border-2);
+  margin: 0 10px;
+}
+.logo-sub {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-3);
+  letter-spacing: .5px;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.conn-dot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+.conn-dot::before {
+  content: '';
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--text-4);
+  transition: background .3s;
+}
+.conn-dot.ok::before  { background: var(--green); }
+.conn-dot.err::before { background: var(--red); }
+
+/* ── NAV TABS ── */
+nav {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  background: #fff;
+  position: sticky;
+  top: 56px;
+  z-index: 190;
+}
+nav button {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 12px 18px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-3);
+  cursor: pointer;
+  transition: color .15s, border-color .15s;
+  margin-bottom: -1px;
+}
+nav button:hover { color: var(--text); }
+nav button.active { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+
+/* ── LAYOUT ── */
+main { padding: 28px 28px 60px; max-width: 1320px; }
+
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* ── SEZIONE LABEL ── */
+.sec-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-4);
+  margin-bottom: 14px;
+}
+
+/* ── GRID ── */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; }
+
+/* ── CARD ── */
+.card {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+}
+.card-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .8px;
+  text-transform: uppercase;
+  color: var(--text-4);
+  margin-bottom: 16px;
+}
+
+/* ── STAT ── */
+.stat {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.stat-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+.stat-value { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+.stat-sub   { font-size: 11px; color: var(--text-4); margin-top: 4px; }
+.stat.blue  { border-top: 3px solid var(--blue); }
+.stat.blue .stat-value { color: var(--blue); }
+.stat.green { border-top: 3px solid var(--green); }
+.stat.green .stat-value { color: var(--green); }
+.stat.red   { border-top: 3px solid var(--red); }
+.stat.red .stat-value { color: var(--red); }
+.stat.amber { border-top: 3px solid var(--amber); }
+.stat.amber .stat-value { color: var(--amber); }
+
+/* ── FILE CARD ── */
+.file-card {
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 18px;
+  transition: border-color .2s, background .2s;
+  background: #fff;
+}
+.file-card.found {
+  border-color: var(--green);
+  background: var(--green-bg);
+}
+.file-card.missing {
+  border-color: var(--border);
+  background: var(--bg-2);
+  opacity: .7;
+}
+.fc-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.fc-icon {
+  width: 34px; height: 34px;
+  border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  background: var(--bg-3);
+  flex-shrink: 0;
+}
+.file-card.found .fc-icon { background: var(--green-bg); }
+.fc-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+}
+.fc-azienda { font-size: 11px; color: var(--text-3); }
+.fc-status {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 20px;
+}
+.file-card.found .fc-status { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-bd); }
+.file-card.missing .fc-status { background: var(--bg-3); color: var(--text-4); border: 1px solid var(--border); }
+.fc-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 16px;
+}
+.fc-meta-item { font-size: 11px; color: var(--text-3); }
+.fc-meta-item strong { color: var(--text-2); font-weight: 600; }
+
+/* ── BOTTONI ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  transition: all .15s;
+  line-height: 1;
+}
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover:not(:disabled) { background: var(--blue-dark); }
+.btn-primary:disabled { opacity: .35; cursor: not-allowed; }
+.btn-secondary { background: var(--bg-2); color: var(--text-2); border: 1px solid var(--border-2); }
+.btn-secondary:hover:not(:disabled) { background: var(--bg-3); }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+/* ── PROGRESS ── */
+.progress-outer { height: 5px; background: var(--bg-3); border-radius: 3px; overflow: hidden; margin: 12px 0; }
+.progress-inner { height: 100%; background: var(--blue); border-radius: 3px; transition: width .3s ease; }
+
+/* ── LOG ── */
+.log {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.9;
+  background: var(--bg-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  max-height: 260px;
+  overflow-y: auto;
+  color: var(--text-2);
+}
+.log .l-ok   { color: var(--green); }
+.log .l-warn { color: var(--amber); }
+.log .l-err  { color: var(--red); }
+.log .l-info { color: var(--blue); }
+.log .l-dim  { color: var(--text-4); }
+
+/* ── TABELLA ── */
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead tr { background: var(--bg-2); }
+th {
+  text-align: left;
+  padding: 9px 13px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .7px;
+  text-transform: uppercase;
+  color: var(--text-3);
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+td {
+  padding: 9px 13px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-2);
+  vertical-align: middle;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--blue-pale); }
+
+/* ── BADGE ── */
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  letter-spacing: .3px;
+  white-space: nowrap;
+}
+.b-green { background: var(--green-bg); color: var(--green); border: 1px solid var(--green-bd); }
+.b-red   { background: var(--red-bg);   color: var(--red);   border: 1px solid var(--red-bd); }
+.b-blue  { background: var(--blue-mid); color: var(--blue);  border: 1px solid #BFDBFE; }
+.b-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid var(--amber-bd); }
+.b-gray  { background: var(--bg-3);     color: var(--text-3); border: 1px solid var(--border); }
+
+.mono { font-family: var(--mono); font-size: 12px; }
+
+/* ── SEARCH ── */
+.search-row { display: flex; gap: 10px; margin-bottom: 20px; }
+.search-input {
+  flex: 1;
+  border: 1.5px solid var(--border-2);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'Outfit', sans-serif;
+  font-size: 14px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+}
+.search-input:focus { border-color: var(--blue); }
+.search-input::placeholder { color: var(--text-4); }
+
+/* ── SCHEDA ── */
+.scheda-head {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+}
+.scheda-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  background: var(--blue-pale);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+.scheda-nome { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.scheda-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+.scheda-pill { font-size: 12px; color: var(--text-3); }
+.scheda-pill strong { color: var(--text); font-family: var(--mono); font-size: 11.5px; font-weight: 500; }
+
+.soc-block { margin-bottom: 24px; }
+.soc-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 14px;
+}
+.soc-head.g1 { background: var(--blue-pale); }
+.soc-head.g3 { background: var(--amber-bg); }
+.soc-head h3 { font-size: 14px; font-weight: 700; }
+.soc-head.g1 h3 { color: var(--blue); }
+.soc-head.g3 h3 { color: var(--amber); }
+.soc-code { font-family: var(--mono); font-size: 11px; font-weight: 500; color: var(--text-3); margin-left: auto; }
+
+.summary-strip {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.s-pill {
+  font-size: 12px;
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  background: var(--bg-2);
+}
+.s-pill.blue  { background: var(--blue-mid);  color: var(--blue);  border-color: #BFDBFE; }
+.s-pill.green { background: var(--green-bg);  color: var(--green); border-color: var(--green-bd); }
+.s-pill.red   { background: var(--red-bg);    color: var(--red);   border-color: var(--red-bd); }
+
+/* ── BAR CHART ── */
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 7px;
+  font-size: 12px;
+}
+.bar-year { width: 34px; font-family: var(--mono); color: var(--text-3); font-size: 11px; }
+.bar-track { flex: 1; height: 8px; background: var(--bg-3); border-radius: 4px; overflow: hidden; position: relative; }
+.bar-fill  { height: 100%; border-radius: 4px; }
+.bar-val   { font-family: var(--mono); font-size: 11px; color: var(--text-3); width: 80px; text-align: right; }
+
+/* ── EMPTY ── */
+.empty { text-align: center; padding: 52px 24px; color: var(--text-4); }
+.empty-icon { font-size: 32px; margin-bottom: 10px; }
+.empty p { font-size: 13px; }
+
+/* ── SPINNER ── */
+.spin {
+  display: inline-block;
+  width: 14px; height: 14px;
+  border: 2px solid var(--border-2);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.divider { height: 1px; background: var(--border); margin: 24px 0; }
+.hidden { display: none !important; }
+
+/* ── HERO IMPORT ── */
+.hero-import {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 32px;
+  text-align: center;
+  margin-bottom: 28px;
+  background: var(--bg-2);
+}
+.hero-import h2 { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 6px; }
+.hero-import p  { font-size: 13px; color: var(--text-3); margin-bottom: 20px; }
+.path-chip {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: #fff;
+  border: 1px solid var(--border-2);
+  padding: 5px 12px;
+  border-radius: 6px;
+  color: var(--text-2);
+  margin-bottom: 20px;
+}
+
+@media(max-width:900px) {
+  .g4,.g3 { grid-template-columns: 1fr 1fr; }
+  .g2 { grid-template-columns: 1fr; }
+  main { padding: 16px; }
+  header, nav { padding-left: 16px; padding-right: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-grid">
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+      <span></span><span></span><span></span>
+    </div>
+    <div class="logo-text">cna<em>flow</em></div>
+    <div class="logo-slash"></div>
+    <div class="logo-sub">Pandora</div>
+  </div>
+  <div class="header-right">
+    <div class="conn-dot" id="connDot">Connessione…</div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav>
+  <button class="active" onclick="showTab('import',this)">Import CSV</button>
+  <button onclick="showTab('report',this)">Reportistica</button>
+  <button onclick="showTab('ricerca',this)">Ricerca impresa</button>
+</nav>
+
+<main>
+
+<!-- ══════════════ TAB IMPORT ══════════════ -->
+<div id="tab-import" class="tab-panel active">
+
+  <div class="hero-import">
+    <h2>Sincronizzazione dati gestionali</h2>
+    <p>Seleziona i file CSV dalla cartella di rete. Tieni premuto <strong>Ctrl</strong> per selezionarli tutti insieme.</p>
+    <div class="path-chip">\\10.0.1.184\GES\TEMPARRELLI\</div>
+    <div style="margin-top:20px;">
+      <input type="file" id="csvInput" multiple accept=".csv" 
+        style="font-family:Outfit,sans-serif;font-size:13px;color:#374151;cursor:pointer;"
+        onchange="scanFolder(this.files)">
+    </div>
+  </div>
+
+  <!-- FILE CARDS -->
+  <div class="g2" id="fileCards" style="margin-bottom:24px;">
+    <div class="file-card missing" id="fc-G1000001_scadenze">
+      <div class="fc-top">
+        <div class="fc-icon">📄</div>
+        <div><div class="fc-name">G1000001_scadenze.csv</div><div class="fc-azienda">CNA Roma — Incassi</div></div>
+        <div class="fc-status">In attesa</div>
+      </div>
+      <div class="fc-meta" id="fm-G1000001_scadenze"></div>
+    </div>
+    <div class="file-card missing" id="fc-G1000003_scadenze">
+      <div class="fc-top">
+        <div class="fc-icon">📄</div>
+        <div><div class="fc-name">G1000003_scadenze.csv</div><div class="fc-azienda">CNA CAF Lazio — Incassi</div></div>
+        <div class="fc-status">In attesa</div>
+      </div>
+      <div class="fc-meta" id="fm-G1000003_scadenze"></div>
+    </div>
+    <div class="file-card missing" id="fc-G1000001_serviziFatturazione">
+      <div class="fc-top">
+        <div class="fc-icon">📄</div>
+        <div><div class="fc-name">G1000001_serviziFatturazione.csv</div><div class="fc-azienda">CNA Roma — Fatturazione</div></div>
+        <div class="fc-status">In attesa</div>
+      </div>
+      <div class="fc-meta" id="fm-G1000001_serviziFatturazione"></div>
+    </div>
+    <div class="file-card missing" id="fc-G1000003_serviziFatturazione">
+      <div class="fc-top">
+        <div class="fc-icon">📄</div>
+        <div><div class="fc-name">G1000003_serviziFatturazione.csv</div><div class="fc-azienda">CNA CAF Lazio — Fatturazione</div></div>
+        <div class="fc-status">In attesa</div>
+      </div>
+      <div class="fc-meta" id="fm-G1000003_serviziFatturazione"></div>
+    </div>
+  </div>
+
+  <!-- AZIONI -->
+  <div id="importActions" class="hidden" style="display:flex;gap:10px;align-items:center;margin-bottom:20px;">
+    <button class="btn btn-primary" id="btnImport" onclick="startImport()">▶ Avvia Import</button>
+    <button class="btn btn-secondary" onclick="resetScan()">↺ Nuova scansione</button>
+    <span id="importSpin" class="hidden"><span class="spin"></span> Import in corso…</span>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="progressWrap" class="hidden" style="margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-3);margin-bottom:4px;">
+      <span id="progressLabel">Preparazione…</span>
+      <span id="progressPct">0%</span>
+    </div>
+    <div class="progress-outer"><div class="progress-inner" id="progressBar" style="width:0%"></div></div>
+  </div>
+
+  <!-- LOG -->
+  <div id="logWrap" class="hidden">
+    <div class="sec-label" style="margin-bottom:8px;">Log operazioni</div>
+    <div class="log" id="logBox"></div>
+  </div>
+
+  <!-- SUMMARY CARDS -->
+  <div id="importSummaryWrap" class="hidden">
+    <div class="divider"></div>
+    <div class="sec-label">Riepilogo import</div>
+    <div class="g4" id="importSummaryCards"></div>
+  </div>
+
+</div>
+
+<!-- ══════════════ TAB REPORT ══════════════ -->
+<div id="tab-report" class="tab-panel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <div class="sec-label" style="margin:0;">Dati su Supabase</div>
+    <button class="btn btn-secondary btn-sm" onclick="loadReport()">↻ Aggiorna</button>
+  </div>
+  <div id="reportContent">
+    <div class="empty"><div class="empty-icon">📊</div><p>Clicca Aggiorna per caricare la reportistica.</p></div>
+  </div>
+</div>
+
+<!-- ══════════════ TAB RICERCA ══════════════ -->
+<div id="tab-ricerca" class="tab-panel">
+  <div class="search-row">
+    <input class="search-input" id="searchInput" type="text"
+      placeholder="Ragione sociale, partita IVA o codice cliente…"
+      onkeydown="if(event.key==='Enter')searchImpresa()"
+      oninput="searchDebounce()">
+    <button class="btn btn-primary" onclick="searchImpresa()">Cerca</button>
+  </div>
+  <div id="searchResults"></div>
+  <div id="schedaContent"></div>
+</div>
+
+</main>
+
+<script>
+// ═══════════════════════════════
+//  SUPABASE
+// ═══════════════════════════════
+const SB  = 'https://ohahuqlfzqckaevaffbt.supabase.co';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9oYWh1cWxmenFja2FldmFmZmJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MDkwNDU0NzcsImV4cCI6MjAyNDYyMTQ3N30.GCrWeqP8WjbqUh4uGWAUJEHeFCKUYHOzg7IOQAS3hbY';
+const H   = () => ({ 'apikey': KEY, 'Authorization': `Bearer ${KEY}`, 'Content-Type': 'application/json' });
+const HU  = () => ({ ...H(), 'Prefer': 'resolution=merge-duplicates,return=minimal' });
+
+// ═══════════════════════════════
+//  CONNECTION
+// ═══════════════════════════════
+(async () => {
+  const dot = document.getElementById('connDot');
+  try {
+    const r = await fetch(`${SB}/rest/v1/incassipandora?select=id&limit=1`, { headers: H() });
+    if (r.ok) { dot.textContent = 'Supabase connesso'; dot.className = 'conn-dot ok'; }
+    else throw new Error();
+  } catch { dot.textContent = 'Errore connessione'; dot.className = 'conn-dot err'; }
+})();
+
+// ═══════════════════════════════
+//  TABS
+// ═══════════════════════════════
+function showTab(name, btn) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'report') loadReport();
+}
+
+// ═══════════════════════════════
+//  UTILS
+// ═══════════════════════════════
+const fmtEur  = n  => n != null ? parseFloat(n).toLocaleString('it-IT', { style:'currency', currency:'EUR', minimumFractionDigits:0 }) : '–';
+const fmtN    = n  => n != null ? Number(n).toLocaleString('it-IT') : '–';
+const fmtDate = d  => d ? new Date(d).toLocaleDateString('it-IT') : '–';
+const fmtSize = b  => b < 1024 ? b+'B' : b < 1048576 ? (b/1024).toFixed(1)+'KB' : (b/1048576).toFixed(1)+'MB';
+
+function log(msg, cls='') {
+  const box = document.getElementById('logBox');
+  const d = document.createElement('div');
+  const ts = new Date().toLocaleTimeString('it-IT');
+  d.className = cls;
+  d.textContent = `[${ts}]  ${msg}`;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setProgress(pct, label) {
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressPct').textContent = Math.round(pct) + '%';
+  document.getElementById('progressLabel').textContent = label;
+}
+
+// ═══════════════════════════════
+//  SCAN CARTELLA (showDirectoryPicker)
+// ═══════════════════════════════
+const EXPECTED = [
+  'G1000001_scadenze',
+  'G1000003_scadenze',
+  'G1000001_serviziFatturazione',
+  'G1000003_serviziFatturazione'
+];
+
+let foundFiles = {};
+
+async function scanFolder(files) {
+  foundFiles = {};
+  let found = 0;
+
+  for (const file of files) {
+    // Il nome può includere il percorso relativo (webkitRelativePath)
+    const basename = file.name.replace(/\.csv$/i, '');
+    const key = EXPECTED.find(k => k.toLowerCase() === basename.toLowerCase());
+    if (!key) continue;
+
+    foundFiles[key] = file;
+    found++;
+
+    const card = document.getElementById('fc-' + key);
+    const meta = document.getElementById('fm-' + key);
+    if (card) {
+      card.classList.remove('missing');
+      card.classList.add('found');
+      card.querySelector('.fc-icon').textContent = '✅';
+      card.querySelector('.fc-status').textContent = 'Trovato';
+    }
+    if (meta) {
+      const text = await file.text();
+      const lines = text.split('\n').filter(l => l.trim()).length - 1;
+      meta.innerHTML = `
+        <div class="fc-meta-item">Righe: <strong>${fmtN(lines)}</strong></div>
+        <div class="fc-meta-item">Dimensione: <strong>${fmtSize(file.size)}</strong></div>
+        <div class="fc-meta-item">Ultima modifica: <strong>${new Date(file.lastModified).toLocaleString('it-IT')}</strong></div>
+        <div class="fc-meta-item">Data file: <strong>${new Date(file.lastModified).toLocaleDateString('it-IT')}</strong></div>
+      `;
+      file._cachedText = text;
+    }
+  }
+
+  if (found > 0) {
+    const wrap = document.getElementById('importActions');
+    wrap.classList.remove('hidden');
+    wrap.style.display = 'flex';
+  } else {
+    alert('Nessun file CSV atteso trovato.\nAssicurati di selezionare la cartella che contiene i file:\n' + EXPECTED.map(k => k + '.csv').join('\n'));
+  }
+}
+
+function resetScan() {
+  foundFiles = {};
+  EXPECTED.forEach(k => {
+    const card = document.getElementById('fc-' + k);
+    const meta = document.getElementById('fm-' + k);
+    if (card) { card.classList.remove('found'); card.classList.add('missing'); card.querySelector('.fc-icon').textContent = '📄'; card.querySelector('.fc-status').textContent = 'In attesa'; }
+    if (meta) meta.innerHTML = '';
+  });
+  document.getElementById('importActions').classList.add('hidden');
+  document.getElementById('progressWrap').classList.add('hidden');
+  document.getElementById('logWrap').classList.add('hidden');
+  document.getElementById('importSummaryWrap').classList.add('hidden');
+  document.getElementById('logBox').innerHTML = '';
+}
+
+// ═══════════════════════════════
+//  CSV PARSER
+// ═══════════════════════════════
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  if (lines.length < 2) return [];
+  const first = lines[0];
+  const sep = first.includes('\t') ? '\t' : first.includes(';') ? ';' : ',';
+  const headers = first.split(sep).map(h => h.trim().replace(/^"|"$/g,''));
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const vals = []; let cur = '', inQ = false;
+    for (const ch of line) {
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === sep && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else cur += ch;
+    }
+    vals.push(cur.trim());
+    const row = {};
+    headers.forEach((h,i) => { row[h] = (vals[i]||'').replace(/^"|"$/g,'') || null; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+// ═══════════════════════════════
+//  CARICA CODICI CLIENTE
+// ═══════════════════════════════
+async function loadCodici() {
+  const set = new Set();
+  const PAGE = 1000;
+  let from = 0;
+  while (true) {
+    const to = from + PAGE - 1;
+    const r = await fetch(`${SB}/rest/v1/Anagrafiche?select=codiceanagrafica`, {
+      headers: { ...H(), 'Range': `${from}-${to}`, 'Range-Unit': 'items', 'Prefer': 'count=none' }
+    });
+    const data = await r.json();
+    if (!Array.isArray(data) || !data.length) break;
+    data.forEach(d => { if (d.codiceanagrafica) set.add(d.codiceanagrafica.trim()); });
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return set;
+}
+
+// ═══════════════════════════════
+//  UPSERT BATCH
+// ═══════════════════════════════
+async function upsertBatch(table, rows, onConflict) {
+  const BATCH = 500;
+  let done = 0, errs = 0;
+  for (let i = 0; i < rows.length; i += BATCH) {
+    const chunk = rows.slice(i, i + BATCH);
+    const r = await fetch(`${SB}/rest/v1/${table}?on_conflict=${onConflict}`, {
+      method: 'POST',
+      headers: HU(),
+      body: JSON.stringify(chunk)
+    });
+    if (r.ok) done += chunk.length;
+    else { errs += chunk.length; log(`⚠ Errore batch ${i}-${i+BATCH}: ${(await r.text()).substring(0,100)}`, 'l-err'); }
+  }
+  return { done, errs };
+}
+
+// ═══════════════════════════════
+//  MAPPER SCADENZE
+// ═══════════════════════════════
+function mapSc(row, codice_azienda, azienda) {
+  const n = v => { if (!v||v==='NULL') return null; const x=parseFloat(String(v).replace(',','.')); return isNaN(x)?null:x; };
+  const d = v => { if (!v||v==='NULL') return null; const x=new Date(v); return isNaN(x)?null:x.toISOString().split('T')[0]; };
+  return {
+    customer_trx_id:   row.CUSTOMER_TRX_ID ? parseInt(row.CUSTOMER_TRX_ID) : null,
+    codice_cliente:    (row.CODICE_CLIENTE||'').trim(),
+    cliente:           row.CLIENTE||null,
+    numero_fattura:    row.NUMERO_FATTURA||null,
+    riferimento:       row.RIFERIMENTO||null,
+    tipo:              row.TIPO||null,
+    unita_operativa:   row.UNITA_OPERATIVA||null,
+    totale_fattura:    n(row.TOTALE_FATTURA),
+    totale_imponibile: n(row.TOTALE_IMPONIBILE),
+    totale_iva:        n(row.TOTALE_IVA),
+    tipo_pagamento:    row.TIPO_PAGAMENTO||null,
+    saldo:             n(row.SALDO),
+    data_fattura:      d(row.DATA_FATTURA),
+    data_scadenza:     d(row.DATA_SCADENZA),
+    sede:              row.SEDE||null,
+    p_iva:             row.P_IVA||null,
+    codice_fiscale:    row.CODICE_FISCALE||null,
+    indirizzo:         row.INDIRIZZO||null,
+    cap:               row.CAP||null,
+    comune:            row.COMUNE||null,
+    prov:              row.PROV||null,
+    condiz_pagam:      row.CONDIZ_PAGAM||null,
+    org_idi:           row.ORG_IDi ? parseInt(row.ORG_IDi) : null,
+    codice_azienda, azienda,
+    codicetipodoc:     row.CODICETIPODOC||null,
+    codicetipodocaz:   row.codicetipodocaz||null,
+  };
+}
+
+// ═══════════════════════════════
+//  MAPPER FATTURAZIONE
+// ═══════════════════════════════
+function mapFat(row, codice_azienda, azienda) {
+  const n = v => { if (!v||v==='NULL') return null; const x=parseFloat(String(v).replace(',','.')); return isNaN(x)?null:x; };
+  const d = v => { if (!v||v==='NULL') return null; const x=new Date(v); return isNaN(x)?null:x.toISOString().split('T')[0]; };
+  return {
+    codice_cliente: (row.CODICE_CLIENTE||'').trim(),
+    p_iva:          row.P_IVA||null,
+    scadenza:       d(row.SCADENZA),
+    codice:         row.CODICE||null,
+    descrizione:    (row.DESCRIZIONE||'').replace(/<br\s*\/?>/gi,' ').trim()||null,
+    importo:        n(row.IMPORTO),
+    codice_azienda, azienda,
+  };
+}
+
+// ═══════════════════════════════
+//  META AZIENDE
+// ═══════════════════════════════
+const AZIENDE = {
+  G1000001_scadenze:            { codice:'G1000001', azienda:'CNA ROMA ASSOCIAZIONE AREA METROPOLITANA', tipo:'sc' },
+  G1000003_scadenze:            { codice:'G1000003', azienda:'CNA CAF LAZIO SRL',                        tipo:'sc' },
+  G1000001_serviziFatturazione: { codice:'G1000001', azienda:'CNA ROMA ASSOCIAZIONE AREA METROPOLITANA', tipo:'fat' },
+  G1000003_serviziFatturazione: { codice:'G1000003', azienda:'CNA CAF LAZIO SRL',                        tipo:'fat' },
+};
+
+// ═══════════════════════════════
+//  IMPORT
+// ═══════════════════════════════
+async function startImport() {
+  document.getElementById('btnImport').disabled = true;
+  document.getElementById('importSpin').classList.remove('hidden');
+  document.getElementById('progressWrap').classList.remove('hidden');
+  document.getElementById('logWrap').classList.remove('hidden');
+  document.getElementById('importSummaryWrap').classList.add('hidden');
+  document.getElementById('logBox').innerHTML = '';
+
+  const totFiles = Object.keys(foundFiles).length;
+  const sum = { sc:{ done:0,skip:0,err:0 }, fat:{ done:0,skip:0,err:0 } };
+
+  try {
+    setProgress(2, 'Caricamento codici Anagrafiche…');
+    log('Caricamento codici cliente da Anagrafiche…', 'l-info');
+    const codici = await loadCodici();
+    log(`✓ ${fmtN(codici.size)} codici cliente caricati`, 'l-ok');
+
+    let fi = 0;
+    for (const [key, file] of Object.entries(foundFiles)) {
+      fi++;
+      const meta = AZIENDE[key];
+      if (!meta) continue;
+
+      setProgress(5 + (fi-1)/totFiles * 85, `Lettura ${key}.csv…`);
+      log(`\n── ${key}.csv ──`, 'l-info');
+
+      const text = file._cachedText || await file.text();
+      const rows = parseCSV(text);
+      log(`  ${fmtN(rows.length)} righe lette`);
+
+      const valid = rows.filter(r => codici.has((r.CODICE_CLIENTE||'').trim()));
+      const skip  = rows.length - valid.length;
+        const cod = (r.CODICE_CLIENTE||'').trim();
+        return `"${cod}"(${cod.length}) match:${codici.has(cod)}`;
+      });
+      log(`  ${fmtN(valid.length)} valide · ${fmtN(skip)} scartate (non in Anagrafiche)`, skip>0?'l-warn':'');
+
+      setProgress(5 + (fi-.4)/totFiles * 85, `Upsert ${key}…`);
+
+      if (meta.tipo === 'sc') {
+        const mapped = valid.map(r => mapSc(r, meta.codice, meta.azienda)).filter(r => r.customer_trx_id !== null);
+        log(`  Upsert incassipandora (${fmtN(mapped.length)} record)…`, 'l-info');
+        const res = await upsertBatch('incassipandora', mapped, 'customer_trx_id,codice_azienda');
+        sum.sc.done += res.done; sum.sc.skip += skip; sum.sc.err += res.errs;
+        log(`  ✓ ${fmtN(res.done)} record upserted`, 'l-ok');
+      } else {
+        const mapped = valid.map(r => mapFat(r, meta.codice, meta.azienda));
+        log(`  Upsert fatturazionepandora (${fmtN(mapped.length)} record)…`, 'l-info');
+        const res = await upsertBatch('fatturazionepandora', mapped, 'codice_cliente,codice_azienda,scadenza,codice');
+        sum.fat.done += res.done; sum.fat.skip += skip; sum.fat.err += res.errs;
+        log(`  ✓ ${fmtN(res.done)} record upserted`, 'l-ok');
+      }
+    }
+
+    setProgress(100, 'Import completato ✓');
+    log('\n══ COMPLETATO ══', 'l-ok');
+
+    document.getElementById('importSummaryWrap').classList.remove('hidden');
+    document.getElementById('importSummaryCards').innerHTML = `
+      <div class="stat green"><div class="stat-label">Incassi inseriti/aggiornati</div><div class="stat-value">${fmtN(sum.sc.done)}</div><div class="stat-sub">${fmtN(sum.sc.skip)} scartati</div></div>
+      <div class="stat blue"><div class="stat-label">Fatturazione inserita/aggiornata</div><div class="stat-value">${fmtN(sum.fat.done)}</div><div class="stat-sub">${fmtN(sum.fat.skip)} scartati</div></div>
+      <div class="stat ${sum.sc.err+sum.fat.err>0?'red':'green'}"><div class="stat-label">Errori</div><div class="stat-value">${fmtN(sum.sc.err+sum.fat.err)}</div><div class="stat-sub">${sum.sc.err+sum.fat.err===0?'Nessun errore':'Vedi log'}</div></div>
+      <div class="stat"><div class="stat-label">File elaborati</div><div class="stat-value">${totFiles}</div><div class="stat-sub">${new Date().toLocaleString('it-IT')}</div></div>
+    `;
+
+  } catch(e) {
+    log('ERRORE: ' + e.message, 'l-err');
+    console.error(e);
+  }
+
+  document.getElementById('btnImport').disabled = false;
+  document.getElementById('importSpin').classList.add('hidden');
+}
+
+// ═══════════════════════════════
+//  REPORTISTICA
+// ═══════════════════════════════
+async function loadReport() {
+  document.getElementById('reportContent').innerHTML = '<div class="empty"><span class="spin"></span><p style="margin-top:12px;">Caricamento…</p></div>';
+
+  try {
+    const [rInc, rFat, rLast] = await Promise.all([
+      fetch(`${SB}/rest/v1/incassipandora?select=totale_fattura,saldo,pagato,codice_azienda,tipo,data_fattura&limit=100000`, { headers: H() }),
+      fetch(`${SB}/rest/v1/fatturazionepandora?select=importo,codice_azienda,scadenza,codice_cliente&limit=100000`, { headers: H() }),
+      fetch(`${SB}/rest/v1/incassipandora?select=imported_at&order=imported_at.desc&limit=1`, { headers: H() }),
+    ]);
+
+    const [incRows, fatRows, lastArr] = await Promise.all([rInc.json(), rFat.json(), rLast.json()]);
+    const lastTs = lastArr[0]?.imported_at ? new Date(lastArr[0].imported_at).toLocaleString('it-IT') : '–';
+
+    // aggregati incassi
+    let totFat=0, totSal=0, nPag=0, nIns=0;
+    let g1Fat=0, g1Sal=0, g3Fat=0, g3Sal=0;
+    const perAnno={}, perTipo={};
+
+    for (const r of incRows) {
+      const f=parseFloat(r.totale_fattura)||0, s=parseFloat(r.saldo)||0;
+      totFat+=f; totSal+=s;
+      if (r.pagato) nPag++; else nIns++;
+      if (r.codice_azienda==='G1000001') { g1Fat+=f; g1Sal+=s; }
+      else { g3Fat+=f; g3Sal+=s; }
+      const a=r.data_fattura?r.data_fattura.substring(0,4):'?';
+      if (!perAnno[a]) perAnno[a]={f:0,s:0,n:0};
+      perAnno[a].f+=f; perAnno[a].s+=s; perAnno[a].n++;
+      const t=r.tipo||'Altro';
+      if (!perTipo[t]) perTipo[t]={f:0,s:0,n:0};
+      perTipo[t].f+=f; perTipo[t].s+=s; perTipo[t].n++;
+    }
+
+    // aggregati fatturazione
+    let totFatImp=0, g1FatImp=0, g3FatImp=0;
+    const perAnnoFat={};
+    const clientiFat = new Set();
+    for (const r of fatRows) {
+      const imp=parseFloat(r.importo)||0;
+      totFatImp+=imp;
+      clientiFat.add((r.codice_azienda||'')+(r.codice_cliente||''));
+      if (r.codice_azienda==='G1000001') g1FatImp+=imp; else g3FatImp+=imp;
+      const a=r.scadenza?r.scadenza.substring(0,4):'?';
+      if(!perAnnoFat[a]) perAnnoFat[a]=0;
+      perAnnoFat[a]+=imp;
+    }
+
+    const anniKeys = Object.keys(perAnno).filter(a=>a!=='?').sort();
+    const maxF = Math.max(...anniKeys.map(a=>perAnno[a].f), 1);
+
+    const anniBars = anniKeys.map(a => {
+      const pF = perAnno[a].f/maxF*100, pS = perAnno[a].s/maxF*100;
+      return `
+        <div class="bar-row">
+          <span class="bar-year">${a}</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pF}%;background:var(--blue-light);"></div>
+          </div>
+          <span class="bar-val">${fmtEur(perAnno[a].f)}</span>
+        </div>
+        <div class="bar-row" style="margin-top:-4px;margin-bottom:6px;">
+          <span class="bar-year" style="color:var(--red);font-size:9px;">ins</span>
+          <div class="bar-track">
+            <div class="bar-fill" style="width:${pS}%;background:var(--red);opacity:.7;"></div>
+          </div>
+          <span class="bar-val" style="color:var(--red)">${fmtEur(perAnno[a].s)}</span>
+        </div>`;
+    }).join('');
+
+    const tipoRows = Object.entries(perTipo).sort((a,b)=>b[1].n-a[1].n).map(([t,v])=>`
+      <tr>
+        <td>${t}</td>
+        <td class="mono">${fmtN(v.n)}</td>
+        <td class="mono">${fmtEur(v.f)}</td>
+        <td class="mono" style="color:${v.s>0?'var(--red)':'var(--green)'}">${fmtEur(v.s)}</td>
+      </tr>`).join('');
+
+    const anniKeysFat = Object.keys(perAnnoFat).filter(a=>a!=='?').sort();
+    const maxFI = Math.max(...anniKeysFat.map(a=>perAnnoFat[a]),1);
+    const anniFatBars = anniKeysFat.map(a=>{
+      const p=perAnnoFat[a]/maxFI*100;
+      return `<div class="bar-row">
+        <span class="bar-year">${a}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${p}%;background:var(--green);"></div></div>
+        <span class="bar-val">${fmtEur(perAnnoFat[a])}</span>
+      </div>`;
+    }).join('');
+
+    document.getElementById('reportContent').innerHTML = `
+      <div style="font-size:12px;color:var(--text-3);margin-bottom:20px;">Ultimo import: <strong style="color:var(--text)">${lastTs}</strong></div>
+
+      <div class="g4" style="margin-bottom:24px;">
+        <div class="stat blue"><div class="stat-label">Documenti totali</div><div class="stat-value">${fmtN(incRows.length)}</div><div class="stat-sub">CNA Roma + CAF Lazio</div></div>
+        <div class="stat"><div class="stat-label">Fatturato storico</div><div class="stat-value" style="font-size:20px;">${fmtEur(totFat)}</div><div class="stat-sub">Tutti gli anni</div></div>
+        <div class="stat green"><div class="stat-label">Pagati</div><div class="stat-value">${fmtN(nPag)}</div><div class="stat-sub">${incRows.length?Math.round(nPag/incRows.length*100):0}% del totale</div></div>
+        <div class="stat red"><div class="stat-label">Insoluto totale</div><div class="stat-value" style="font-size:20px;">${fmtEur(totSal)}</div><div class="stat-sub">${fmtN(nIns)} posizioni aperte</div></div>
+      </div>
+
+      <div class="g2" style="margin-bottom:24px;">
+        <div class="card">
+          <div class="card-title">Fatturato per anno <span style="color:var(--blue-light)">■</span> fatturato  <span style="color:var(--red)">■</span> insoluto</div>
+          ${anniBars}
+        </div>
+        <div class="card">
+          <div class="card-title">Distribuzione per tipo documento</div>
+          <div class="tbl-wrap" style="border:none;">
+            <table>
+              <thead><tr><th>Tipo</th><th>N.</th><th>Fatturato</th><th>Insoluto</th></tr></thead>
+              <tbody>${tipoRows}</tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-label">Fatturazione pianificata</div>
+
+      <div class="g4" style="margin-bottom:20px;">
+        <div class="stat blue"><div class="stat-label">Rate pianificate</div><div class="stat-value">${fmtN(fatRows.length)}</div><div class="stat-sub">totali</div></div>
+        <div class="stat green"><div class="stat-label">Valore pianificato</div><div class="stat-value" style="font-size:20px;">${fmtEur(totFatImp)}</div><div class="stat-sub">G1: ${fmtEur(g1FatImp)} · G3: ${fmtEur(g3FatImp)}</div></div>
+        <div class="stat"><div class="stat-label">Clienti attivi</div><div class="stat-value">${fmtN(clientiFat.size)}</div><div class="stat-sub">con piano di rinnovo</div></div>
+        <div class="stat"><div class="stat-label">Media per rata</div><div class="stat-value" style="font-size:20px;">${fmtEur(fatRows.length?totFatImp/fatRows.length:0)}</div><div class="stat-sub">importo medio</div></div>
+      </div>
+
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-title">Importo pianificato per anno di scadenza</div>
+        ${anniFatBars}
+      </div>
+
+      <div class="divider"></div>
+      <div class="sec-label">Confronto società</div>
+
+      <div class="g2">
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <div style="width:10px;height:10px;border-radius:2px;background:var(--blue);"></div>
+            <span style="font-size:14px;font-weight:700;color:var(--blue);">CNA Roma</span>
+            <span class="mono" style="color:var(--text-3);font-size:11px;">G1000001</span>
+          </div>
+          <div class="g2" style="gap:12px;">
+            <div><div class="stat-label">Fatturato</div><div style="font-size:17px;font-weight:700;">${fmtEur(g1Fat)}</div></div>
+            <div><div class="stat-label">Insoluto</div><div style="font-size:17px;font-weight:700;color:var(--red);">${fmtEur(g1Sal)}</div></div>
+            <div><div class="stat-label">Pianificato</div><div style="font-size:17px;font-weight:700;color:var(--green);">${fmtEur(g1FatImp)}</div></div>
+            <div><div class="stat-label">% incasso</div><div style="font-size:17px;font-weight:700;">${g1Fat?Math.round((g1Fat-g1Sal)/g1Fat*100):0}%</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+            <div style="width:10px;height:10px;border-radius:2px;background:var(--amber);"></div>
+            <span style="font-size:14px;font-weight:700;color:var(--amber);">CNA CAF Lazio</span>
+            <span class="mono" style="color:var(--text-3);font-size:11px;">G1000003</span>
+          </div>
+          <div class="g2" style="gap:12px;">
+            <div><div class="stat-label">Fatturato</div><div style="font-size:17px;font-weight:700;">${fmtEur(g3Fat)}</div></div>
+            <div><div class="stat-label">Insoluto</div><div style="font-size:17px;font-weight:700;color:var(--red);">${fmtEur(g3Sal)}</div></div>
+            <div><div class="stat-label">Pianificato</div><div style="font-size:17px;font-weight:700;color:var(--green);">${fmtEur(g3FatImp)}</div></div>
+            <div><div class="stat-label">% incasso</div><div style="font-size:17px;font-weight:700;">${g3Fat?Math.round((g3Fat-g3Sal)/g3Fat*100):0}%</div></div>
+          </div>
+        </div>
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('reportContent').innerHTML = `<div class="empty"><p>Errore: ${e.message}</p></div>`;
+    console.error(e);
+  }
+}
+
+// ═══════════════════════════════
+//  RICERCA
+// ═══════════════════════════════
+let searchTimer;
+function searchDebounce() { clearTimeout(searchTimer); searchTimer = setTimeout(searchImpresa, 400); }
+
+async function searchImpresa() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (q.length < 2) return;
+  document.getElementById('searchResults').innerHTML = '<div class="empty"><span class="spin"></span></div>';
+  document.getElementById('schedaContent').innerHTML = '';
+
+  let url;
+  if (/^\d{11}$/.test(q))
+    url = `${SB}/rest/v1/Anagrafiche?partitaiva=eq.${encodeURIComponent(q)}&limit=10`;
+  else if (/^[GgAaPp]\d/.test(q))
+    url = `${SB}/rest/v1/Anagrafiche?codiceanagrafica=ilike.*${encodeURIComponent(q)}*&limit=10`;
+  else
+    url = `${SB}/rest/v1/Anagrafiche?ragionesociale=ilike.*${encodeURIComponent(q)}*&limit=20`;
+
+  try {
+    const data = await (await fetch(url, { headers: H() })).json();
+    if (!data.length) {
+      document.getElementById('searchResults').innerHTML = `<div class="empty"><div class="empty-icon">🔍</div><p>Nessuna impresa trovata per "<strong>${q}</strong>"</p></div>`;
+      return;
+    }
+    if (data.length === 1) { document.getElementById('searchResults').innerHTML=''; loadScheda(data[0]); return; }
+
+    document.getElementById('searchResults').innerHTML = `
+      <div class="tbl-wrap" style="margin-bottom:20px;">
+        <table>
+          <thead><tr><th>Codice</th><th>Ragione sociale</th><th>P.IVA</th><th>Comune</th><th>Stato</th><th></th></tr></thead>
+          <tbody>${data.map(a=>`<tr>
+            <td class="mono">${a.codiceanagrafica||'–'}</td>
+            <td style="font-weight:500;">${a.ragionesociale||'–'}</td>
+            <td class="mono">${a.partitaiva||'–'}</td>
+            <td>${a.comune||'–'}</td>
+            <td><span class="badge ${a.statogiuridico==='ATTIVO'?'b-green':'b-gray'}">${a.statogiuridico||'–'}</span></td>
+            <td><button class="btn btn-secondary btn-sm" onclick='loadScheda(${JSON.stringify(a).replace(/'/g,"&#39;")})'>Apri →</button></td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>`;
+  } catch(e) {
+    document.getElementById('searchResults').innerHTML = `<div class="empty"><p>Errore: ${e.message}</p></div>`;
+  }
+}
+
+// ═══════════════════════════════
+//  SCHEDA IMPRESA
+// ═══════════════════════════════
+async function loadScheda(a) {
+  document.getElementById('searchResults').innerHTML = '';
+  document.getElementById('schedaContent').innerHTML = '<div class="empty"><span class="spin"></span><p style="margin-top:12px;">Caricamento…</p></div>';
+  const cod = a.codiceanagrafica;
+
+  try {
+    const [r1,r3,f1,f3] = await Promise.all([
+      fetch(`${SB}/rest/v1/incassipandora?codice_cliente=eq.${cod}&codice_azienda=eq.G1000001&order=data_fattura.desc&limit=500`, { headers: H() }),
+      fetch(`${SB}/rest/v1/incassipandora?codice_cliente=eq.${cod}&codice_azienda=eq.G1000003&order=data_fattura.desc&limit=500`, { headers: H() }),
+      fetch(`${SB}/rest/v1/fatturazionepandora?codice_cliente=eq.${cod}&codice_azienda=eq.G1000001&order=scadenza.desc&limit=200`, { headers: H() }),
+      fetch(`${SB}/rest/v1/fatturazionepandora?codice_cliente=eq.${cod}&codice_azienda=eq.G1000003&order=scadenza.desc&limit=200`, { headers: H() }),
+    ]);
+    const [inc1,inc3,fat1,fat3] = await Promise.all([r1.json(),r3.json(),f1.json(),f3.json()]);
+
+    const incBlock = (rows, label) => {
+      if (!rows.length) return `<p style="color:var(--text-4);font-size:13px;padding:12px 0;">Nessun documento trovato per ${label}.</p>`;
+      const totF = rows.reduce((s,r)=>s+(parseFloat(r.totale_fattura)||0),0);
+      const totS = rows.reduce((s,r)=>s+(parseFloat(r.saldo)||0),0);
+      const nP = rows.filter(r=>r.pagato).length;
+      return `
+        <div class="summary-strip">
+          <span class="s-pill blue">${fmtN(rows.length)} documenti</span>
+          <span class="s-pill green">✓ ${fmtN(nP)} pagati</span>
+          ${totS>0?`<span class="s-pill red">⚠ Insoluto ${fmtEur(totS)}</span>`:`<span class="s-pill green">Tutto saldato</span>`}
+          <span class="s-pill">Fatturato ${fmtEur(totF)}</span>
+        </div>
+        <div class="tbl-wrap">
+          <table>
+            <thead><tr><th>Data</th><th>Scadenza</th><th>Riferimento</th><th>Tipo</th><th>Importo</th><th>Saldo</th><th>Stato</th></tr></thead>
+            <tbody>${rows.map(r=>`<tr>
+              <td class="mono">${fmtDate(r.data_fattura)}</td>
+              <td class="mono">${fmtDate(r.data_scadenza)}</td>
+              <td style="max-width:260px;font-size:12px;">${r.riferimento||'–'}</td>
+              <td style="font-size:11px;color:var(--text-3)">${r.tipo||'–'}</td>
+              <td class="mono">${fmtEur(r.totale_fattura)}</td>
+              <td class="mono" style="font-weight:600;color:${parseFloat(r.saldo)>0?'var(--red)':'var(--green)'}">${fmtEur(r.saldo)}</td>
+              <td><span class="badge ${r.pagato?'b-green':'b-red'}">${r.pagato?'PAGATO':'APERTO'}</span></td>
+            </tr>`).join('')}</tbody>
+          </table>
+        </div>`;
+    };
+
+    const fatBlock = rows => {
+      if (!rows.length) return '';
+      const tot = rows.reduce((s,r)=>s+(parseFloat(r.importo)||0),0);
+      return `
+        <div style="margin-top:16px;">
+          <div class="sec-label" style="margin-bottom:8px;">Piano di fatturazione</div>
+          <div class="summary-strip">
+            <span class="s-pill blue">${fmtN(rows.length)} rate pianificate</span>
+            <span class="s-pill green">Totale ${fmtEur(tot)}</span>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <thead><tr><th>Scadenza</th><th>Descrizione</th><th>Codice</th><th>Importo</th></tr></thead>
+              <tbody>${rows.map(r=>`<tr>
+                <td class="mono">${fmtDate(r.scadenza)}</td>
+                <td style="font-size:12px;">${r.descrizione||'–'}</td>
+                <td class="mono" style="color:var(--text-3)">${r.codice||'–'}</td>
+                <td class="mono">${fmtEur(r.importo)}</td>
+              </tr>`).join('')}</tbody>
+            </table>
+          </div>
+        </div>`;
+    };
+
+    document.getElementById('schedaContent').innerHTML = `
+      <button class="btn btn-secondary btn-sm" style="margin-bottom:16px;" onclick="document.getElementById('schedaContent').innerHTML='';document.getElementById('searchInput').focus();">← Torna alla ricerca</button>
+
+      <div class="scheda-head">
+        <div class="scheda-icon">🏢</div>
+        <div style="flex:1;">
+          <div class="scheda-nome">${a.ragionesociale||'–'}</div>
+          <div class="scheda-pills">
+            <span class="scheda-pill">Codice <strong>${a.codiceanagrafica||'–'}</strong></span>
+            <span class="scheda-pill">P.IVA <strong>${a.partitaiva||'–'}</strong></span>
+            <span class="scheda-pill">C.F. <strong>${a.codicefiscale||'–'}</strong></span>
+            <span class="scheda-pill">Comune <strong>${[a.comune,a.provincia].filter(Boolean).join(' (')+(a.provincia?')':'')}</strong></span>
+            ${a.mestiere?`<span class="scheda-pill">Mestiere <strong>${a.mestiere}</strong></span>`:''}
+            <span class="badge ${a.statogiuridico==='ATTIVO'?'b-green':'b-gray'}" style="margin-left:4px;">${a.statogiuridico||'–'}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="soc-block">
+        <div class="soc-head g1">
+          <span style="font-size:16px;">🏛</span>
+          <h3>CNA Roma — Tesseramento</h3>
+          <span class="soc-code">G1000001</span>
+          <span class="badge b-blue" style="margin-left:8px;">${inc1.length} doc</span>
+        </div>
+        ${incBlock(inc1,'CNA Roma')}
+        ${fatBlock(fat1)}
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="soc-block">
+        <div class="soc-head g3">
+          <span style="font-size:16px;">📋</span>
+          <h3>CNA CAF Lazio — Servizi fiscali</h3>
+          <span class="soc-code">G1000003</span>
+          <span class="badge b-amber" style="margin-left:8px;">${inc3.length} doc</span>
+        </div>
+        ${incBlock(inc3,'CNA CAF Lazio')}
+        ${fatBlock(fat3)}
+      </div>
+    `;
+  } catch(e) {
+    document.getElementById('schedaContent').innerHTML = `<div class="empty"><p>Errore: ${e.message}</p></div>`;
+    console.error(e);
+  }
+}
+</script>
+</body>
+</html>
