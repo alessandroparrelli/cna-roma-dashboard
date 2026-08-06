@@ -949,11 +949,8 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
     } else {
       G('upload-zone').style.display='none';
     }
-    // Lazy-load anagrafiche: ora è on-demand, non fare nulla all'apertura tab
-    if(tabId==='tab-anagrafiche'){
-      // Popola i select dei filtri (valori distinti, leggero)
-      if(typeof anaLoadSelects === 'function') anaLoadSelects();
-    }
+    // Lazy-load anagrafiche on first visit
+    if(tabId==='tab-anagrafiche' && !anaLoaded && !anaLoading){ anaLoad(); }
     // Lazy-load ateco on first visit
     if(tabId==='tab-ateco' && !atecoLoaded && !atecoLoading){ atecoLoad(); }
     if(tabId==='tab-raggruppamenti' && !raggLoaded && !raggLoading){ raggLoad(); }
@@ -975,20 +972,18 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
 });
 
 // ANAGRAFICHE EVENTS
-G('ana-btn-apply').addEventListener('click', anaSearch);
+G('ana-btn-apply').addEventListener('click', anaApply);
 G('ana-btn-reset').addEventListener('click', anaReset);
-G('ana-btn-reload').addEventListener('click', function(){ anaSearch(); });
+G('ana-btn-reload').addEventListener('click', function(){ anaLoaded=false; anaLoad(true); });
 G('ana-btn-export').addEventListener('click', anaExport);
 G('ana-selall').addEventListener('change', anaToggleAll);
-// Invio nei campi testo = cerca
-['ana-f-rs','ana-f-piva','ana-f-cf-real','ana-f-cap','ana-f-comune','ana-f-ateco'].forEach(function(id){
-  var el = G(id); if (!el) return;
-  el.addEventListener('keypress', function(e){ if(e.key==='Enter') anaSearch(); });
+// Invio nei campi testo = applica
+['ana-f-rs','ana-f-piva','ana-f-cf','ana-f-cap'].forEach(function(id){
+  G(id).addEventListener('keypress', function(e){ if(e.key==='Enter') anaApply(); });
 });
-// Cambio di un select = cerca
-['ana-f-sesso','ana-f-mestiere','ana-f-servizio','ana-f-sede','ana-f-acuradi','ana-f-motivo','ana-f-anno','ana-f-unione','ana-f-settore','ana-f-tipo','ana-f-raggr-analisi','ana-f-disdetta-status'].forEach(function(id){
-  var el = G(id); if(!el) return;
-  el.addEventListener('change', function(){ setTimeout(anaSearch, 0); });
+// Cambio di un select = applica immediatamente
+['ana-f-comune','ana-f-sesso','ana-f-ateco','ana-f-servizio','ana-f-anno','ana-f-raggr','ana-f-sede','ana-f-acuradi','ana-f-motivo','ana-f-unione','ana-f-settore','ana-f-mestiere','ana-f-raggr-analisi'].forEach(function(id){
+  G(id).addEventListener('change', anaApply);
 });
 // Delegate checkbox clicks on tbody
 G('ana-tbody').addEventListener('change', function(e){
