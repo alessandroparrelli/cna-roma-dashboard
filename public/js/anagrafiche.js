@@ -264,7 +264,34 @@ async function anaLoad(force){
       (r.servizi_tutti || []).forEach(function(s){ if(s) svSet[s] = true; });
       Object.keys(r.contratti_attivi).forEach(function(tipo){ if(tipo) svSet[tipo] = true; });
       r.servizi_tutti = Object.keys(svSet);
+      r.isPagante = false; // inizializzato, verrà aggiornato dopo
     });
+
+    // ── Carica badge Pagante: codici che hanno pagato tessera negli ultimi 3 anni ──
+    anaSetProgress(88, 'Verifica paganti…');
+    try {
+      var annoMin = new Date().getFullYear() - 2;
+      var dataMin = annoMin + '-01-01';
+      // Legge i codici distinti pagati (saldo=0, data_fattura >= 3 anni fa) in batch da 50
+      var codiciAll = anaAll.map(function(r){ return r.codiceanagrafica; }).filter(Boolean);
+      var pagantiBatch = [];
+      for (var pb = 0; pb < codiciAll.length; pb += 50) {
+        var batch = codiciAll.slice(pb, pb + 50);
+        var rp = await fetch(
+          SB + '/rest/v1/incassipandora?select=codice_cliente&codice_azienda=eq.G1000001&pagato=eq.true&data_fattura=gte.' + dataMin + '&codice_cliente=in.(' + batch.join(',') + ')&limit=1000',
+          { headers: H() }
+        );
+        if (rp.ok) {
+          var dp = await rp.json();
+          dp.forEach(function(row){ if(row.codice_cliente) pagantiBatch.push(row.codice_cliente); });
+        }
+      }
+      var pagantiSet = {};
+      pagantiBatch.forEach(function(c){ pagantiSet[c] = true; });
+      anaAll.forEach(function(r){ r.isPagante = !!pagantiSet[r.codiceanagrafica]; });
+    } catch(ep) {
+      console.warn('Errore caricamento paganti:', ep.message);
+    }
 
     anaFiltered = [];  // Parte vuoto: mostra risultati solo dopo ricerca
     anaSelected.clear();
@@ -724,7 +751,7 @@ function anaExport(){
       'INDIRIZZO','CAP','COMUNE','SESSO','COGNOME','NOME','DATA NASCITA','LUOGO NASCITA',
       'COD. ATECO','SERVIZIO','DATA STIPULA','DATA DISDETTA','RAGGRUPPAMENTO',
       'SEDE EROGAZIONE','A CURA DI','MOTIVO INIZIO','IMPORTO','UNIONE','SETTORE','MESTIERE',
-      'TIPO IMPRESA','RAGGR. ANALISI',
+      'TIPO IMPRESA','RAGGR. ANALISI','PAGANTE',
       'ISCRITTO','DATA STIPULA ISCRITTO','CONSULENTE ISCRITTO',
       'DIP. SUBORDINATI','DIP. FAMILIARI','TOT. DIPENDENTI'
     ];
@@ -749,7 +776,7 @@ function anaExport(){
         r.servizio||'', r.datastipula||'', r.datadisdetta||'',
         r.raggruppamento||'', r.sedeerogazione||'', r.acuradi||'',
         r.motivoinizio||'', r.importo||'', r.unione||'', r.settore||'', r.mestiere||'',
-        r.tipoimpresa||'', (r.raggAnalisi||[]).join(', '),
+        r.tipoimpresa||'', (r.raggAnalisi||[]).join(', '), r.isPagante ? 'Pagante' : '',
         r.iscritto_data ? 'Attivo' : '', iscDataStr, r.iscritto_consulente||'',
         r.addetti_sub > 0 ? r.addetti_sub : '', r.addetti_fam > 0 ? r.addetti_fam : '', r.totale_addetti > 0 ? r.totale_addetti : ''
       ];
@@ -773,7 +800,7 @@ function anaExport(){
     // ── LARGHEZZE COLONNE ──
     var colWidths = [13,14,50,13,32,13,35,7,18,6,18,14,11,16,10,20,12,12,18,18,18,16,10,18,18,20,16,30];
     // iscritto+dip
-    colWidths.push(10,14,25,13,12,13);
+    colWidths.push(10,12,14,25,13,12,13);
     servizi.forEach(function(){ colWidths.push(22,13,25); });
     ws['!cols'] = colWidths.map(function(w){ return {wch:w}; });
 
@@ -853,24 +880,30 @@ function anaExport(){
           }
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
-        // Colonna Iscritto stato (col 27) — verde se "Attivo"
-        if(dc === 27 && ws[dRef].v === 'Attivo'){
+        // Colonna PAGANTE (col 28) — verde
+        if(dc === 28 && ws[dRef].v === 'Pagante'){
+          cellStyle.font = {name:'Calibri', sz:11, bold:true, color:TEXT_WHITE};
+          cellStyle.fill = {patternType:'solid', fgColor:{rgb:'FF16A34A'}};
+          cellStyle.alignment = {horizontal:'center', vertical:'center'};
+        }
+        // Colonna Iscritto stato (col 29) — verde se "Attivo"
+        if(dc === 29 && ws[dRef].v === 'Attivo'){
           cellStyle.font = {name:'Calibri', sz:11, bold:true, color:TEXT_WHITE};
           cellStyle.fill = {patternType:'solid', fgColor:{rgb:CNA_GREEN}};
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
         // Colonne TOT DIPENDENTI (col 32) — blu
-        if(dc === 32 && ws[dRef].v !== ''){
+        if(dc === 33 && ws[dRef].v !== ''){
           cellStyle.font = {name:'Calibri', sz:11, bold:true, color:{rgb:CNA_BLUE}};
           cellStyle.fill = {patternType:'solid', fgColor:{rgb:'FFE8F0FE'}};
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
         // Colonne Sub/Fam dipendenti (col 30, 31) — centrate
-        if(dc === 30 || dc === 31){
+        if(dc === 31 || dc === 32){
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
         // Colonne "Attivo" contratti (ogni 3° dal col 33+)
-        if(dc >= 33 && (dc - 33) % 3 === 0 && ws[dRef].v === 'Attivo'){
+        if(dc >= 34 && (dc - 34) % 3 === 0 && ws[dRef].v === 'Attivo'){
           cellStyle.font = {name:'Calibri', sz:11, bold:true, color:TEXT_WHITE};
           cellStyle.fill = {patternType:'solid', fgColor:{rgb:CNA_GREEN}};
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
