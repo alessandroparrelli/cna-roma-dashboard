@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1786027972"></script>
+<script src="js/report-generator.js?v=1786028984"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1786027972">
-<link rel="stylesheet" href="css/assistant.css?v=1786027972">
+<link rel="stylesheet" href="css/main.css?v=1786028984">
+<link rel="stylesheet" href="css/assistant.css?v=1786028984">
 </head>
 <body>
 
@@ -286,7 +286,7 @@
       <p class="hero-desc" style="font-weight:700;font-size:14px;color:var(--text);letter-spacing:-0.01em;line-height:1.35;max-width:680px;margin-top:6px">Il luogo dove analizzare l'andamento associativo della CNA di Roma, l'andamento dei contratti e la gestione dei consulenti. Monitora i dati associativi, le performance dei promotori, l'archivio imprese in tempo reale e la reportistica.</p>
     </div>
     <div class="home-hero-img-wrap">
-      <img src="modulo-adesione.png?v=1786027972" alt="Modulo di adesione CNA" class="home-hero-modulo">
+      <img src="modulo-adesione.png?v=1786028984" alt="Modulo di adesione CNA" class="home-hero-modulo">
     </div>
   </div>
 
@@ -1261,7 +1261,133 @@
         • I dati caricati sostituiranno quelli presenti (usa "Pulisci Tabelle" prima di caricare)
       </div>
     </div>
-    
+
+    <!-- ══════════════════════════════════════════════
+         PANDORA — visibile solo admin
+    ══════════════════════════════════════════════ -->
+    <div class="filters-bar no-toggle" id="pandora-section" style="display:none;padding:20px 18px;height:auto;margin-top:0;border-top:3px solid #2563EB">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px">
+        <div style="display:grid;grid-template-columns:repeat(3,5px);gap:2px">
+          <span style="width:5px;height:5px;background:#2563EB;border-radius:1px;display:block"></span>
+          <span style="width:5px;height:5px;background:#2563EB;border-radius:1px;display:block"></span>
+          <span style="width:5px;height:5px;background:#2563EB;border-radius:1px;display:block"></span>
+          <span style="width:5px;height:5px;background:#2563EB;border-radius:1px;display:block"></span>
+          <span style="width:5px;height:5px;background:#3B82F6;border-radius:1px;display:block;opacity:.5"></span>
+          <span style="width:5px;height:5px;background:#2563EB;border-radius:1px;display:block"></span>
+          <span style="width:5px;height:5px;background:#2563EB;border-radius:1px;display:block"></span>
+          <span style="width:5px;height:5px;background:#2563EB;border-radius:1px;display:block"></span>
+          <span style="width:5px;height:5px;background:#2563EB;border-radius:1px;display:block"></span>
+        </div>
+        <h3 style="margin:0;color:#2563EB;font-size:16px;font-weight:800;letter-spacing:-.3px">pandora <span style="font-weight:400;color:var(--text-dim);font-size:12px">— Import CSV gestionali</span></h3>
+        <span style="margin-left:auto;font-size:10px;font-weight:700;padding:2px 10px;border-radius:20px;background:#DBEAFE;color:#1D4ED8;border:1px solid #BFDBFE">SOLO ADMIN</span>
+      </div>
+      <p style="margin:0 0 16px 0;color:var(--text-sub);font-size:13px">
+        Importa i file CSV dalla cartella di rete <code style="font-size:11px;background:var(--surface2);padding:1px 6px;border-radius:4px">\\10.0.1.184\GES\TEMPARRELLI\</code> nelle tabelle <strong>incassipandora</strong> e <strong>fatturazionepandora</strong>.
+      </p>
+
+      <!-- File cards -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px" id="pandora-cards">
+        <div class="pandora-fc" id="pfc-G1000001_scadenze">
+          <div class="pandora-fc-top"><span class="pandora-fc-icon">📄</span><div><div class="pandora-fc-name">G1000001_scadenze.csv</div><div class="pandora-fc-sub">CNA Roma — Incassi</div></div><span class="pandora-fc-badge">In attesa</span></div>
+          <div class="pandora-fc-meta" id="pfm-G1000001_scadenze"></div>
+        </div>
+        <div class="pandora-fc" id="pfc-G1000003_scadenze">
+          <div class="pandora-fc-top"><span class="pandora-fc-icon">📄</span><div><div class="pandora-fc-name">G1000003_scadenze.csv</div><div class="pandora-fc-sub">CNA CAF Lazio — Incassi</div></div><span class="pandora-fc-badge">In attesa</span></div>
+          <div class="pandora-fc-meta" id="pfm-G1000003_scadenze"></div>
+        </div>
+        <div class="pandora-fc" id="pfc-G1000001_serviziFatturazione">
+          <div class="pandora-fc-top"><span class="pandora-fc-icon">📄</span><div><div class="pandora-fc-name">G1000001_serviziFatturazione.csv</div><div class="pandora-fc-sub">CNA Roma — Fatturazione</div></div><span class="pandora-fc-badge">In attesa</span></div>
+          <div class="pandora-fc-meta" id="pfm-G1000001_serviziFatturazione"></div>
+        </div>
+        <div class="pandora-fc" id="pfc-G1000003_serviziFatturazione">
+          <div class="pandora-fc-top"><span class="pandora-fc-icon">📄</span><div><div class="pandora-fc-name">G1000003_serviziFatturazione.csv</div><div class="pandora-fc-sub">CNA CAF Lazio — Fatturazione</div></div><span class="pandora-fc-badge">In attesa</span></div>
+          <div class="pandora-fc-meta" id="pfm-G1000003_serviziFatturazione"></div>
+        </div>
+      </div>
+
+      <!-- Seleziona file -->
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+        <label class="btn btn-primary" style="cursor:pointer">
+          🔍 Seleziona CSV
+          <input type="file" id="pandora-input" multiple accept=".csv" style="display:none" onchange="pandoraScanFiles(this.files)">
+        </label>
+        <button class="btn btn-secondary" id="pandora-btn-import" onclick="pandoraStartImport()" disabled style="opacity:.35">▶ Avvia Import</button>
+        <button class="btn btn-secondary btn-sm" onclick="pandoraReset()">↺ Reset</button>
+        <span id="pandora-spin" style="display:none;font-size:12px;color:var(--blue)">⏳ Import in corso…</span>
+      </div>
+
+      <!-- Progress -->
+      <div id="pandora-progress-wrap" style="display:none;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-bottom:4px">
+          <span id="pandora-progress-label">Preparazione…</span>
+          <span id="pandora-progress-pct">0%</span>
+        </div>
+        <div style="height:5px;background:var(--surface2);border-radius:3px;overflow:hidden">
+          <div id="pandora-progress-bar" style="height:100%;background:#2563EB;border-radius:3px;transition:width .3s;width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Log -->
+      <div id="pandora-log-wrap" style="display:none;margin-bottom:16px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Log operazioni</div>
+        <div id="pandora-log" style="font-family:monospace;font-size:11px;line-height:1.9;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:12px 14px;max-height:220px;overflow-y:auto;color:var(--text-sub)"></div>
+      </div>
+
+      <!-- Summary -->
+      <div id="pandora-summary" style="display:none">
+        <div style="height:1px;background:var(--border);margin:16px 0"></div>
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Riepilogo</div>
+        <div id="pandora-summary-cards" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px"></div>
+      </div>
+    </div>
+
+    <style>
+      .pandora-fc {
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        background: var(--surface2);
+        transition: border-color .2s, background .2s;
+      }
+      .pandora-fc.found {
+        border-color: #16A34A;
+        background: rgba(22,163,74,.06);
+      }
+      .pandora-fc-top {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .pandora-fc-icon { font-size: 18px; flex-shrink: 0; }
+      .pandora-fc-name { font-family: monospace; font-size: 11px; font-weight: 600; color: var(--text); }
+      .pandora-fc-sub  { font-size: 11px; color: var(--text-dim); }
+      .pandora-fc-badge {
+        margin-left: auto;
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 8px;
+        border-radius: 20px;
+        background: var(--surface);
+        color: var(--text-dim);
+        border: 1px solid var(--border);
+        white-space: nowrap;
+      }
+      .pandora-fc.found .pandora-fc-badge {
+        background: rgba(22,163,74,.1);
+        color: #16A34A;
+        border-color: #BBF7D0;
+      }
+      .pandora-fc-meta {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 4px 12px;
+        font-size: 11px;
+        color: var(--text-sub);
+      }
+      .pandora-fc-meta strong { color: var(--text); font-weight: 600; }
+    </style>
+
     <div class="filters-bar no-toggle" style="display:block;padding:14px 18px;height:auto">
       <h3 style="margin:0 0 15px 0;color:var(--text)">🗑️ Pulisci Tabelle</h3>
       <p style="margin:0 0 15px 0;color:var(--text-sub);font-size:13px">
@@ -1322,7 +1448,7 @@
     <div style="margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <h3 style="margin:0 0 10px 0;font-size:14px;font-weight:700;color:#333">ERP CNA di Roma</h3>
       <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-        <div><strong>Versione:</strong> v2026.34</div>
+        <div><strong>Versione:</strong> v2026.35</div>
         <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
         <div><strong>Data rilascio:</strong> 06 August 2026</div>
         <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>
@@ -1685,24 +1811,24 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1786027972"></script>
-<script src="js/auth.js?v=1786027972"></script>
-<script src="js/dashboard.js?v=1786027972"></script>
-<script src="js/nav.js?v=1786027972"></script>
-<script src="js/admin.js?v=1786027972"></script>
-<script src="js/anagrafiche.js?v=1786027972"></script>
-<script src="js/contratti.js?v=1786027972"></script>
-<script src="js/consulenti.js?v=1786027972"></script>
-<script src="js/import.js?v=1786027972"></script>
-<script src="js/trasformatore.js?v=1786027972"></script>
-<script src="js/scheda.js?v=1786027972"></script>
-<script src="js/mestieri.js?v=1786027972"></script>
-<script src="js/ateco.js?v=1786027972"></script>
-<script src="js/raggruppamenti.js?v=1786027972"></script>
-<script src="js/storica.js?v=1786027972"></script>
-<script src="js/reportistica.js?v=1786027972"></script>
-<script src="js/incassi.js?v=1786027972"></script>
-<script src="js/assistant.js?v=1786027972"></script>
+<script src="js/config.js?v=1786028984"></script>
+<script src="js/auth.js?v=1786028984"></script>
+<script src="js/dashboard.js?v=1786028984"></script>
+<script src="js/nav.js?v=1786028984"></script>
+<script src="js/admin.js?v=1786028984"></script>
+<script src="js/anagrafiche.js?v=1786028984"></script>
+<script src="js/contratti.js?v=1786028984"></script>
+<script src="js/consulenti.js?v=1786028984"></script>
+<script src="js/import.js?v=1786028984"></script>
+<script src="js/trasformatore.js?v=1786028984"></script>
+<script src="js/scheda.js?v=1786028984"></script>
+<script src="js/mestieri.js?v=1786028984"></script>
+<script src="js/ateco.js?v=1786028984"></script>
+<script src="js/raggruppamenti.js?v=1786028984"></script>
+<script src="js/storica.js?v=1786028984"></script>
+<script src="js/reportistica.js?v=1786028984"></script>
+<script src="js/incassi.js?v=1786028984"></script>
+<script src="js/assistant.js?v=1786028984"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">

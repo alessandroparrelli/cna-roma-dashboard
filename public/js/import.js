@@ -1077,3 +1077,336 @@ async function sincronizzaZone(btn) {
     console.error(e);
   }
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// PANDORA — Import CSV gestionali (solo admin)
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Mostra sezione Pandora solo agli admin, quando si apre Carica Dati
+function pandoraInitVisibility() {
+  var sec = document.getElementById('pandora-section');
+  if (!sec) return;
+  sec.style.display = (typeof isAdmin === 'function' && isAdmin()) ? 'block' : 'none';
+}
+
+// Mostra Pandora ogni volta che upload-zone diventa visibile
+document.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    pandoraInitVisibility();
+    // Observer: ogni volta che upload-zone viene mostrata, reinit Pandora
+    var uz = document.getElementById('upload-zone');
+    if (uz) {
+      new MutationObserver(function() {
+        if (uz.style.display !== 'none' && uz.style.display !== '') {
+          pandoraInitVisibility();
+        }
+      }).observe(uz, { attributes: true, attributeFilter: ['style'] });
+    }
+  }, 600);
+});
+
+var PANDORA_EXPECTED = [
+  'G1000001_scadenze',
+  'G1000003_scadenze',
+  'G1000001_serviziFatturazione',
+  'G1000003_serviziFatturazione'
+];
+
+var PANDORA_AZIENDE = {
+  'G1000001_scadenze':            { codice:'G1000001', azienda:'CNA ROMA ASSOCIAZIONE AREA METROPOLITANA', tipo:'sc' },
+  'G1000003_scadenze':            { codice:'G1000003', azienda:'CNA CAF LAZIO SRL',                        tipo:'sc' },
+  'G1000001_serviziFatturazione': { codice:'G1000001', azienda:'CNA ROMA ASSOCIAZIONE AREA METROPOLITANA', tipo:'fat' },
+  'G1000003_serviziFatturazione': { codice:'G1000003', azienda:'CNA CAF LAZIO SRL',                        tipo:'fat' }
+};
+
+var pandoraFiles = {};
+
+function pandoraLog(msg, cls) {
+  var box = document.getElementById('pandora-log');
+  if (!box) return;
+  var d = document.createElement('div');
+  var ts = new Date().toLocaleTimeString('it-IT');
+  d.style.color = cls === 'ok' ? '#16A34A' : cls === 'warn' ? '#D97706' : cls === 'err' ? '#DC2626' : cls === 'info' ? '#2563EB' : '';
+  d.textContent = '[' + ts + ']  ' + msg;
+  box.appendChild(d);
+  box.scrollTop = box.scrollHeight;
+}
+
+function pandoraSetProgress(pct, label) {
+  var bar = document.getElementById('pandora-progress-bar');
+  var pctEl = document.getElementById('pandora-progress-pct');
+  var lbl = document.getElementById('pandora-progress-label');
+  if (bar) bar.style.width = pct + '%';
+  if (pctEl) pctEl.textContent = Math.round(pct) + '%';
+  if (lbl) lbl.textContent = label;
+}
+
+function pandoraScanFiles(files) {
+  pandoraFiles = {};
+  var found = 0;
+  var promises = [];
+
+  Array.from(files).forEach(function(file) {
+    var basename = file.name.replace(/\.csv$/i, '');
+    var key = PANDORA_EXPECTED.find(function(k) { return k.toLowerCase() === basename.toLowerCase(); });
+    if (!key) return;
+    pandoraFiles[key] = file;
+    found++;
+
+    var card = document.getElementById('pfc-' + key);
+    var meta = document.getElementById('pfm-' + key);
+    if (card) {
+      card.classList.add('found');
+      card.querySelector('.pandora-fc-icon').textContent = '✅';
+      card.querySelector('.pandora-fc-badge').textContent = 'Trovato';
+    }
+
+    var p = new Promise(function(resolve) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var text = e.target.result;
+        var lines = text.split('\n').filter(function(l){ return l.trim(); }).length - 1;
+        file._cachedText = text;
+        if (meta) {
+          meta.innerHTML =
+            '<div>Righe: <strong>' + lines.toLocaleString('it-IT') + '</strong></div>' +
+            '<div>Dim: <strong>' + (file.size < 1048576 ? (file.size/1024).toFixed(1)+'KB' : (file.size/1048576).toFixed(1)+'MB') + '</strong></div>' +
+            '<div>Modifica: <strong>' + new Date(file.lastModified).toLocaleDateString('it-IT') + '</strong></div>' +
+            '<div>Ora: <strong>' + new Date(file.lastModified).toLocaleTimeString('it-IT') + '</strong></div>';
+        }
+        resolve();
+      };
+      reader.readAsText(file, 'latin1');
+    });
+    promises.push(p);
+  });
+
+  Promise.all(promises).then(function() {
+    var btn = document.getElementById('pandora-btn-import');
+    if (btn) { btn.disabled = found === 0; btn.style.opacity = found > 0 ? '1' : '.35'; }
+  });
+}
+
+function pandoraReset() {
+  pandoraFiles = {};
+  var inp = document.getElementById('pandora-input');
+  if (inp) inp.value = '';
+  PANDORA_EXPECTED.forEach(function(k) {
+    var card = document.getElementById('pfc-' + k);
+    var meta = document.getElementById('pfm-' + k);
+    if (card) { card.classList.remove('found'); card.querySelector('.pandora-fc-icon').textContent = '📄'; card.querySelector('.pandora-fc-badge').textContent = 'In attesa'; }
+    if (meta) meta.innerHTML = '';
+  });
+  var btn = document.getElementById('pandora-btn-import');
+  if (btn) { btn.disabled = true; btn.style.opacity = '.35'; }
+  var pw = document.getElementById('pandora-progress-wrap');
+  var lw = document.getElementById('pandora-log-wrap');
+  var sw = document.getElementById('pandora-summary');
+  if (pw) pw.style.display = 'none';
+  if (lw) lw.style.display = 'none';
+  if (sw) sw.style.display = 'none';
+  var log = document.getElementById('pandora-log');
+  if (log) log.innerHTML = '';
+}
+
+function pandoraParseCSV(text) {
+  var lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  if (lines.length < 2) return [];
+  var first = lines[0];
+  var sep = first.indexOf('\t') >= 0 ? '\t' : first.indexOf(';') >= 0 ? ';' : ',';
+  var headers = first.split(sep).map(function(h){ return h.trim().replace(/^"|"$/g,''); });
+  var rows = [];
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i].trim(); if (!line) continue;
+    var vals = [], cur = '', inQ = false;
+    for (var c = 0; c < line.length; c++) {
+      var ch = line[c];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === sep && !inQ) { vals.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    vals.push(cur.trim());
+    var row = {};
+    headers.forEach(function(h, i){ row[h] = (vals[i]||'').replace(/^"|"$/g,'') || null; });
+    rows.push(row);
+  }
+  return rows;
+}
+
+function pandoraMapSc(row, codice_azienda, azienda) {
+  var n = function(v){ if(!v||v==='NULL') return null; var x=parseFloat(String(v).replace(',','.')); return isNaN(x)?null:x; };
+  var d = function(v){ if(!v||v==='NULL') return null; var x=new Date(v); return isNaN(x)?null:x.toISOString().split('T')[0]; };
+  return {
+    customer_trx_id: row.CUSTOMER_TRX_ID ? parseInt(row.CUSTOMER_TRX_ID) : null,
+    codice_cliente: (row.CODICE_CLIENTE||'').trim(), cliente: row.CLIENTE||null,
+    numero_fattura: row.NUMERO_FATTURA||null, riferimento: row.RIFERIMENTO||null,
+    tipo: row.TIPO||null, unita_operativa: row.UNITA_OPERATIVA||null,
+    totale_fattura: n(row.TOTALE_FATTURA), totale_imponibile: n(row.TOTALE_IMPONIBILE),
+    totale_iva: n(row.TOTALE_IVA), tipo_pagamento: row.TIPO_PAGAMENTO||null,
+    saldo: n(row.SALDO), data_fattura: d(row.DATA_FATTURA), data_scadenza: d(row.DATA_SCADENZA),
+    sede: row.SEDE||null, p_iva: row.P_IVA||null, codice_fiscale: row.CODICE_FISCALE||null,
+    indirizzo: row.INDIRIZZO||null, cap: row.CAP||null, comune: row.COMUNE||null,
+    prov: row.PROV||null, condiz_pagam: row.CONDIZ_PAGAM||null,
+    org_idi: row.ORG_IDi ? parseInt(row.ORG_IDi) : null,
+    codice_azienda: codice_azienda, azienda: azienda,
+    codicetipodoc: row.CODICETIPODOC||null, codicetipodocaz: row.codicetipodocaz||null
+  };
+}
+
+function pandoraMapFat(row, codice_azienda, azienda) {
+  var n = function(v){ if(!v||v==='NULL') return null; var x=parseFloat(String(v).replace(',','.')); return isNaN(x)?null:x; };
+  var d = function(v){ if(!v||v==='NULL') return null; var x=new Date(v); return isNaN(x)?null:x.toISOString().split('T')[0]; };
+  return {
+    codice_cliente: (row.CODICE_CLIENTE||'').trim(), p_iva: row.P_IVA||null,
+    scadenza: d(row.SCADENZA), codice: row.CODICE||null,
+    descrizione: (row.DESCRIZIONE||'').replace(/<br\s*\/?>/gi,' ').trim()||null,
+    importo: n(row.IMPORTO), codice_azienda: codice_azienda, azienda: azienda
+  };
+}
+
+async function pandoraLoadCodici() {
+  var set = {};
+  var from = 0, PAGE = 1000;
+  while (true) {
+    var to = from + PAGE - 1;
+    var r = await fetch(SB + '/rest/v1/Anagrafiche?select=codiceanagrafica', {
+      headers: Object.assign({}, H(), { 'Range': from+'-'+to, 'Range-Unit': 'items', 'Prefer': 'count=none' })
+    });
+    var data = await r.json();
+    if (!Array.isArray(data) || !data.length) break;
+    data.forEach(function(d){ if(d.codiceanagrafica) set[d.codiceanagrafica.trim()] = true; });
+    if (data.length < PAGE) break;
+    from += PAGE;
+  }
+  return set;
+}
+
+async function pandoraUpsertBatch(table, rows, onConflict) {
+  var BATCH = 500, done = 0, errs = 0;
+  for (var i = 0; i < rows.length; i += BATCH) {
+    var chunk = rows.slice(i, i + BATCH);
+    var r = await fetch(SB + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
+      method: 'POST',
+      headers: Object.assign({}, H(), { 'Prefer': 'resolution=merge-duplicates,return=minimal', 'Content-Type': 'application/json' }),
+      body: JSON.stringify(chunk)
+    });
+    if (r.ok) { done += chunk.length; }
+    else {
+      var errText = await r.text();
+      if (errText.indexOf('21000') >= 0) {
+        // Fallback riga per riga
+        for (var ri = 0; ri < chunk.length; ri++) {
+          var r2 = await fetch(SB + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
+            method: 'POST',
+            headers: Object.assign({}, H(), { 'Prefer': 'resolution=merge-duplicates,return=minimal', 'Content-Type': 'application/json' }),
+            body: JSON.stringify([chunk[ri]])
+          });
+          if (r2.ok) done++; else errs++;
+        }
+      } else { errs += chunk.length; pandoraLog('⚠ Errore batch ' + i + '-' + (i+BATCH) + ': ' + errText.substring(0,100), 'err'); }
+    }
+  }
+  return { done: done, errs: errs };
+}
+
+async function pandoraStartImport() {
+  if (typeof isAdmin === 'function' && !isAdmin()) { toast('Accesso negato', 'error'); return; }
+  var btn = document.getElementById('pandora-btn-import');
+  if (btn) btn.disabled = true;
+  document.getElementById('pandora-spin').style.display = 'inline';
+  document.getElementById('pandora-progress-wrap').style.display = 'block';
+  document.getElementById('pandora-log-wrap').style.display = 'block';
+  document.getElementById('pandora-summary').style.display = 'none';
+  document.getElementById('pandora-log').innerHTML = '';
+
+  var totFiles = Object.keys(pandoraFiles).length;
+  var sum = { sc: { done:0, skip:0, err:0 }, fat: { done:0, skip:0, err:0 } };
+
+  try {
+    pandoraSetProgress(2, 'Caricamento codici Anagrafiche…');
+    pandoraLog('Caricamento codici cliente da Anagrafiche…', 'info');
+    var codici = await pandoraLoadCodici();
+    pandoraLog('✓ ' + Object.keys(codici).length.toLocaleString('it-IT') + ' codici caricati', 'ok');
+
+    var fi = 0;
+    for (var key in pandoraFiles) {
+      if (!pandoraFiles.hasOwnProperty(key)) continue;
+      fi++;
+      var file = pandoraFiles[key];
+      var meta = PANDORA_AZIENDE[key];
+      if (!meta) continue;
+
+      pandoraSetProgress(5 + (fi-1)/totFiles*85, 'Lettura ' + key + '.csv…');
+      pandoraLog('\n── ' + key + '.csv ──', 'info');
+
+      var text = file._cachedText || await new Promise(function(res){ var rd=new FileReader(); rd.onload=function(e){res(e.target.result);}; rd.readAsText(file,'latin1'); });
+      var rows = pandoraParseCSV(text);
+      pandoraLog('  ' + rows.length.toLocaleString('it-IT') + ' righe lette');
+
+      var valid = rows.filter(function(r){ return codici[(r.CODICE_CLIENTE||'').trim()]; });
+      var skip = rows.length - valid.length;
+      pandoraLog('  ' + valid.length.toLocaleString('it-IT') + ' valide · ' + skip.toLocaleString('it-IT') + ' scartate', skip > 0 ? 'warn' : '');
+
+      pandoraSetProgress(5 + (fi-.4)/totFiles*85, 'Upsert ' + key + '…');
+
+      if (meta.tipo === 'sc') {
+        var rawSc = valid.map(function(r){ return pandoraMapSc(r, meta.codice, meta.azienda); }).filter(function(r){ return r.customer_trx_id !== null; });
+        var scMap = {};
+        rawSc.forEach(function(r){ scMap[r.customer_trx_id+'|'+r.codice_azienda] = r; });
+        var mapped = Object.values ? Object.values(scMap) : Object.keys(scMap).map(function(k){ return scMap[k]; });
+        pandoraLog('  Upsert incassipandora (' + mapped.length.toLocaleString('it-IT') + ' record)…', 'info');
+        var res = await pandoraUpsertBatch('incassipandora', mapped, 'customer_trx_id,codice_azienda');
+        sum.sc.done += res.done; sum.sc.skip += skip; sum.sc.err += res.errs;
+        pandoraLog('  ✓ ' + res.done.toLocaleString('it-IT') + ' record upserted', 'ok');
+      } else {
+        var rawFat = valid.map(function(r){ return pandoraMapFat(r, meta.codice, meta.azienda); });
+        var fatMap = {};
+        rawFat.forEach(function(r){ fatMap[(r.codice_cliente||'')+'|'+r.codice_azienda+'|'+r.scadenza+'|'+r.codice] = r; });
+        var mapped2 = Object.values ? Object.values(fatMap) : Object.keys(fatMap).map(function(k){ return fatMap[k]; });
+        pandoraLog('  Upsert fatturazionepandora (' + mapped2.length.toLocaleString('it-IT') + ' record)…', 'info');
+        var res2 = await pandoraUpsertBatch('fatturazionepandora', mapped2, 'codice_cliente,codice_azienda,scadenza,codice');
+        sum.fat.done += res2.done; sum.fat.skip += skip; sum.fat.err += res2.errs;
+        pandoraLog('  ✓ ' + res2.done.toLocaleString('it-IT') + ' record upserted', 'ok');
+      }
+    }
+
+    pandoraSetProgress(100, 'Import completato ✓');
+    pandoraLog('\n══ COMPLETATO ══', 'ok');
+
+    var sc = document.getElementById('pandora-summary');
+    var cards = document.getElementById('pandora-summary-cards');
+    if (sc && cards) {
+      sc.style.display = 'block';
+      var totErr = sum.sc.err + sum.fat.err;
+      cards.innerHTML =
+        '<div style="background:var(--surface2);border:1px solid var(--border);border-top:3px solid #16A34A;border-radius:8px;padding:14px">' +
+          '<div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Incassi upserted</div>' +
+          '<div style="font-size:24px;font-weight:700;color:#16A34A">' + sum.sc.done.toLocaleString('it-IT') + '</div>' +
+          '<div style="font-size:11px;color:var(--text-dim)">' + sum.sc.skip.toLocaleString('it-IT') + ' scartati</div>' +
+        '</div>' +
+        '<div style="background:var(--surface2);border:1px solid var(--border);border-top:3px solid #2563EB;border-radius:8px;padding:14px">' +
+          '<div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Fatturazione upserted</div>' +
+          '<div style="font-size:24px;font-weight:700;color:#2563EB">' + sum.fat.done.toLocaleString('it-IT') + '</div>' +
+          '<div style="font-size:11px;color:var(--text-dim)">' + sum.fat.skip.toLocaleString('it-IT') + ' scartati</div>' +
+        '</div>' +
+        '<div style="background:var(--surface2);border:1px solid var(--border);border-top:3px solid ' + (totErr>0?'#DC2626':'#16A34A') + ';border-radius:8px;padding:14px">' +
+          '<div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">Errori</div>' +
+          '<div style="font-size:24px;font-weight:700;color:' + (totErr>0?'#DC2626':'#16A34A') + '">' + totErr.toLocaleString('it-IT') + '</div>' +
+          '<div style="font-size:11px;color:var(--text-dim)">' + (totErr===0?'Nessun errore':'Vedi log') + '</div>' +
+        '</div>' +
+        '<div style="background:var(--surface2);border:1px solid var(--border);border-top:3px solid var(--border);border-radius:8px;padding:14px">' +
+          '<div style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px">File elaborati</div>' +
+          '<div style="font-size:24px;font-weight:700;color:var(--text)">' + totFiles + '</div>' +
+          '<div style="font-size:11px;color:var(--text-dim)">' + new Date().toLocaleString('it-IT') + '</div>' +
+        '</div>';
+    }
+    toast('Import Pandora completato', 'success');
+  } catch(e) {
+    pandoraLog('ERRORE: ' + e.message, 'err');
+    toast('Errore import Pandora: ' + e.message, 'error');
+    console.error(e);
+  }
+
+  if (btn) { btn.disabled = false; }
+  document.getElementById('pandora-spin').style.display = 'none';
+}
