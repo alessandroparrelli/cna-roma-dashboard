@@ -58,6 +58,7 @@ function anaBuildQuery() {
   var sesso   = v('ana-f-sesso');
   var ateco   = v('ana-f-ateco');
   var mestiere= v('ana-f-mestiere');
+  var servizio = v('ana-f-servizio');
   var sede    = v('ana-f-sede');
   var acuradi = v('ana-f-acuradi');
   var raggr   = v('ana-f-raggr');
@@ -79,7 +80,7 @@ function anaBuildQuery() {
   if (mestiere) params.push('mestiere=eq.' + encodeURIComponent(mestiere));
   if (sede)     params.push('sedeerogazione=eq.' + encodeURIComponent(sede));
   if (acuradi)  params.push('acuradi=eq.' + encodeURIComponent(acuradi));
-  if (raggr)    params.push('raggruppamento=eq.' + encodeURIComponent(raggr));
+  // servizio filtrato lato client (vedi sotto)
   if (motivo)   params.push('motivoinizio=eq.' + encodeURIComponent(motivo));
   if (anno)     params.push('datastipula=gte.' + anno + '-01-01&datastipula=lte.' + anno + '-12-31');
   if (unione)   params.push('unione=eq.' + encodeURIComponent(unione));
@@ -88,7 +89,7 @@ function anaBuildQuery() {
   if (disdetta === 'present') params.push('datadisdetta=not.is.null');
   // tipo impresa e raggA filtrati lato client
 
-  return { params: params, raggA: raggA, tipo: tipo };
+  return { params: params, raggA: raggA, tipo: tipo, servizio: servizio };
 }
 
 // ── Ricerca principale on-demand ──
@@ -134,7 +135,7 @@ async function anaSearch() {
     anaSetProgress(50, 'Elaborazione risultati…');
 
     // Filtro lato client
-    if (qb.raggA || qb.tipo) {
+    if (qb.raggA || qb.tipo || qb.servizio) {
       rows = rows.filter(function(row) {
         if (qb.raggA) {
           if (qb.raggA === 'commercio' && !row.is_commercio) return false;
@@ -157,6 +158,10 @@ async function anaSearch() {
           var cc2 = anaCCIAAMap[piva2];
           var ti = cc2 ? (String(cc2.art_com_tur||'').trim().toUpperCase() === 'A' ? 'Artigiano' : String(cc2.art_com_tur||'').trim().toUpperCase() === 'C' ? 'Commerciante' : '') : '';
           if (ti !== qb.tipo) return false;
+        }
+        if (qb.servizio) {
+          var hasSrv = (row.servizio && row.servizio.toUpperCase() === qb.servizio.toUpperCase());
+          if (!hasSrv) return false;
         }
         return true;
       });
@@ -247,7 +252,7 @@ function anaApply() { anaSearch(); }
 function anaReset() {
   ['ana-f-rs','ana-f-piva','ana-f-cf-real','ana-f-cap',
    'ana-f-comune','ana-f-sesso','ana-f-ateco','ana-f-mestiere',
-   'ana-f-sede','ana-f-acuradi','ana-f-raggr','ana-f-motivo',
+   'ana-f-sede','ana-f-acuradi','ana-f-servizio','ana-f-motivo',
    'ana-f-anno','ana-f-unione','ana-f-settore','ana-f-tipo',
    'ana-f-raggr-analisi','ana-f-disdetta-status'].forEach(function(id) {
     var el = G(id); if (el) el.value = '';
@@ -467,10 +472,11 @@ async function anaLoadSelects() {
       });
     }
 
-    fillSel('ana-f-mestiere', data.mestieri,        'Tutti…');
+    fillSel('ana-f-mestiere', data.mestieri, 'Tutti…');
+    fillSel('ana-f-servizio', data.servizi,  'Tutti…');
     fillSel('ana-f-sede',     data.sedi,            'Tutte…');
     fillSel('ana-f-acuradi',  data.acuradi,         'Tutti…');
-    fillSel('ana-f-raggr',    data.raggruppamenti,  'Tutti…');
+    fillSel('ana-f-servizio',    data.raggruppamenti,  'Tutti…');
     fillSel('ana-f-motivo',   data.motivi,          'Tutti…');
     fillSel('ana-f-unione',   data.unioni,          'Tutte…');
     fillSel('ana-f-settore',  data.settori,         'Tutti…');
