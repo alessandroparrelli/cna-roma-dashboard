@@ -987,7 +987,8 @@ G('ana-selall').addEventListener('change', anaToggleAll);
 });
 // Cambio di un select = cerca
 ['ana-f-sesso','ana-f-mestiere','ana-f-servizio','ana-f-sede','ana-f-acuradi','ana-f-motivo','ana-f-anno','ana-f-unione','ana-f-settore','ana-f-tipo','ana-f-raggr-analisi','ana-f-disdetta-status'].forEach(function(id){
-  G(id).addEventListener('change', anaSearch);
+  var el = G(id); if(!el) return;
+  el.addEventListener('change', function(){ setTimeout(anaSearch, 0); });
 });
 // Delegate checkbox clicks on tbody
 G('ana-tbody').addEventListener('change', function(e){
