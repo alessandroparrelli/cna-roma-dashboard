@@ -981,12 +981,12 @@ G('ana-btn-reload').addEventListener('click', function(){ anaSearch(); });
 G('ana-btn-export').addEventListener('click', anaExport);
 G('ana-selall').addEventListener('change', anaToggleAll);
 // Invio nei campi testo = cerca
-['ana-f-rs','ana-f-piva','ana-f-cf-real','ana-f-cap'].forEach(function(id){
+['ana-f-rs','ana-f-piva','ana-f-cf-real','ana-f-cap','ana-f-comune','ana-f-ateco'].forEach(function(id){
   var el = G(id); if (!el) return;
   el.addEventListener('keypress', function(e){ if(e.key==='Enter') anaSearch(); });
 });
 // Cambio di un select = cerca
-['ana-f-sesso','ana-f-comune','ana-f-ateco','ana-f-mestiere','ana-f-sede','ana-f-acuradi','ana-f-raggr','ana-f-motivo','ana-f-anno','ana-f-unione','ana-f-settore','ana-f-tipo','ana-f-raggr-analisi','ana-f-disdetta-status'].forEach(function(id){
+['ana-f-sesso','ana-f-mestiere','ana-f-sede','ana-f-acuradi','ana-f-raggr','ana-f-motivo','ana-f-anno','ana-f-unione','ana-f-settore','ana-f-tipo','ana-f-raggr-analisi','ana-f-disdetta-status'].forEach(function(id){
   G(id).addEventListener('change', anaSearch);
 });
 // Delegate checkbox clicks on tbody

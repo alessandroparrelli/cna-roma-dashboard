@@ -73,9 +73,9 @@ function anaBuildQuery() {
   if (piva)     params.push('partitaiva=ilike.*' + encodeURIComponent(piva) + '*');
   if (cf)       params.push('codicefiscale=ilike.*' + encodeURIComponent(cf) + '*');
   if (cap)      params.push('cap=eq.' + encodeURIComponent(cap));
-  if (comune)   params.push('comune=eq.' + encodeURIComponent(comune));
+  if (comune)   params.push('comune=ilike.*' + encodeURIComponent(comune) + '*');
   if (sesso)    params.push('sesso=eq.' + encodeURIComponent(sesso));
-  if (ateco)    params.push('codiceateco=eq.' + encodeURIComponent(ateco));
+  if (ateco)    params.push('codiceateco=ilike.*' + encodeURIComponent(ateco) + '*');
   if (mestiere) params.push('mestiere=eq.' + encodeURIComponent(mestiere));
   if (sede)     params.push('sedeerogazione=eq.' + encodeURIComponent(sede));
   if (acuradi)  params.push('acuradi=eq.' + encodeURIComponent(acuradi));
@@ -467,8 +467,6 @@ async function anaLoadSelects() {
       });
     }
 
-    fillSel('ana-f-comune',   data.comuni,         'Tutti i comuni…');
-    fillSel('ana-f-ateco',    data.ateco,           'Tutti…');
     fillSel('ana-f-mestiere', data.mestieri,        'Tutti…');
     fillSel('ana-f-sede',     data.sedi,            'Tutte…');
     fillSel('ana-f-acuradi',  data.acuradi,         'Tutti…');
