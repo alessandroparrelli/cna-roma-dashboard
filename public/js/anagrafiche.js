@@ -100,7 +100,7 @@ async function anaSearch() {
   }
 
   var qb = anaBuildQuery();
-  if (qb.params.length === 0 && !qb.raggA) {
+  if (qb.params.length === 0 && !qb.raggA && !qb.servizio && !qb.tipo) {
     // Nessun filtro: avvisa ma permetti comunque (mostra max 200)
     var ok = confirm('Nessun filtro impostato.\nVerranno mostrate le prime 200 imprese. Continuare?');
     if (!ok) return;
