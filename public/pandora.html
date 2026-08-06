@@ -911,9 +911,6 @@ async function startImport() {
 
       const valid = rows.filter(r => codici.has((r.CODICE_CLIENTE||'').trim()));
       const skip  = rows.length - valid.length;
-        const cod = (r.CODICE_CLIENTE||'').trim();
-        return `"${cod}"(${cod.length}) match:${codici.has(cod)}`;
-      });
       log(`  ${fmtN(valid.length)} valide · ${fmtN(skip)} scartate (non in Anagrafiche)`, skip>0?'l-warn':'');
 
       setProgress(5 + (fi-.4)/totFiles * 85, `Upsert ${key}…`);
