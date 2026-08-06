@@ -916,13 +916,23 @@ async function startImport() {
       setProgress(5 + (fi-.4)/totFiles * 85, `Upsert ${key}…`);
 
       if (meta.tipo === 'sc') {
-        const mapped = valid.map(r => mapSc(r, meta.codice, meta.azienda)).filter(r => r.customer_trx_id !== null);
+        const rawMapped = valid.map(r => mapSc(r, meta.codice, meta.azienda)).filter(r => r.customer_trx_id !== null);
+        // deduplicazione per chiave unica (customer_trx_id, codice_azienda)
+        const scMap = new Map();
+        for (const r of rawMapped) scMap.set(r.customer_trx_id + '|' + r.codice_azienda, r);
+        const mapped = [...scMap.values()];
+        if (rawMapped.length !== mapped.length) log(`  Deduplicati ${rawMapped.length - mapped.length} duplicati`, 'l-warn');
         log(`  Upsert incassipandora (${fmtN(mapped.length)} record)…`, 'l-info');
         const res = await upsertBatch('incassipandora', mapped, 'customer_trx_id,codice_azienda');
         sum.sc.done += res.done; sum.sc.skip += skip; sum.sc.err += res.errs;
         log(`  ✓ ${fmtN(res.done)} record upserted`, 'l-ok');
       } else {
-        const mapped = valid.map(r => mapFat(r, meta.codice, meta.azienda));
+        const rawMapped2 = valid.map(r => mapFat(r, meta.codice, meta.azienda));
+        // deduplicazione per chiave unica
+        const fatMap = new Map();
+        for (const r of rawMapped2) fatMap.set(r.codice_cliente + '|' + r.codice_azienda + '|' + r.scadenza + '|' + r.codice, r);
+        const mapped = [...fatMap.values()];
+        if (rawMapped2.length !== mapped.length) log(`  Deduplicati ${rawMapped2.length - mapped.length} duplicati`, 'l-warn');
         log(`  Upsert fatturazionepandora (${fmtN(mapped.length)} record)…`, 'l-info');
         const res = await upsertBatch('fatturazionepandora', mapped, 'codice_cliente,codice_azienda,scadenza,codice');
         sum.fat.done += res.done; sum.fat.skip += skip; sum.fat.err += res.errs;
