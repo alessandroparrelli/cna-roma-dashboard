@@ -47,36 +47,48 @@ function anaFmtDate(v) {
 
 // ── Costruisce query params dalla vista ──
 function anaBuildQuery() {
+  var v = function(id){ var el=G(id); return el ? el.value.trim() : ''; };
   var params = [];
-  var rs     = (G('ana-f-rs')           ? G('ana-f-rs').value           : '').trim();
-  var piva   = (G('ana-f-piva')         ? G('ana-f-piva').value         : '').trim();
-  var cf     = (G('ana-f-cf-real')      ? G('ana-f-cf-real').value      : (G('ana-f-cf') ? G('ana-f-cf').value : '')).trim();
-  var cap    = (G('ana-f-cap')          ? G('ana-f-cap').value          : '').trim();
-  var comune = (G('ana-f-comune-text')  ? G('ana-f-comune-text').value  : '').trim();
-  var sesso  = (G('ana-f-sesso')        ? G('ana-f-sesso').value        : '').trim();
-  var ateco  = (G('ana-f-ateco-text')   ? G('ana-f-ateco-text').value   : '').trim();
-  var sede   = (G('ana-f-sede-text')    ? G('ana-f-sede-text').value    : '').trim();
-  var acuradi= (G('ana-f-acuradi-text') ? G('ana-f-acuradi-text').value : '').trim();
-  var mestiere=(G('ana-f-mestiere-text')? G('ana-f-mestiere-text').value: '').trim();
-  var raggA  = (G('ana-f-raggr-analisi')? G('ana-f-raggr-analisi').value: '').trim();
-  var disdetta=(G('ana-f-disdetta-status')?G('ana-f-disdetta-status').value:'').trim();
 
-  if (rs)      params.push('ragionesociale=ilike.*' + encodeURIComponent(rs) + '*');
-  if (piva)    params.push('partitaiva=ilike.*' + encodeURIComponent(piva) + '*');
-  if (cf)      params.push('codicefiscale=ilike.*' + encodeURIComponent(cf) + '*');
-  if (cap)     params.push('cap=eq.' + encodeURIComponent(cap));
-  if (comune)  params.push('comune=ilike.*' + encodeURIComponent(comune) + '*');
-  if (sesso)   params.push('sesso=eq.' + encodeURIComponent(sesso));
-  if (ateco)   params.push('codiceateco=ilike.*' + encodeURIComponent(ateco) + '*');
-  if (sede)    params.push('sedeerogazione=ilike.*' + encodeURIComponent(sede) + '*');
-  if (acuradi) params.push('acuradi=ilike.*' + encodeURIComponent(acuradi) + '*');
-  if (mestiere)params.push('mestiere=ilike.*' + encodeURIComponent(mestiere) + '*');
+  var rs      = v('ana-f-rs');
+  var piva    = v('ana-f-piva');
+  var cf      = v('ana-f-cf-real') || v('ana-f-cf');
+  var cap     = v('ana-f-cap');
+  var comune  = v('ana-f-comune');
+  var sesso   = v('ana-f-sesso');
+  var ateco   = v('ana-f-ateco');
+  var mestiere= v('ana-f-mestiere');
+  var sede    = v('ana-f-sede');
+  var acuradi = v('ana-f-acuradi');
+  var raggr   = v('ana-f-raggr');
+  var motivo  = v('ana-f-motivo');
+  var anno    = v('ana-f-anno');
+  var unione  = v('ana-f-unione');
+  var settore = v('ana-f-settore');
+  var tipo    = v('ana-f-tipo');
+  var raggA   = v('ana-f-raggr-analisi');
+  var disdetta= v('ana-f-disdetta-status');
+
+  if (rs)       params.push('ragionesociale=ilike.*' + encodeURIComponent(rs) + '*');
+  if (piva)     params.push('partitaiva=ilike.*' + encodeURIComponent(piva) + '*');
+  if (cf)       params.push('codicefiscale=ilike.*' + encodeURIComponent(cf) + '*');
+  if (cap)      params.push('cap=eq.' + encodeURIComponent(cap));
+  if (comune)   params.push('comune=eq.' + encodeURIComponent(comune));
+  if (sesso)    params.push('sesso=eq.' + encodeURIComponent(sesso));
+  if (ateco)    params.push('codiceateco=eq.' + encodeURIComponent(ateco));
+  if (mestiere) params.push('mestiere=eq.' + encodeURIComponent(mestiere));
+  if (sede)     params.push('sedeerogazione=eq.' + encodeURIComponent(sede));
+  if (acuradi)  params.push('acuradi=eq.' + encodeURIComponent(acuradi));
+  if (raggr)    params.push('raggruppamento=eq.' + encodeURIComponent(raggr));
+  if (motivo)   params.push('motivoinizio=eq.' + encodeURIComponent(motivo));
+  if (anno)     params.push('datastipula=gte.' + anno + '-01-01&datastipula=lte.' + anno + '-12-31');
+  if (unione)   params.push('unione=eq.' + encodeURIComponent(unione));
+  if (settore)  params.push('settore=eq.' + encodeURIComponent(settore));
   if (disdetta === 'empty')   params.push('datadisdetta=is.null');
   if (disdetta === 'present') params.push('datadisdetta=not.is.null');
-  // Raggruppamento analisi — filtrato lato client dopo fetch (flag booleani nella vista)
-  // (non mappabili direttamente a query params senza funzioni SQL)
+  // tipo impresa e raggA filtrati lato client
 
-  return { params: params, raggA: raggA };
+  return { params: params, raggA: raggA, tipo: tipo };
 }
 
 // ── Ricerca principale on-demand ──
@@ -121,14 +133,31 @@ async function anaSearch() {
 
     anaSetProgress(50, 'Elaborazione risultati…');
 
-    // Filtro lato client per raggruppamento analisi (flags booleani)
-    if (qb.raggA) {
+    // Filtro lato client
+    if (qb.raggA || qb.tipo) {
       rows = rows.filter(function(row) {
-        if (qb.raggA === 'commercio') return row.is_commercio;
-        if (qb.raggA === 'turismo')   return row.is_turismo;
-        if (qb.raggA === 'cinema')    return row.is_cinema;
-        if (qb.raggA === 'donne')     return row.is_donna;
-        if (qb.raggA === 'stranieri') return row.is_straniero;
+        if (qb.raggA) {
+          if (qb.raggA === 'commercio' && !row.is_commercio) return false;
+          if (qb.raggA === 'turismo'   && !row.is_turismo)   return false;
+          if (qb.raggA === 'cinema'    && !row.is_cinema)    return false;
+          if (qb.raggA === 'donne'     && !row.is_donna)     return false;
+          if (qb.raggA === 'stranieri' && !row.is_straniero) return false;
+          if (qb.raggA === 'giovani') {
+            var cf2 = String(row.cftitolare||'').trim().toUpperCase();
+            if (cf2.length !== 16) return false;
+            var a2 = cf2.substring(6,8);
+            if (!/^\d{2}$/.test(a2)) return false;
+            var y2 = parseInt(a2); var th = new Date().getFullYear() - 2000;
+            var annoNasc = y2 <= th ? 2000+y2 : 1900+y2;
+            if ((new Date().getFullYear() - annoNasc) > 40) return false;
+          }
+        }
+        if (qb.tipo) {
+          var piva2 = String(row.partitaiva||'').trim();
+          var cc2 = anaCCIAAMap[piva2];
+          var ti = cc2 ? (String(cc2.art_com_tur||'').trim().toUpperCase() === 'A' ? 'Artigiano' : String(cc2.art_com_tur||'').trim().toUpperCase() === 'C' ? 'Commerciante' : '') : '';
+          if (ti !== qb.tipo) return false;
+        }
         return true;
       });
     }
@@ -216,9 +245,10 @@ function anaApply() { anaSearch(); }
 
 // ── Reset ──
 function anaReset() {
-  ['ana-f-rs','ana-f-piva','ana-f-cap','ana-f-sesso',
-   'ana-f-comune-text','ana-f-ateco-text','ana-f-sede-text',
-   'ana-f-acuradi-text','ana-f-mestiere-text',
+  ['ana-f-rs','ana-f-piva','ana-f-cf-real','ana-f-cap',
+   'ana-f-comune','ana-f-sesso','ana-f-ateco','ana-f-mestiere',
+   'ana-f-sede','ana-f-acuradi','ana-f-raggr','ana-f-motivo',
+   'ana-f-anno','ana-f-unione','ana-f-settore','ana-f-tipo',
    'ana-f-raggr-analisi','ana-f-disdetta-status'].forEach(function(id) {
     var el = G(id); if (el) el.value = '';
   });
@@ -405,3 +435,86 @@ function anaExport() {
 function anaJoin() {}
 function anaFetchAll() { return Promise.resolve([]); }
 function anaFetchAllFiltered() { return Promise.resolve([]); }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// POPOLAMENTO SELECT — valori distinti caricati all'apertura del tab
+// ══════════════════════════════════════════════════════════════════════════════
+
+var anaSelectsLoaded = false;
+
+async function anaLoadSelects() {
+  if (anaSelectsLoaded) return;
+  anaSelectsLoaded = true;
+
+  try {
+    // Carica tutti i valori distinti in parallelo dalla vista (leggero, solo campi chiave)
+    var [rCom, rAte, rSede, rAc, rRag, rMot, rUni, rSet, rMes, rAnni] = await Promise.all([
+      fetch(SB+'/rest/v1/vista_archivio_imprese?select=comune&comune=not.is.null&order=comune.asc&limit=500', {headers:H()}),
+      fetch(SB+'/rest/v1/Anagrafiche?select=codiceateco&codiceateco=not.is.null&order=codiceateco.asc&limit=1000', {headers:H()}),
+      fetch(SB+'/rest/v1/diretti?select=sedeerogazione&sedeerogazione=not.is.null&order=sedeerogazione.asc&limit=200', {headers:H()}),
+      fetch(SB+'/rest/v1/diretti?select=acuradi&acuradi=not.is.null&order=acuradi.asc&limit=300', {headers:H()}),
+      fetch(SB+'/rest/v1/diretti?select=raggruppamento&raggruppamento=not.is.null&order=raggruppamento.asc&limit=200', {headers:H()}),
+      fetch(SB+'/rest/v1/diretti?select=motivoinizio&motivoinizio=not.is.null&order=motivoinizio.asc&limit=100', {headers:H()}),
+      fetch(SB+'/rest/v1/codiciateco?select=unione&unione=not.is.null&order=unione.asc&limit=100', {headers:H()}),
+      fetch(SB+'/rest/v1/codiciateco?select=settore&settore=not.is.null&order=settore.asc&limit=200', {headers:H()}),
+      fetch(SB+'/rest/v1/Anagrafiche?select=mestiere&mestiere=not.is.null&order=mestiere.asc&limit=1000', {headers:H()}),
+      fetch(SB+'/rest/v1/diretti?select=datastipula&datastipula=not.is.null&order=datastipula.desc&limit=5000', {headers:H()}),
+    ]);
+
+    var fill = function(selId, data, key, transform) {
+      var sel = G(selId); if (!sel) return;
+      var seen = {}; var vals = [];
+      (data||[]).forEach(function(r){
+        var v = transform ? transform(r[key]) : (r[key]||'');
+        v = String(v).trim();
+        if (v && !seen[v]) { seen[v]=true; vals.push(v); }
+      });
+      vals.sort();
+      var first = sel.options[0] ? sel.options[0].text : 'Tutti…';
+      sel.innerHTML = '<option value="">' + first + '</option>';
+      vals.forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+    };
+
+    var comuniData = rCom.ok ? await rCom.json() : [];
+    fill('ana-f-comune', comuniData, 'comune');
+
+    var atecoData = rAte.ok ? await rAte.json() : [];
+    fill('ana-f-ateco', atecoData, 'codiceateco');
+
+    var sedeData = rSede.ok ? await rSede.json() : [];
+    fill('ana-f-sede', sedeData, 'sedeerogazione');
+
+    var acData = rAc.ok ? await rAc.json() : [];
+    fill('ana-f-acuradi', acData, 'acuradi');
+
+    var ragData = rRag.ok ? await rRag.json() : [];
+    fill('ana-f-raggr', ragData, 'raggruppamento');
+
+    var motData = rMot.ok ? await rMot.json() : [];
+    fill('ana-f-motivo', motData, 'motivoinizio');
+
+    var uniData = rUni.ok ? await rUni.json() : [];
+    fill('ana-f-unione', uniData, 'unione');
+
+    var setData = rSet.ok ? await rSet.json() : [];
+    fill('ana-f-settore', setData, 'settore');
+
+    var mesData = rMes.ok ? await rMes.json() : [];
+    fill('ana-f-mestiere', mesData, 'mestiere');
+
+    var anniData = rAnni.ok ? await rAnni.json() : [];
+    var anniSeen = {};
+    (anniData||[]).forEach(function(r){
+      if (r.datastipula) { var y = String(r.datastipula).substring(0,4); if(y) anniSeen[y]=true; }
+    });
+    var anni = Object.keys(anniSeen).sort().reverse();
+    var selAnno = G('ana-f-anno');
+    if (selAnno) {
+      selAnno.innerHTML = '<option value="">Tutti gli anni…</option>';
+      anni.forEach(function(y){ var o=document.createElement('option'); o.value=y; o.textContent=y; selAnno.appendChild(o); });
+    }
+
+  } catch(e) {
+    console.warn('anaLoadSelects error:', e.message);
+  }
+}

@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1786029613"></script>
+<script src="js/report-generator.js?v=1786029957"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1786029613">
-<link rel="stylesheet" href="css/assistant.css?v=1786029613">
+<link rel="stylesheet" href="css/main.css?v=1786029957">
+<link rel="stylesheet" href="css/assistant.css?v=1786029957">
 </head>
 <body>
 
@@ -286,7 +286,7 @@
       <p class="hero-desc" style="font-weight:700;font-size:14px;color:var(--text);letter-spacing:-0.01em;line-height:1.35;max-width:680px;margin-top:6px">Il luogo dove analizzare l'andamento associativo della CNA di Roma, l'andamento dei contratti e la gestione dei consulenti. Monitora i dati associativi, le performance dei promotori, l'archivio imprese in tempo reale e la reportistica.</p>
     </div>
     <div class="home-hero-img-wrap">
-      <img src="modulo-adesione.png?v=1786029613" alt="Modulo di adesione CNA" class="home-hero-modulo">
+      <img src="modulo-adesione.png?v=1786029957" alt="Modulo di adesione CNA" class="home-hero-modulo">
     </div>
   </div>
 
@@ -538,19 +538,25 @@
       <span style="font-size:12px;font-weight:700;color:#7C3AED;letter-spacing:.5px;text-transform:uppercase">Criteri di ricerca</span>
       <span style="font-size:11px;color:#9CA3AF;margin-left:4px">— imposta almeno un criterio, poi clicca Cerca</span>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px 14px;margin-bottom:16px">
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Ragione Sociale</label><input type="text" id="ana-f-rs" placeholder="Cerca per nome…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Partita IVA</label><input type="text" id="ana-f-piva" placeholder="Partita IVA…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Cod. Fiscale</label><input type="text" id="ana-f-cf" placeholder="Codice fiscale…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Mestiere</label><input type="text" id="ana-f-mestiere-text" placeholder="Es. pastai, idraulici…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Comune</label><input type="text" id="ana-f-comune-text" placeholder="Comune…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">CAP</label><input type="text" id="ana-f-cap" placeholder="CAP…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Sesso</label><select id="ana-f-sesso" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff"><option value="">Tutti…</option><option value="M">M</option><option value="F">F</option></select></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Cod. ATECO</label><input type="text" id="ana-f-ateco-text" placeholder="Es. 43.21…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Sede Erogazione</label><input type="text" id="ana-f-sede-text" placeholder="Es. Colombo…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">A Cura Di</label><input type="text" id="ana-f-acuradi-text" placeholder="Consulente…" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none" onfocus="this.style.borderColor='#7C3AED'" onblur="this.style.borderColor='#D1D5DB'"></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Raggruppamento Analisi</label><select id="ana-f-raggr-analisi" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff"><option value="">Tutti…</option><option value="commercio">🛒 Commercio (46/47)</option><option value="turismo">🏨 Turismo (55/56/79)</option><option value="cinema">🎬 Cinema (591/592)</option><option value="donne">👩 Donne</option><option value="stranieri">🌍 Stranieri</option></select></div>
-      <div><label style="font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px">Disdetta</label><select id="ana-f-disdetta-status" style="width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff"><option value="">Tutti…</option><option value="empty">Senza disdetta</option><option value="present">Con disdetta</option></select></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px 14px;margin-bottom:16px">
+      <div><label class="ana-fl">Ragione Sociale</label><input type="text" id="ana-f-rs" placeholder="Cerca per nome…" class="ana-fi"></div>
+      <div><label class="ana-fl">Partita IVA</label><input type="text" id="ana-f-piva" placeholder="Partita IVA…" class="ana-fi"></div>
+      <div><label class="ana-fl">Cod. Fiscale</label><input type="text" id="ana-f-cf-real" placeholder="Codice fiscale…" class="ana-fi"></div>
+      <div><label class="ana-fl">CAP</label><input type="text" id="ana-f-cap" placeholder="CAP…" class="ana-fi"></div>
+      <div><label class="ana-fl">Comune</label><select id="ana-f-comune" class="ana-fi"><option value="">Tutti i comuni…</option></select></div>
+      <div><label class="ana-fl">Sesso</label><select id="ana-f-sesso" class="ana-fi"><option value="">Tutti…</option><option value="M">M</option><option value="F">F</option></select></div>
+      <div><label class="ana-fl">Cod. ATECO</label><select id="ana-f-ateco" class="ana-fi"><option value="">Tutti…</option></select></div>
+      <div><label class="ana-fl">Mestiere</label><select id="ana-f-mestiere" class="ana-fi"><option value="">Tutti…</option></select></div>
+      <div><label class="ana-fl">Sede Erogazione</label><select id="ana-f-sede" class="ana-fi"><option value="">Tutte…</option></select></div>
+      <div><label class="ana-fl">A Cura Di</label><select id="ana-f-acuradi" class="ana-fi"><option value="">Tutti…</option></select></div>
+      <div><label class="ana-fl">Raggruppamento</label><select id="ana-f-raggr" class="ana-fi"><option value="">Tutti…</option></select></div>
+      <div><label class="ana-fl">Motivo Inizio</label><select id="ana-f-motivo" class="ana-fi"><option value="">Tutti…</option></select></div>
+      <div><label class="ana-fl">Anno Stipula</label><select id="ana-f-anno" class="ana-fi"><option value="">Tutti gli anni…</option></select></div>
+      <div><label class="ana-fl">Unione</label><select id="ana-f-unione" class="ana-fi"><option value="">Tutte…</option></select></div>
+      <div><label class="ana-fl">Settore</label><select id="ana-f-settore" class="ana-fi"><option value="">Tutti…</option></select></div>
+      <div><label class="ana-fl">Tipo Impresa</label><select id="ana-f-tipo" class="ana-fi"><option value="">Tutti…</option><option value="Artigiano">Artigiano</option><option value="Commerciante">Commerciante</option></select></div>
+      <div><label class="ana-fl">Raggruppamento Analisi</label><select id="ana-f-raggr-analisi" class="ana-fi"><option value="">Tutti…</option><option value="commercio">🛒 Commercio (46/47)</option><option value="turismo">🏨 Turismo (55/56/79)</option><option value="cinema">🎬 Cinema (591/592)</option><option value="donne">👩 Donne</option><option value="stranieri">🌍 Stranieri</option><option value="giovani">🌱 Giovani ≤40</option></select></div>
+      <div><label class="ana-fl">Data Disdetta</label><select id="ana-f-disdetta-status" class="ana-fi"><option value="">Tutti…</option><option value="empty">Senza disdetta</option><option value="present">Con disdetta</option></select></div>
     </div>
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-primary" id="ana-btn-apply" style="background:#7C3AED;box-shadow:0 2px 8px rgba(124,58,237,.25)">
@@ -564,8 +570,13 @@
       <span id="ana-search-hint" style="font-size:12px;color:#9CA3AF">Premi Cerca o Invio per avviare la ricerca</span>
     </div>
   </div>
+  <style>
+    .ana-fi { width:100%;padding:7px 10px;border:1px solid #D1D5DB;border-radius:6px;font-size:13px;font-family:inherit;outline:none;background:#fff;transition:border-color .15s;box-sizing:border-box; }
+    .ana-fi:focus { border-color:#7C3AED;box-shadow:0 0 0 2px rgba(124,58,237,.1); }
+    .ana-fl { font-size:11px;font-weight:600;color:#6B7280;display:block;margin-bottom:3px; }
+  </style>
 
-  <!-- Risultati — nascosti finché non si cerca -->
+    <!-- Risultati — nascosti finché non si cerca -->
   <div id="ana-content" style="display:none">
     <!-- hidden inputs per compatibilità col codice esistente -->
     <input type="hidden" id="ana-f-cf">
@@ -1461,7 +1472,7 @@
     <div style="margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <h3 style="margin:0 0 10px 0;font-size:14px;font-weight:700;color:#333">ERP CNA di Roma</h3>
       <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-        <div><strong>Versione:</strong> v2026.36</div>
+        <div><strong>Versione:</strong> v2026.37</div>
         <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
         <div><strong>Data rilascio:</strong> 06 August 2026</div>
         <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>
@@ -1824,24 +1835,24 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1786029613"></script>
-<script src="js/auth.js?v=1786029613"></script>
-<script src="js/dashboard.js?v=1786029613"></script>
-<script src="js/nav.js?v=1786029613"></script>
-<script src="js/admin.js?v=1786029613"></script>
-<script src="js/anagrafiche.js?v=1786029613"></script>
-<script src="js/contratti.js?v=1786029613"></script>
-<script src="js/consulenti.js?v=1786029613"></script>
-<script src="js/import.js?v=1786029613"></script>
-<script src="js/trasformatore.js?v=1786029613"></script>
-<script src="js/scheda.js?v=1786029613"></script>
-<script src="js/mestieri.js?v=1786029613"></script>
-<script src="js/ateco.js?v=1786029613"></script>
-<script src="js/raggruppamenti.js?v=1786029613"></script>
-<script src="js/storica.js?v=1786029613"></script>
-<script src="js/reportistica.js?v=1786029613"></script>
-<script src="js/incassi.js?v=1786029613"></script>
-<script src="js/assistant.js?v=1786029613"></script>
+<script src="js/config.js?v=1786029957"></script>
+<script src="js/auth.js?v=1786029957"></script>
+<script src="js/dashboard.js?v=1786029957"></script>
+<script src="js/nav.js?v=1786029957"></script>
+<script src="js/admin.js?v=1786029957"></script>
+<script src="js/anagrafiche.js?v=1786029957"></script>
+<script src="js/contratti.js?v=1786029957"></script>
+<script src="js/consulenti.js?v=1786029957"></script>
+<script src="js/import.js?v=1786029957"></script>
+<script src="js/trasformatore.js?v=1786029957"></script>
+<script src="js/scheda.js?v=1786029957"></script>
+<script src="js/mestieri.js?v=1786029957"></script>
+<script src="js/ateco.js?v=1786029957"></script>
+<script src="js/raggruppamenti.js?v=1786029957"></script>
+<script src="js/storica.js?v=1786029957"></script>
+<script src="js/reportistica.js?v=1786029957"></script>
+<script src="js/incassi.js?v=1786029957"></script>
+<script src="js/assistant.js?v=1786029957"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">

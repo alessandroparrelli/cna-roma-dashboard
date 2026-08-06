@@ -950,7 +950,10 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
       G('upload-zone').style.display='none';
     }
     // Lazy-load anagrafiche: ora è on-demand, non fare nulla all'apertura tab
-    if(tabId==='tab-anagrafiche'){ /* on-demand: l'utente usa i filtri */ }
+    if(tabId==='tab-anagrafiche'){
+      // Popola i select dei filtri (valori distinti, leggero)
+      if(typeof anaLoadSelects === 'function') anaLoadSelects();
+    }
     // Lazy-load ateco on first visit
     if(tabId==='tab-ateco' && !atecoLoaded && !atecoLoading){ atecoLoad(); }
     if(tabId==='tab-raggruppamenti' && !raggLoaded && !raggLoading){ raggLoad(); }
@@ -978,12 +981,12 @@ G('ana-btn-reload').addEventListener('click', function(){ anaSearch(); });
 G('ana-btn-export').addEventListener('click', anaExport);
 G('ana-selall').addEventListener('change', anaToggleAll);
 // Invio nei campi testo = cerca
-['ana-f-rs','ana-f-piva','ana-f-cap','ana-f-comune-text','ana-f-ateco-text','ana-f-sede-text','ana-f-acuradi-text','ana-f-mestiere-text'].forEach(function(id){
+['ana-f-rs','ana-f-piva','ana-f-cf-real','ana-f-cap'].forEach(function(id){
   var el = G(id); if (!el) return;
   el.addEventListener('keypress', function(e){ if(e.key==='Enter') anaSearch(); });
 });
 // Cambio di un select = cerca
-['ana-f-sesso','ana-f-raggr-analisi','ana-f-disdetta-status'].forEach(function(id){
+['ana-f-sesso','ana-f-comune','ana-f-ateco','ana-f-mestiere','ana-f-sede','ana-f-acuradi','ana-f-raggr','ana-f-motivo','ana-f-anno','ana-f-unione','ana-f-settore','ana-f-tipo','ana-f-raggr-analisi','ana-f-disdetta-status'].forEach(function(id){
   G(id).addEventListener('change', anaSearch);
 });
 // Delegate checkbox clicks on tbody
