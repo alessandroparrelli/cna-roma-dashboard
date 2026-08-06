@@ -180,9 +180,34 @@ async function openAnagraficaModal(anaIdx) {
   }
 
   // Badge inline
-  function badge(text, bg, fg) {
+  function badge(text, bg, fg, gradient) {
     fg = fg || 'white';
-    return '<span style="display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;background:' + bg + ';color:' + fg + ';font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase">' + text + '</span>';
+    var bgStyle = gradient ? 'background:' + gradient : 'background:' + bg;
+    return '<span style="display:inline-flex;align-items:center;gap:6px;padding:7px 16px;border-radius:30px;' + bgStyle + ';color:' + fg + ';font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 3px 10px rgba(0,0,0,.18);text-shadow:0 1px 2px rgba(0,0,0,.15)">' + text + '</span>';
+  }
+
+  // Badge vivaci con gradienti
+  function badgeStato(testo, color) {
+    var gradMap = {
+      '#10B981': 'linear-gradient(135deg,#059669,#10B981)',
+      '#F59E0B': 'linear-gradient(135deg,#D97706,#F59E0B)',
+      '#EF4444': 'linear-gradient(135deg,#DC2626,#EF4444)',
+      '#9CA3AF': 'linear-gradient(135deg,#6B7280,#9CA3AF)',
+    };
+    var grad = gradMap[color] || 'linear-gradient(135deg,' + color + ',' + color + 'cc)';
+    return badge(testo, color, 'white', grad);
+  }
+
+  function badgeTipo(testo, bgColor, textColor) {
+    var gradMap = {
+      '#EF4444': 'linear-gradient(135deg,#DC2626,#F87171)',
+      '#FBBF24': 'linear-gradient(135deg,#D97706,#FCD34D)',
+      '#F97316': 'linear-gradient(135deg,#EA580C,#FB923C)',
+    };
+    var grad = gradMap[bgColor] || 'linear-gradient(135deg,' + bgColor + ',' + bgColor + 'cc)';
+    var fg = textColor || 'white';
+    if (bgColor === '#FBBF24') fg = '#78350F';
+    return badge(testo, bgColor, fg, grad);
   }
 
   // SVG paths per ogni sezione
@@ -224,18 +249,18 @@ async function openAnagraficaModal(anaIdx) {
   var badgeRow = '';
   if (cciaa && cciaa.stato_attivita !== null && cciaa.stato_attivita !== undefined) {
     var statoInfo = traduciStatoAttivita(cciaa.stato_attivita);
-    badgeRow += badge(statoInfo.testo, statoInfo.color);
+    badgeRow += badgeStato(statoInfo.testo, statoInfo.color);
   }
   if (cciaa && cciaa.art_com_tur) {
     var tipoInfo = traduciTipoImpresa(cciaa.art_com_tur);
-    badgeRow += ' ' + badge(tipoInfo.testo, tipoInfo.bgColor, tipoInfo.textColor);
+    badgeRow += ' ' + badgeTipo(tipoInfo.testo, tipoInfo.bgColor, tipoInfo.textColor);
   }
-  if (isIscritto) badgeRow += ' ' + badge('✓ Iscritto CNA', '#059669');
-  if (isInps)     badgeRow += ' ' + badge('INPS', '#0284C7');
-  if (isPagante)  badgeRow += ' ' + badge('✓ Pagante', '#16A34A');
+  if (isIscritto) badgeRow += ' ' + badge('✓ Iscritto CNA', '#059669', 'white', 'linear-gradient(135deg,#047857,#10B981)');
+  if (isInps)     badgeRow += ' ' + badge('INPS', '#0284C7', 'white', 'linear-gradient(135deg,#0369A1,#38BDF8)');
+  if (isPagante)  badgeRow += ' ' + badge('✓ Pagante', '#16A34A', 'white', 'linear-gradient(135deg,#15803D,#4ADE80)');
 
   if (badgeRow) {
-    body += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">' + badgeRow + '</div>';
+    body += '<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;align-items:center">' + badgeRow + '</div>';
   }
 
   // Tabella dati anagrafici (layout 2-colonne label/valore)
