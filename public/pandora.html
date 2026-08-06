@@ -804,11 +804,32 @@ async function upsertBatch(table, rows, onConflict) {
     const chunk = rows.slice(i, i + BATCH);
     const r = await fetch(`${SB}/rest/v1/${table}?on_conflict=${onConflict}`, {
       method: 'POST',
-      headers: HU(),
+      headers: {
+        ...H(),
+        'Prefer': 'resolution=merge-duplicates,return=minimal',
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(chunk)
     });
-    if (r.ok) done += chunk.length;
-    else { errs += chunk.length; log(`⚠ Errore batch ${i}-${i+BATCH}: ${(await r.text()).substring(0,100)}`, 'l-err'); }
+    if (r.ok) { done += chunk.length; }
+    else {
+      const errText = await r.text();
+      // Se errore 21000 (duplicati nella stessa batch), riprova uno ad uno
+      if (errText.includes('21000')) {
+        log(`  Risolvo duplicati batch ${i}-${i+BATCH}…`, 'l-warn');
+        for (const row of chunk) {
+          const r2 = await fetch(`${SB}/rest/v1/${table}?on_conflict=${onConflict}`, {
+            method: 'POST',
+            headers: { ...H(), 'Prefer': 'resolution=merge-duplicates,return=minimal', 'Content-Type': 'application/json' },
+            body: JSON.stringify([row])
+          });
+          if (r2.ok) done++; else errs++;
+        }
+      } else {
+        errs += chunk.length;
+        log(`⚠ Errore batch ${i}-${i+BATCH}: ${errText.substring(0,100)}`, 'l-err');
+      }
+    }
   }
   return { done, errs };
 }
