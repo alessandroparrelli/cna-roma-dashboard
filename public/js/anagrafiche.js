@@ -437,7 +437,7 @@ function anaFetchAll() { return Promise.resolve([]); }
 function anaFetchAllFiltered() { return Promise.resolve([]); }
 
 // ══════════════════════════════════════════════════════════════════════════════
-// POPOLAMENTO SELECT — valori distinti caricati all'apertura del tab
+// POPOLAMENTO SELECT — una singola RPC carica tutti i valori distinti
 // ══════════════════════════════════════════════════════════════════════════════
 
 var anaSelectsLoaded = false;
@@ -447,74 +447,50 @@ async function anaLoadSelects() {
   anaSelectsLoaded = true;
 
   try {
-    // Carica tutti i valori distinti in parallelo dalla vista (leggero, solo campi chiave)
-    var [rCom, rAte, rSede, rAc, rRag, rMot, rUni, rSet, rMes, rAnni] = await Promise.all([
-      fetch(SB+'/rest/v1/vista_archivio_imprese?select=comune&comune=not.is.null&order=comune.asc&limit=500', {headers:H()}),
-      fetch(SB+'/rest/v1/Anagrafiche?select=codiceateco&codiceateco=not.is.null&order=codiceateco.asc&limit=1000', {headers:H()}),
-      fetch(SB+'/rest/v1/diretti?select=sedeerogazione&sedeerogazione=not.is.null&order=sedeerogazione.asc&limit=200', {headers:H()}),
-      fetch(SB+'/rest/v1/diretti?select=acuradi&acuradi=not.is.null&order=acuradi.asc&limit=300', {headers:H()}),
-      fetch(SB+'/rest/v1/diretti?select=raggruppamento&raggruppamento=not.is.null&order=raggruppamento.asc&limit=200', {headers:H()}),
-      fetch(SB+'/rest/v1/diretti?select=motivoinizio&motivoinizio=not.is.null&order=motivoinizio.asc&limit=100', {headers:H()}),
-      fetch(SB+'/rest/v1/codiciateco?select=unione&unione=not.is.null&order=unione.asc&limit=100', {headers:H()}),
-      fetch(SB+'/rest/v1/codiciateco?select=settore&settore=not.is.null&order=settore.asc&limit=200', {headers:H()}),
-      fetch(SB+'/rest/v1/Anagrafiche?select=mestiere&mestiere=not.is.null&order=mestiere.asc&limit=1000', {headers:H()}),
-      fetch(SB+'/rest/v1/diretti?select=datastipula&datastipula=not.is.null&order=datastipula.desc&limit=5000', {headers:H()}),
-    ]);
-
-    var fill = function(selId, data, key, transform) {
-      var sel = G(selId); if (!sel) return;
-      var seen = {}; var vals = [];
-      (data||[]).forEach(function(r){
-        var v = transform ? transform(r[key]) : (r[key]||'');
-        v = String(v).trim();
-        if (v && !seen[v]) { seen[v]=true; vals.push(v); }
-      });
-      vals.sort();
-      var first = sel.options[0] ? sel.options[0].text : 'Tutti…';
-      sel.innerHTML = '<option value="">' + first + '</option>';
-      vals.forEach(function(v){ var o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
-    };
-
-    var comuniData = rCom.ok ? await rCom.json() : [];
-    fill('ana-f-comune', comuniData, 'comune');
-
-    var atecoData = rAte.ok ? await rAte.json() : [];
-    fill('ana-f-ateco', atecoData, 'codiceateco');
-
-    var sedeData = rSede.ok ? await rSede.json() : [];
-    fill('ana-f-sede', sedeData, 'sedeerogazione');
-
-    var acData = rAc.ok ? await rAc.json() : [];
-    fill('ana-f-acuradi', acData, 'acuradi');
-
-    var ragData = rRag.ok ? await rRag.json() : [];
-    fill('ana-f-raggr', ragData, 'raggruppamento');
-
-    var motData = rMot.ok ? await rMot.json() : [];
-    fill('ana-f-motivo', motData, 'motivoinizio');
-
-    var uniData = rUni.ok ? await rUni.json() : [];
-    fill('ana-f-unione', uniData, 'unione');
-
-    var setData = rSet.ok ? await rSet.json() : [];
-    fill('ana-f-settore', setData, 'settore');
-
-    var mesData = rMes.ok ? await rMes.json() : [];
-    fill('ana-f-mestiere', mesData, 'mestiere');
-
-    var anniData = rAnni.ok ? await rAnni.json() : [];
-    var anniSeen = {};
-    (anniData||[]).forEach(function(r){
-      if (r.datastipula) { var y = String(r.datastipula).substring(0,4); if(y) anniSeen[y]=true; }
+    var r = await fetch(SB + '/rest/v1/rpc/get_archivio_filtri', {
+      method: 'POST',
+      headers: H(),
+      body: '{}'
     });
-    var anni = Object.keys(anniSeen).sort().reverse();
+    if (!r.ok) { console.warn('anaLoadSelects HTTP', r.status); return; }
+    var data = await r.json();
+
+    function fillSel(id, arr, firstLabel) {
+      var sel = G(id); if (!sel || !arr) return;
+      sel.innerHTML = '<option value="">' + (firstLabel||'Tutti…') + '</option>';
+      arr.forEach(function(v) {
+        if (!v || String(v).trim() === '') return;
+        var o = document.createElement('option');
+        o.value = String(v).trim();
+        o.textContent = String(v).trim();
+        sel.appendChild(o);
+      });
+    }
+
+    fillSel('ana-f-comune',   data.comuni,         'Tutti i comuni…');
+    fillSel('ana-f-ateco',    data.ateco,           'Tutti…');
+    fillSel('ana-f-mestiere', data.mestieri,        'Tutti…');
+    fillSel('ana-f-sede',     data.sedi,            'Tutte…');
+    fillSel('ana-f-acuradi',  data.acuradi,         'Tutti…');
+    fillSel('ana-f-raggr',    data.raggruppamenti,  'Tutti…');
+    fillSel('ana-f-motivo',   data.motivi,          'Tutti…');
+    fillSel('ana-f-unione',   data.unioni,          'Tutte…');
+    fillSel('ana-f-settore',  data.settori,         'Tutti…');
+
+    // Anni
     var selAnno = G('ana-f-anno');
-    if (selAnno) {
+    if (selAnno && data.anni) {
       selAnno.innerHTML = '<option value="">Tutti gli anni…</option>';
-      anni.forEach(function(y){ var o=document.createElement('option'); o.value=y; o.textContent=y; selAnno.appendChild(o); });
+      data.anni.forEach(function(y) {
+        var o = document.createElement('option');
+        o.value = String(y); o.textContent = String(y);
+        selAnno.appendChild(o);
+      });
     }
 
   } catch(e) {
     console.warn('anaLoadSelects error:', e.message);
   }
 }
+
+
