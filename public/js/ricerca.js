@@ -399,3 +399,221 @@ function riReset() {
   var l=G('ri-lista'); if(l){l.innerHTML='';}
   var sc=G('ri-scheda'); if(sc){sc.style.display='none';sc.innerHTML='';}
 }
+
+// ══════════════════════════════════════════════════════════════
+//  RICERCA HOMEPAGE — stessi input ma con prefisso "hm-"
+//  Apre la scheda in modale overlay invece che inline
+// ══════════════════════════════════════════════════════════════
+
+async function hmCerca() {
+  var ragione = (G('hm-ragione')||{value:''}).value.trim();
+  var piva    = (G('hm-piva')   ||{value:''}).value.trim();
+  var nome    = (G('hm-nome')   ||{value:''}).value.trim();
+  var cognome = (G('hm-cognome')||{value:''}).value.trim();
+  var comune  = (G('hm-comune') ||{value:''}).value.trim();
+  var cf      = (G('hm-cf')     ||{value:''}).value.trim().toUpperCase();
+
+  var statusEl    = G('hm-status');
+  var risultatiEl = G('hm-risultati');
+  var listaEl     = G('hm-lista');
+
+  var haInput = ragione.length>=2||piva.length>=2||nome.length>=2||cognome.length>=2||comune.length>=2||cf.length>=2;
+  if(!haInput){ statusEl.textContent='Inserisci almeno un criterio (min. 2 caratteri)'; statusEl.style.color='#D97706'; return; }
+
+  statusEl.textContent='Ricerca in corso…'; statusEl.style.color='var(--text-dim)';
+  risultatiEl.style.display='none'; listaEl.innerHTML='';
+
+  try {
+    var esc=function(s){return s.replace(/[%_]/g,'');};
+    var aOrs=[];
+    if(piva.length>=2)    aOrs.push('partitaiva.eq.'+esc(piva));
+    if(cf.length>=2)      aOrs.push('codicefiscale.ilike.*'+esc(cf)+'*');
+    if(cognome.length>=2) aOrs.push('cognometitolare.ilike.*'+esc(cognome)+'*');
+    if(nome.length>=2)    aOrs.push('nometitolare.ilike.*'+esc(nome)+'*');
+    if(ragione.length>=2) aOrs.push('ragionesociale.ilike.*'+esc(ragione)+'*');
+    if(comune.length>=2)  aOrs.push('comune.ilike.*'+esc(comune)+'*');
+    var urlA=SB+'/rest/v1/Anagrafiche?or=('+aOrs.join(',')+')'+'&select=codiceanagrafica,partitaiva,codicefiscale,ragionesociale,cognometitolare,nometitolare,comune,provincia,cap,indirizzo,email,telefono,cellulare,datanascita,luogonascita,cftitolare,sesso,naturagiuridica,statogiuridico,codiceateco,mestiere&limit=50';
+
+    var rA=await fetch(urlA,{headers:H()});
+    if(!rA.ok){statusEl.textContent='Errore: HTTP '+rA.status;return;}
+    var anagrafiche=await rA.json();
+
+    if(!anagrafiche.length){
+      statusEl.textContent='Nessun risultato trovato';
+      statusEl.style.color='#059669';
+      listaEl.innerHTML='<div style="text-align:center;padding:24px;background:var(--surface2);border-radius:10px;color:var(--text-dim)">🔍 Nessuna impresa trovata</div>';
+      risultatiEl.style.display='block'; return;
+    }
+
+    statusEl.textContent=anagrafiche.length+' impres'+(anagrafiche.length===1?'a trovata':'e trovate');
+    statusEl.style.color='var(--text-dim)';
+    listaEl.innerHTML='';
+
+    anagrafiche.forEach(function(a){
+      var tit=[a.cognometitolare,a.nometitolare].filter(Boolean).join(' ');
+      var sub=[]; if(a.partitaiva) sub.push('P.IVA: '+a.partitaiva); if(a.comune) sub.push(a.comune+(a.provincia?' ('+a.provincia+')':''));
+      var statoColor=a.statogiuridico==='ATTIVO'?'#059669':'#9CA3AF';
+      var card=document.createElement('div');
+      card.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:13px 18px;background:#fff;border:1.5px solid var(--border);border-radius:10px;cursor:pointer;transition:all .15s;gap:12px';
+      card.onmouseenter=function(){card.style.borderColor='#2563EB';card.style.background='#EFF6FF';card.style.transform='translateY(-1px)';card.style.boxShadow='0 4px 14px rgba(37,99,235,.12)';};
+      card.onmouseleave=function(){card.style.borderColor='var(--border)';card.style.background='#fff';card.style.transform='';card.style.boxShadow='';};
+      card.onclick=function(){ hmApriModal(a); };
+      card.innerHTML=
+        '<div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1">'+
+          '<div style="width:38px;height:38px;background:rgba(37,99,235,.08);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+
+            '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#2563EB" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>'+
+          '</div>'+
+          '<div style="min-width:0">'+
+            '<div style="font-weight:700;font-size:14px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_riEsc(a.ragionesociale||'—')+(tit?'<span style="font-weight:400;color:var(--text-sub)"> — '+_riEsc(tit)+'</span>':'')+'</div>'+
+            (sub.length?'<div style="font-size:11px;color:var(--text-dim);margin-top:2px;font-family:monospace">'+sub.join('  ·  ')+'</div>':'')+
+          '</div>'+
+        '</div>'+
+        '<div style="display:flex;align-items:center;gap:8px;flex-shrink:0">'+
+          '<span style="background:'+statoColor+'22;color:'+statoColor+';font-size:10px;font-weight:700;padding:3px 10px;border-radius:999px">'+_riEsc(a.statogiuridico||'—')+'</span>'+
+          '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg>'+
+        '</div>';
+      listaEl.appendChild(card);
+    });
+    risultatiEl.style.display='block';
+    if(anagrafiche.length===1) hmApriModal(anagrafiche[0]);
+  } catch(e) {
+    statusEl.textContent='Errore: '+e.message;
+    statusEl.style.color='#DC2626';
+  }
+}
+
+function hmReset(){
+  ['hm-ragione','hm-piva','hm-nome','hm-cognome','hm-comune','hm-cf'].forEach(function(id){var el=G(id);if(el)el.value='';});
+  var s=G('hm-status');if(s)s.textContent='';
+  var r=G('hm-risultati');if(r)r.style.display='none';
+  var l=G('hm-lista');if(l)l.innerHTML='';
+  hmChiudiModal();
+}
+
+// ── Modale scheda impresa dalla homepage ──
+function hmApriModal(ana) {
+  // Crea modale se non esiste
+  var modal = G('hm-modal');
+  if(!modal){
+    modal = document.createElement('div');
+    modal.id = 'hm-modal';
+    modal.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:500;align-items:flex-start;justify-content:center;padding:20px;overflow-y:auto';
+    modal.onclick=function(e){ if(e.target===modal) hmChiudiModal(); };
+    var box = document.createElement('div');
+    box.id = 'hm-modal-box';
+    box.style.cssText='background:var(--surface);border-radius:14px;width:100%;max-width:860px;margin:0 auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.25)';
+    // Header con chiudi
+    var hdr = document.createElement('div');
+    hdr.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--surface);border-radius:14px 14px 0 0;z-index:1';
+    hdr.innerHTML='<span id="hm-modal-title" style="font-size:15px;font-weight:700;color:var(--text)">Scheda Impresa</span>'+
+      '<button onclick="hmChiudiModal()" style="background:none;border:none;cursor:pointer;padding:6px;border-radius:6px;color:var(--text-dim);font-size:18px;line-height:1">✕</button>';
+    var body = document.createElement('div');
+    body.id = 'hm-modal-body';
+    body.style.cssText='padding:20px;overflow-y:auto;max-height:calc(90vh - 60px)';
+    body.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-dim)"><span class="spinner"></span><p style="margin-top:12px">Caricamento…</p></div>';
+    box.appendChild(hdr);
+    box.appendChild(body);
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+  }
+
+  // Mostra modale con spinner
+  modal.style.display='flex';
+  document.body.style.overflow='hidden';
+  var titleEl=G('hm-modal-title');
+  if(titleEl) titleEl.textContent=ana.ragionesociale||'Scheda Impresa';
+  var bodyEl=G('hm-modal-body');
+  if(bodyEl) bodyEl.innerHTML='<div style="text-align:center;padding:40px;color:var(--text-dim)"><span class="spinner"></span><p style="margin-top:12px">Caricamento scheda…</p></div>';
+
+  // Carica scheda usando riApriScheda (la stessa funzione della tab Ricerca)
+  // ma inietta il risultato nella modale invece che nel div inline
+  hmCaricaScheda(ana);
+}
+
+async function hmCaricaScheda(ana) {
+  var bodyEl = G('hm-modal-body');
+  if(!bodyEl) return;
+
+  var cod  = ana.codiceanagrafica||'';
+  var piva = ana.partitaiva||'';
+  var cf   = ana.codicefiscale||'';
+
+  try {
+    var urlD = SB+'/rest/v1/diretti?codiceanagrafica=eq.'+encodeURIComponent(cod)+'&select=servizio,datastipula,datadisdetta,raggruppamento,importo,acuradi,sedeerogazione,zonacliente&order=datastipula.desc';
+    var urlS = SB+'/rest/v1/contrattiservizio?codicecliente=eq.'+encodeURIComponent(cod)+'&datadisdetta=is.null&select=tipocontratto,datastipulacontratto,raggruppamento,sedeerogazione,nomeconsulente&order=datastipulacontratto.desc';
+    var urlC = piva ? SB+'/rest/v1/cciaa?partita_iva=eq.'+encodeURIComponent(piva)+'&select=stato_attivita,art_com_tur,num_addetti_sub,num_addetti_fam_ul&limit=1' : null;
+    var urlCat=ana.codiceateco ? SB+'/rest/v1/codiciateco?codiceateco=eq.'+encodeURIComponent(ana.codiceateco.trim())+'&select=mestiere,unione,settore&limit=1' : null;
+    var urlP1= SB+'/rest/v1/incassipandora?codice_cliente=eq.'+encodeURIComponent(cod)+'&codice_azienda=eq.G1000001&order=data_fattura.desc&limit=200';
+    var urlP3= SB+'/rest/v1/incassipandora?codice_cliente=eq.'+encodeURIComponent(cod)+'&codice_azienda=eq.G1000003&order=data_fattura.desc&limit=200';
+
+    var [rD,rS,rC,rCat,rP1,rP3]=await Promise.all([
+      fetch(urlD,{headers:H()}),fetch(urlS,{headers:H()}),
+      urlC?fetch(urlC,{headers:H()}):Promise.resolve({ok:true,json:function(){return Promise.resolve([]);}}),
+      urlCat?fetch(urlCat,{headers:H()}):Promise.resolve({ok:true,json:function(){return Promise.resolve([]);}}),
+      fetch(urlP1,{headers:H()}),fetch(urlP3,{headers:H()})
+    ]);
+    var diretti=rD.ok?await rD.json():[];
+    var servizi=rS.ok?await rS.json():[];
+    var cciaaArr=rC.ok?await rC.json():[];
+    var catArr=rCat.ok?await rCat.json():[];
+    var pandoraG1=rP1.ok?await rP1.json():[];
+    var pandoraG3=rP3.ok?await rP3.json():[];
+    var cciaa=cciaaArr[0]||null;
+    var catPro=catArr[0]||null;
+
+    // Riutilizza la stessa logica di riApriScheda per generare l'HTML
+    // (costruzione badge, sezioni, pandora)
+    var tipoImp=cciaa?(cciaa.art_com_tur==='A'?'Artigiano':cciaa.art_com_tur==='C'?'Commerciante':null):null;
+    var addSub=cciaa?(parseInt(cciaa.num_addetti_sub)||0):0;
+    var addFam=cciaa?(parseInt(cciaa.num_addetti_fam_ul)||0):0;
+    var isIscritto=diretti.some(function(d){return(d.servizio||'').toUpperCase()==='ISCRITTO';});
+    if(!isIscritto) isIscritto=servizi.some(function(s){return(s.tipocontratto||'').toUpperCase()==='ISCRITTO';});
+    var annoMin=new Date().getFullYear()-2;
+    var isPagante=pandoraG1.some(function(p){return p.pagato&&p.data_fattura&&parseInt(p.data_fattura.substring(0,4))>=annoMin;});
+    var titolare=[ana.cognometitolare,ana.nometitolare].filter(Boolean).join(' ');
+    var isAttivo=(ana.statogiuridico||'').toUpperCase()==='ATTIVO';
+    var statoLabel=(ana.statogiuridico||'—').charAt(0).toUpperCase()+(ana.statogiuridico||'—').slice(1).toLowerCase();
+    var statoGrad=isAttivo?'linear-gradient(135deg,#047857,#10B981)':'linear-gradient(135deg,#6B7280,#9CA3AF)';
+    var bs='display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap';
+    var ck='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>&nbsp;';
+    var html='';
+    // Header
+    html+='<div style="background:#fff;border:1.5px solid var(--border);border-radius:12px;padding:18px 22px;margin-bottom:14px">';
+    html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">';
+    html+='<div><div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:3px">'+_riEsc(ana.ragionesociale||'—')+'</div>'+(titolare?'<div style="font-size:13px;color:var(--text-sub)">Titolare: '+_riEsc(titolare)+'</div>':'')+'</div>';
+    html+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
+    html+='<span style="'+bs+';background:'+statoGrad+';color:#fff">'+(isAttivo?ck:'')+_riEsc(statoLabel)+'</span>';
+    if(tipoImp){var tg=tipoImp==='Artigiano'?'linear-gradient(135deg,#B91C1C,#EF4444)':'linear-gradient(135deg,#D97706,#FBBF24)';var tc=tipoImp==='Artigiano'?'#fff':'#451A03';html+='<span style="'+bs+';background:'+tg+';color:'+tc+'">'+_riEsc(tipoImp)+'</span>';}
+    if(isIscritto) html+='<span style="'+bs+';background:linear-gradient(135deg,#0369A1,#38BDF8);color:#fff">'+ck+'Iscritto CNA</span>';
+    if(isPagante)  html+='<span style="'+bs+';background:linear-gradient(135deg,#15803D,#22C55E);color:#fff">'+ck+'Pagante</span>';
+    html+='</div></div></div>';
+    // Dati anagrafici
+    var fmtDN=function(d){if(!d)return null;var x=new Date(d);if(isNaN(x))return d;return('0'+x.getDate()).slice(-2)+'/'+('0'+(x.getMonth()+1)).slice(-2)+'/'+x.getFullYear();};
+    html+=riSezione('#2563EB','📋','Dati Anagrafici',[['Codice',ana.codiceanagrafica],['Partita IVA',ana.partitaiva],['Codice Fiscale',ana.codicefiscale],['Indirizzo',(ana.indirizzo||'').trim()||null],['CAP',ana.cap||null],['Comune',ana.comune],['Provincia',ana.provincia],['Email',ana.email?'<a href="mailto:'+_riEsc(ana.email)+'" style="color:#2563EB">'+_riEsc(ana.email)+'</a>':null],['Telefono',ana.telefono?'<a href="tel:'+_riEsc(ana.telefono)+'" style="color:#2563EB">'+_riEsc(ana.telefono)+'</a>':null],['Cellulare',ana.cellulare?'<a href="tel:'+_riEsc(ana.cellulare)+'" style="color:#7C3AED">'+_riEsc(ana.cellulare)+'</a>':null],['Data Nascita',fmtDN(ana.datanascita)],['Luogo Nascita',ana.luogonascita||null],['Natura Giuridica',ana.naturagiuridica||null]]);
+    // Addetti
+    if(addSub+addFam>0){html+='<div class="ri-card-section"><div class="ri-section-hdr" style="background:#F3F4F6;color:#374151"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Addetti e Dipendenti</div><div style="display:grid;grid-template-columns:1fr 1fr 1fr"><div style="padding:14px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">Subordinati</div><div style="font-size:26px;font-weight:800;color:var(--text)">'+addSub+'</div></div><div style="padding:14px;text-align:center;border-right:1px solid var(--border)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">Familiari</div><div style="font-size:26px;font-weight:800;color:var(--text)">'+addFam+'</div></div><div style="padding:14px;text-align:center;background:linear-gradient(135deg,#2563EB,#1D4ED8)"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:4px">Totale</div><div style="font-size:26px;font-weight:800;color:#fff">'+(addSub+addFam)+'</div></div></div></div>';}
+    // Stato associativo
+    var dA=diretti.filter(function(d){return !d.datadisdetta;});
+    if(dA.length){html+='<div class="ri-card-section"><div class="ri-section-hdr" style="background:#F5F3FF;color:#7C3AED"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Stato Associativo</div>';dA.forEach(function(d){html+='<div style="background:#F5F3FF;border-bottom:1px solid #DDD6FE;padding:12px 16px"><div style="display:flex;flex-wrap:wrap;gap:12px"><div style="flex:2;min-width:140px"><div style="font-size:10px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Tipo</div><div style="font-size:14px;font-weight:700;color:#3B0764">'+_riEsc(d.servizio||'—')+'</div><div style="font-size:11px;color:#6D28D9;margin-top:2px">'+_riEsc((d.raggruppamento||'').replace(/,\s*$/,'').trim()||'—')+(d.acuradi?' · '+_riEsc(d.acuradi):'')+'</div></div><div style="flex:1;min-width:100px"><div style="font-size:10px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Data Stipula</div><div style="font-size:13px;color:#3B0764">'+_riFmt(d.datastipula)+'</div></div>'+(parseFloat(d.importo)>0?'<div style="flex:1;min-width:80px"><div style="font-size:10px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Importo</div><div style="font-size:13px;font-weight:700;color:#3B0764">'+_riEur(d.importo)+'</div></div>':'')+(d.sedeerogazione?'<div style="flex:1;min-width:80px"><div style="font-size:10px;font-weight:700;color:#7C3AED;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Sede</div><div style="font-size:13px;color:#3B0764">'+_riEsc(d.sedeerogazione)+'</div></div>':'')+'</div></div>';});html+='</div>';}
+    // Contratti servizio
+    var sA=servizi.filter(function(s){return(s.tipocontratto||'').toUpperCase()!=='ISCRITTO';});
+    if(sA.length){html+='<div class="ri-card-section"><div class="ri-section-hdr" style="background:#EFF6FF;color:#1D4ED8"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Contratti Servizio Attivi</div>';sA.forEach(function(s){var sede=(s.sedeerogazione||'').replace(/^\d+\s*-\s*/,'').trim();html+='<div style="background:#EFF6FF;border-bottom:1px solid #BFDBFE;padding:12px 16px"><div style="display:flex;flex-wrap:wrap;gap:12px"><div style="flex:2;min-width:140px"><div style="font-size:10px;font-weight:700;color:#0369A1;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Contratto</div><div style="font-size:14px;font-weight:700;color:#1E3A5F">'+_riEsc(s.tipocontratto||'—')+'</div><div style="font-size:11px;color:#0369A1;margin-top:3px">'+_riEsc((s.raggruppamento||'').replace(/,\s*$/,'').trim()||'—')+(sede?' · '+_riEsc(sede):'')+'</div></div><div style="flex:1;min-width:110px"><div style="font-size:10px;font-weight:700;color:#0369A1;text-transform:uppercase;letter-spacing:.05em;margin-bottom:3px">Data Stipula</div><div style="font-size:13px;color:#1E3A5F">'+_riFmt(s.datastipulacontratto)+'</div>'+(s.nomeconsulente?'<div style="font-size:11px;color:#0369A1;margin-top:2px">'+_riEsc(s.nomeconsulente)+'</div>':'')+'</div></div></div>';});html+='</div>';}
+    // Categoria professionale
+    if(ana.codiceateco||catPro){html+=riSezione('#059669','🏭','Categoria Professionale',[['Codice ATECO',(ana.codiceateco||'').trim()],['Mestiere',catPro?catPro.mestiere:(ana.mestiere||'')],['Unione',catPro?catPro.unione:null],['Settore',catPro?catPro.settore:null]]);}
+    // Pagamenti Pandora
+    html+=riPandoraSection(pandoraG1,pandoraG3,isPagante);
+    bodyEl.innerHTML=html;
+  } catch(e){
+    if(bodyEl) bodyEl.innerHTML='<div style="color:#DC2626;padding:20px">Errore: '+e.message+'</div>';
+    console.error('hmCaricaScheda:',e);
+  }
+}
+
+function hmChiudiModal(){
+  var modal=G('hm-modal');
+  if(modal) modal.style.display='none';
+  document.body.style.overflow='';
+}
+
+// Chiudi modale con ESC
+document.addEventListener('keydown',function(e){if(e.key==='Escape')hmChiudiModal();});
