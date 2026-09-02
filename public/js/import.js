@@ -951,6 +951,8 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
     }
     // Lazy-load anagrafiche on first visit
     if(tabId==='tab-anagrafiche' && !anaLoaded && !anaLoading){ anaLoad(); }
+    // Pandora visibile solo admin nella tab Carica Dati
+    if(tabId==='tab-import'){ pandoraInitVisibility(); }
     // Lazy-load ateco on first visit
     if(tabId==='tab-ateco' && !atecoLoaded && !atecoLoading){ atecoLoad(); }
     if(tabId==='tab-raggruppamenti' && !raggLoaded && !raggLoading){ raggLoad(); }
@@ -1089,20 +1091,17 @@ function pandoraInitVisibility() {
   sec.style.display = (typeof isAdmin === 'function' && isAdmin()) ? 'block' : 'none';
 }
 
-// Mostra Pandora ogni volta che upload-zone diventa visibile
+// Mostra Pandora quando si apre la tab Carica Dati (tab-import)
 document.addEventListener('DOMContentLoaded', function() {
   setTimeout(function() {
     pandoraInitVisibility();
-    // Observer: ogni volta che upload-zone viene mostrata, reinit Pandora
-    var uz = document.getElementById('upload-zone');
-    if (uz) {
-      new MutationObserver(function() {
-        if (uz.style.display !== 'none' && uz.style.display !== '') {
-          pandoraInitVisibility();
-        }
-      }).observe(uz, { attributes: true, attributeFilter: ['style'] });
-    }
-  }, 600);
+  }, 800);
+});
+
+// Aggancia pandoraInitVisibility al click su tab-import
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-tab="tab-import"]');
+  if (btn) setTimeout(pandoraInitVisibility, 100);
 });
 
 var PANDORA_EXPECTED = [
