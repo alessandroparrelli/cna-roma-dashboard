@@ -38,7 +38,7 @@ async function riCerca() {
     if(nome.length>=2)    aOrs.push('nometitolare.ilike.*'+esc(nome)+'*');
     if(ragione.length>=2) aOrs.push('ragionesociale.ilike.*'+esc(ragione)+'*');
     if(comune.length>=2)  aOrs.push('comune.ilike.*'+esc(comune)+'*');
-    var urlA=SB+'/rest/v1/Anagrafiche?or=('+aOrs.join(',')+')'+'&select=codiceanagrafica,partitaiva,codicefiscale,ragionesociale,cognometitolare,nometitolare,comune,provincia,statogiuridico,codiceateco,mestiere&limit=50';
+    var urlA=SB+'/rest/v1/Anagrafiche?or=('+aOrs.join(',')+')'+'&select=codiceanagrafica,partitaiva,codicefiscale,ragionesociale,cognometitolare,nometitolare,comune,provincia,cap,indirizzo,email,telefono,cellulare,datanascita,luogonascita,cftitolare,sesso,naturagiuridica,statogiuridico,codiceateco,mestiere&limit=50';
 
     var rA = await fetch(urlA, {headers:H()});
     if(!rA.ok){ statusEl.textContent='Errore: HTTP '+rA.status; return; }
@@ -121,6 +121,7 @@ async function riApriScheda(ana) {
     var urlD = SB+'/rest/v1/diretti?codiceanagrafica=eq.'+encodeURIComponent(cod)+'&select=servizio,datastipula,datadisdetta,raggruppamento,importo,acuradi,sedeerogazione,zonacliente&order=datastipula.desc';
     var urlS = SB+'/rest/v1/contrattiservizio?codicecliente=eq.'+encodeURIComponent(cod)+'&datadisdetta=is.null&select=tipocontratto,datastipulacontratto,raggruppamento,sedeerogazione,nomeconsulente,zonacliente&order=datastipulacontratto.desc';
     var urlC = piva ? SB+'/rest/v1/cciaa?partita_iva=eq.'+encodeURIComponent(piva)+'&select=stato_attivita,art_com_tur,num_addetti_sub,num_addetti_fam_ul&limit=1' : null;
+    var urlCat= ana.codiceateco ? SB+'/rest/v1/codiciateco?codiceateco=eq.'+encodeURIComponent(ana.codiceateco.trim())+'&select=mestiere,unione,settore&limit=1' : null;
     var urlP1= SB+'/rest/v1/incassipandora?codice_cliente=eq.'+encodeURIComponent(cod)+'&codice_azienda=eq.G1000001&order=data_fattura.desc&limit=200';
     var urlP3= SB+'/rest/v1/incassipandora?codice_cliente=eq.'+encodeURIComponent(cod)+'&codice_azienda=eq.G1000003&order=data_fattura.desc&limit=200';
 
@@ -129,20 +130,23 @@ async function riApriScheda(ana) {
       fetch(urlS,{headers:H()}),
       urlC ? fetch(urlC,{headers:H()}) : Promise.resolve({ok:true,json:function(){return Promise.resolve([]);}}),
       fetch(urlP1,{headers:H()}),
-      fetch(urlP3,{headers:H()})
+      fetch(urlP3,{headers:H()}),
+      urlCat ? fetch(urlCat,{headers:H()}) : Promise.resolve({ok:true,json:function(){return Promise.resolve([]);}})
     ];
-    var [rD,rS,rC,rP1,rP3] = await Promise.all(fetches);
-    var diretti   = rD.ok  ? await rD.json()  : [];
-    var servizi   = rS.ok  ? await rS.json()  : [];
-    var cciaaArr  = rC.ok  ? await rC.json()  : [];
-    var pandoraG1 = rP1.ok ? await rP1.json() : [];
-    var pandoraG3 = rP3.ok ? await rP3.json() : [];
+    var [rD,rS,rC,rP1,rP3,rCat] = await Promise.all(fetches);
+    var diretti   = rD.ok   ? await rD.json()   : [];
+    var servizi   = rS.ok   ? await rS.json()   : [];
+    var cciaaArr  = rC.ok   ? await rC.json()   : [];
+    var pandoraG1 = rP1.ok  ? await rP1.json()  : [];
+    var pandoraG3 = rP3.ok  ? await rP3.json()  : [];
+    var catArr    = rCat.ok ? await rCat.json() : [];
     var cciaa = cciaaArr[0]||null;
+    var catPro = catArr[0]||null; // {mestiere, unione, settore} da codiciateco
 
     // Badge stato
-    var statoLabel = ana.statogiuridico||'—';
-    var statoColor = ana.statogiuridico==='ATTIVO'?'#059669':'#9CA3AF';
-    var statoGrad  = ana.statogiuridico==='ATTIVO'?'linear-gradient(135deg,#047857,#10B981)':'linear-gradient(135deg,#6B7280,#9CA3AF)';
+    var statoLabel = (ana.statogiuridico||'—').charAt(0).toUpperCase()+(ana.statogiuridico||'—').slice(1).toLowerCase();
+    var isAttivo   = (ana.statogiuridico||'').toUpperCase()==='ATTIVO';
+    var statoGrad  = isAttivo ? 'linear-gradient(135deg,#047857,#10B981)' : 'linear-gradient(135deg,#6B7280,#9CA3AF)';
 
     // Tipo impresa da CCIAA
     var tipoImp = cciaa ? (cciaa.art_com_tur==='A'?'Artigiano':cciaa.art_com_tur==='C'?'Commerciante':null) : null;
@@ -175,29 +179,41 @@ async function riApriScheda(ana) {
     html += '<div style="font-size:22px;font-weight:800;color:var(--text);margin-bottom:4px">'+_riEsc(ana.ragionesociale||'—')+'</div>';
     if(titolare) html += '<div style="font-size:13px;color:var(--text-sub)">Titolare: '+_riEsc(titolare)+'</div>';
     html += '</div>';
-    // Badge
-    html += '<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
-    html += '<span style="display:inline-flex;align-items:center;padding:6px 14px;border-radius:30px;background:'+statoGrad+';color:#fff;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 3px 10px rgba(0,0,0,.15)"><span style="font-size:9px;margin-right:4px">STATO</span>'+_riEsc(statoLabel)+'</span>';
-    if(tipoImp) {
-      var tGrad = tipoImp==='Artigiano'?'linear-gradient(135deg,#DC2626,#F87171)':'linear-gradient(135deg,#D97706,#FCD34D)';
-      var tColor = tipoImp==='Artigiano'?'#fff':'#78350F';
-      html += '<span style="display:inline-flex;align-items:center;padding:6px 14px;border-radius:30px;background:'+tGrad+';color:'+tColor+';font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 3px 10px rgba(0,0,0,.15)"><span style="font-size:9px;margin-right:4px">TIPO</span>'+_riEsc(tipoImp)+'</span>';
+    // Badge ridisegnati — pill moderne senza prefisso
+    html += '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">';
+    // Stato
+    html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap;background:'+statoGrad+';color:#fff">'+
+      (isAttivo?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'')+'&nbsp;'+_riEsc(statoLabel)+'</span>';
+    // Tipo impresa
+    if(tipoImp){
+      var tGrad=tipoImp==='Artigiano'?'linear-gradient(135deg,#B91C1C,#EF4444)':'linear-gradient(135deg,#D97706,#FBBF24)';
+      var tCol=tipoImp==='Artigiano'?'#fff':'#451A03';
+      html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap;background:'+tGrad+';color:'+tCol+'">'+_riEsc(tipoImp)+'</span>';
     }
-    if(isIscritto) html += '<span style="display:inline-flex;align-items:center;padding:6px 14px;border-radius:30px;background:linear-gradient(135deg,#047857,#10B981);color:#fff;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 3px 10px rgba(0,0,0,.15)">✓ Iscritto CNA</span>';
-    if(isPagante) html += '<span style="display:inline-flex;align-items:center;padding:6px 14px;border-radius:30px;background:linear-gradient(135deg,#15803D,#4ADE80);color:#fff;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;box-shadow:0 3px 10px rgba(0,0,0,.15)">✓ Pagante</span>';
+    // Iscritto CNA
+    if(isIscritto) html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap;background:linear-gradient(135deg,#0369A1,#38BDF8);color:#fff">'+
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>&nbsp;Iscritto CNA</span>';
+    // Pagante
+    if(isPagante) html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap;background:linear-gradient(135deg,#15803D,#22C55E);color:#fff">'+
+      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>&nbsp;Pagante</span>';
     html += '</div></div></div>';
 
     // Dati anagrafici
+    var fmtDataNasc = function(d) { if(!d) return null; var x=new Date(d); if(isNaN(x)) return d; return ('0'+x.getDate()).slice(-2)+'/'+('0'+(x.getMonth()+1)).slice(-2)+'/'+x.getFullYear(); };
     html += riSezione('#2563EB', '📋', 'Dati Anagrafici', [
       ['Codice', ana.codiceanagrafica],
       ['Partita IVA', ana.partitaiva],
       ['Codice Fiscale', ana.codicefiscale],
-      ['Indirizzo', [ana.indirizzo, ana.cap, ana.comune, ana.provincia ? '('+ana.provincia+')':''].filter(Boolean).join(' ')],
+      ['Indirizzo', (ana.indirizzo||'').trim() || null],
+      ['CAP', ana.cap || null],
       ['Comune', ana.comune],
       ['Provincia', ana.provincia],
       ['Email', ana.email ? '<a href="mailto:'+_riEsc(ana.email)+'" style="color:#2563EB">'+_riEsc(ana.email)+'</a>' : null],
       ['Telefono', ana.telefono ? '<a href="tel:'+_riEsc(ana.telefono)+'" style="color:#2563EB">'+_riEsc(ana.telefono)+'</a>' : null],
       ['Cellulare', ana.cellulare ? '<a href="tel:'+_riEsc(ana.cellulare)+'" style="color:#7C3AED">'+_riEsc(ana.cellulare)+'</a>' : null],
+      ['Data Nascita', fmtDataNasc(ana.datanascita)],
+      ['Luogo Nascita', ana.luogonascita || null],
+      ['Natura Giuridica', ana.naturagiuridica || null],
     ]);
 
     // Addetti e dipendenti
@@ -244,11 +260,13 @@ async function riApriScheda(ana) {
       html += '</div>';
     }
 
-    // Categoria professionale
-    if(ana.codiceateco || ana.mestiere) {
+    // Categoria professionale — fonte: codiciateco (mestiere pulito senza anno)
+    if(ana.codiceateco || catPro) {
       html += riSezione('#059669', '🏭', 'Categoria Professionale', [
-        ['Codice ATECO', ana.codiceateco],
-        ['Mestiere', ana.mestiere],
+        ['Codice ATECO', (ana.codiceateco||'').trim()],
+        ['Mestiere', catPro ? catPro.mestiere : (ana.mestiere||'')],
+        ['Unione', catPro ? catPro.unione : null],
+        ['Settore', catPro ? catPro.settore : null],
       ]);
     }
 
