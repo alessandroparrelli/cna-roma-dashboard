@@ -9,14 +9,14 @@ var allIncassi      = [];   // righe aggregate {anno,mese,codice_azienda,tipo_pa
 var allTasso        = [];   // [{anno,fatturato,incassato}]
 var allTopClienti     = [];   // [{codice_cliente,cliente,avere}]
 var allClientiUnici   = 0;
-var allClientiUniciG1 = 0;   // CNA Roma
-var allClientiUniciG3 = 0;   // CNA CAF Lazio
+var allClientiUniciG1 = 0;
+var allClientiUniciG3 = 0;
 var incassiFiltrati = [];
 var incassiCharts   = {};
 
 function incassiMetodo(r) {
-  var tp = String(r.tipo_pagamento || '').toUpperCase().trim();
-  return (tp === 'RID' || tp === 'SEPA') ? 'SEPA' : 'Cassa';
+  // La RPC traduce già: D→SEPA, C→Cassa, B→Bonifico
+  return r.metodo || 'Cassa';
 }
 
 // ─────────────────────────────────────────────
@@ -42,12 +42,10 @@ async function incassiLoad(force) {
   if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + await r.text());
   var data = await r.json();
 
-  allIncassi        = data.per_anno_mese || [];
-  allTasso          = data.tasso_per_anno || [];
-  allTopClienti     = data.top_clienti || [];
-  allClientiUniciG1 = parseInt(data.clienti_unici_g1) || 0;
-  allClientiUniciG3 = parseInt(data.clienti_unici_g3) || 0;
-  allClientiUnici   = allClientiUniciG1 + allClientiUniciG3;
+  allIncassi    = data.per_anno_mese || [];
+  allTasso      = data.tasso_per_anno || [];
+  allTopClienti = data.top_clienti || [];
+  // Clienti unici calcolati dai dati filtrati lato client (dinamici per filtri)
 
   incassiLoaded = true;
   incassiBuildFilters();
@@ -96,6 +94,19 @@ function incassiApply() {
     return true;
   });
 
+  // Calcola clienti unici dinamicamente dai dati filtrati
+  var clSet={}, clG1={}, clG3={};
+  incassiFiltrati.forEach(function(r){
+    if(r.codice_cliente){
+      clSet[r.codice_cliente]=1;
+      if(r.codice_azienda==='G1000001') clG1[r.codice_cliente]=1;
+      if(r.codice_azienda==='G1000003') clG3[r.codice_cliente]=1;
+    }
+  });
+  allClientiUnici   = Object.keys(clSet).length;
+  allClientiUniciG1 = Object.keys(clG1).length;
+  allClientiUniciG3 = Object.keys(clG3).length;
+
   incassiRender();
 }
 
@@ -139,7 +150,8 @@ function incassiRenderKPI() {
   // Per ora mostriamo il totale globale come indicatore
   var clientiUnici = allClientiUnici;
   var mediaXCliente = clientiUnici > 0 ? totale/clientiUnici : 0;
-  var totSepa  = data.filter(function(r){ return incassiMetodo(r)==='SEPA'; }).reduce(function(s,r){ return s+(parseFloat(r.avere)||0); },0);
+  var totSepa     = data.filter(function(r){ return incassiMetodo(r)==='SEPA'; }).reduce(function(s,r){ return s+(parseFloat(r.avere)||0); },0);
+  var totBonifico = data.filter(function(r){ return incassiMetodo(r)==='Bonifico'; }).reduce(function(s,r){ return s+(parseFloat(r.avere)||0); },0);
   var totG1    = data.filter(function(r){ return r.codice_azienda==='G1000001'; }).reduce(function(s,r){ return s+(parseFloat(r.avere)||0); },0);
   var totG3    = data.filter(function(r){ return r.codice_azienda==='G1000003'; }).reduce(function(s,r){ return s+(parseFloat(r.avere)||0); },0);
   var pctSepa  = totale>0?(totSepa/totale*100).toFixed(1):0;
@@ -167,12 +179,12 @@ function incassiRenderKPI() {
     kpiCard(ISVG.receipt, 'Fatture Saldate',    fmtInt(numPag),            '',                      'var(--accent2)')+
     kpiCard(ISVG.users,   'Clienti Unici',      fmtInt(clientiUnici),      '',                      'var(--accent3)')+
     kpiCard(ISVG.avg,     'Media / Cliente',    '€ '+fmtNum(mediaXCliente),'',                      'var(--green)')+
-    kpiCard(ISVG.euro,    'CNA Roma',           '€ '+fmtNum(totG1),        'G1000001',              '#0284C7')+
-    kpiCard(ISVG.euro,    'CNA CAF Lazio',      '€ '+fmtNum(totG3),        'G1000003',              '#D97706')+
-    kpiCard(ISVG.users,   'Clienti CNA Roma',   fmtInt(allClientiUniciG1), 'G1000001 — Tesseramento','#059669')+
-    kpiCard(ISVG.users,   'Clienti CAF Lazio',  fmtInt(allClientiUniciG3), 'G1000003 — Servizi fiscali','#7C3AED')+
-    kpiCard(ISVG.sepa,    'SEPA',               '€ '+fmtNum(totSepa),      pctSepa+'% del totale',  '#D97706')+
-    kpiCard(ISVG.calendar,'Mese Migliore',       meseMiglVal,              meseMiglImpo,            '#059669');
+    kpiCard(ISVG.euro,    'CNA Roma',           '€ '+fmtNum(totG1),        fmtInt(allClientiUniciG1)+' clienti', '#0284C7')+
+    kpiCard(ISVG.euro,    'CNA CAF Lazio',      '€ '+fmtNum(totG3),        fmtInt(allClientiUniciG3)+' clienti', '#D97706')+
+    kpiCard(ISVG.users,   'Clienti CNA Roma',   fmtInt(allClientiUniciG1), 'Clienti distinti G1000001','#059669')+
+    kpiCard(ISVG.users,   'Clienti CAF Lazio',  fmtInt(allClientiUniciG3), 'Clienti distinti G1000003','#7C3AED')+
+    kpiCard(ISVG.sepa,    'SEPA (Dom.)',         '€ '+fmtNum(totSepa),      pctSepa+'% del totale',  '#2563EB')+
+    kpiCard(ISVG.calendar,'Mese Migliore',       meseMiglVal,               meseMiglImpo,            '#059669');
 }
 
 // ─────────────────────────────────────────────
@@ -195,13 +207,13 @@ function incassiRenderStats() {
   // Per metodo + società
   var mBody=G('inc-metodo-body');
   if(mBody){
-    var byM={SEPA:{tot:0,n:0},Cassa:{tot:0,n:0}};
-    data.forEach(function(r){var m=incassiMetodo(r);byM[m].tot+=(parseFloat(r.avere)||0);byM[m].n+=(parseInt(r.n)||0);});
+    var byM={SEPA:{tot:0,n:0},Cassa:{tot:0,n:0},Bonifico:{tot:0,n:0}};
+    data.forEach(function(r){var m=incassiMetodo(r);if(!byM[m])byM[m]={tot:0,n:0};byM[m].tot+=(parseFloat(r.avere)||0);byM[m].n+=(parseInt(r.n)||0);});
     var byS={G1000001:{tot:0,n:0},G1000003:{tot:0,n:0}};
     data.forEach(function(r){var s=r.codice_azienda;if(byS[s]){byS[s].tot+=(parseFloat(r.avere)||0);byS[s].n+=(parseInt(r.n)||0);}});
     mBody.innerHTML=
       '<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:14px"><thead><tr style="background:var(--surface2)"><th style="padding:7px 10px;text-align:left">Metodo</th><th style="padding:7px 10px;text-align:right">€</th><th style="padding:7px 10px;text-align:right">%</th><th style="padding:7px 10px;text-align:right">N°</th></tr></thead><tbody>'+
-      [['SEPA','#0284C7'],['Cassa','#059669']].map(function(p){var d=byM[p[0]];var pct=totGlob>0?(d.tot/totGlob*100).toFixed(1):0;return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:'+p[1]+';display:inline-block"></span><strong>'+p[0]+'</strong></span></td><td style="padding:7px 10px;text-align:right;font-weight:600;color:'+p[1]+'">€ '+fmtNum(d.tot)+'</td><td style="padding:7px 10px;text-align:right">'+pct+'%</td><td style="padding:7px 10px;text-align:right">'+fmtInt(d.n)+'</td></tr>';}).join('')+'</tbody></table>'+
+      [['SEPA','#0284C7'],['Cassa','#059669'],['Bonifico','#7C3AED']].map(function(p){var d=byM[p[0]]||{tot:0,n:0};var pct=totGlob>0?(d.tot/totGlob*100).toFixed(1):0;return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:'+p[1]+';display:inline-block"></span><strong>'+p[0]+'</strong></span></td><td style="padding:7px 10px;text-align:right;font-weight:600;color:'+p[1]+'">€ '+fmtNum(d.tot)+'</td><td style="padding:7px 10px;text-align:right">'+pct+'%</td><td style="padding:7px 10px;text-align:right">'+fmtInt(d.n)+'</td></tr>';}).join('')+'</tbody></table>'+
       '<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin-bottom:8px">Per Società</div>'+
       '<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--surface2)"><th style="padding:7px 10px;text-align:left">Società</th><th style="padding:7px 10px;text-align:right">€</th><th style="padding:7px 10px;text-align:right">%</th><th style="padding:7px 10px;text-align:right">N°</th></tr></thead><tbody>'+
       [['G1000001','CNA Roma','#2563EB'],['G1000003','CAF Lazio','#D97706']].map(function(t){var d=byS[t[0]]||{tot:0,n:0};var pct=totGlob>0?(d.tot/totGlob*100).toFixed(1):0;return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:7px 10px"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:10px;height:10px;border-radius:50%;background:'+t[2]+';display:inline-block"></span><strong>'+t[1]+'</strong></span></td><td style="padding:7px 10px;text-align:right;font-weight:600;color:'+t[2]+'">€ '+fmtNum(d.tot)+'</td><td style="padding:7px 10px;text-align:right">'+pct+'%</td><td style="padding:7px 10px;text-align:right">'+fmtInt(d.n)+'</td></tr>';}).join('')+'</tbody></table>';
@@ -234,8 +246,19 @@ function incassiRenderStats() {
   // Tasso incasso
   var tBody=G('inc-tasso-body');
   if(tBody&&allTasso.length){
+    // Aggrega tasso per anno (filtra per società se selezionata)
+    var societaFilt=(G('inc-f-societa')||{}).value||'';
+    var tassoByAnno={};
+    allTasso.forEach(function(t){
+      if(societaFilt && t.codice_azienda !== societaFilt) return;
+      var a=t.anno;
+      if(!tassoByAnno[a]) tassoByAnno[a]={fat:0,pag:0};
+      tassoByAnno[a].fat+=parseFloat(t.fatturato)||0;
+      tassoByAnno[a].pag+=parseFloat(t.incassato)||0;
+    });
+    var tassoRows=Object.entries(tassoByAnno).sort(function(a,b){return b[0]-a[0];});
     tBody.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--surface2)"><th style="padding:7px 10px;text-align:left">Anno</th><th style="padding:7px 10px;text-align:right">Fatturato</th><th style="padding:7px 10px;text-align:right">Incassato</th><th style="padding:7px 10px;text-align:right">Insoluto</th><th style="padding:7px 10px;text-align:right">Tasso %</th></tr></thead><tbody>'+
-      allTasso.map(function(t,i){var fat=parseFloat(t.fatturato)||0,pag=parseFloat(t.incassato)||0,ins=fat-pag;var tasso=fat>0?(pag/fat*100).toFixed(1):0;var col=tasso>=90?'var(--green)':tasso>=70?'#D97706':'var(--red)';return '<tr style="border-bottom:1px solid var(--border)'+(i%2?';background:var(--surface2)':'')+'"><td style="padding:6px 10px;font-weight:700">'+t.anno+'</td><td style="padding:6px 10px;text-align:right">€ '+fmtNum(fat)+'</td><td style="padding:6px 10px;text-align:right;color:var(--green);font-weight:600">€ '+fmtNum(pag)+'</td><td style="padding:6px 10px;text-align:right;color:var(--red)">€ '+fmtNum(ins)+'</td><td style="padding:6px 10px;text-align:right"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px"><div style="width:60px;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:'+tasso+'%;height:100%;background:'+col+';border-radius:3px"></div></div><strong style="color:'+col+'">'+tasso+'%</strong></div></td></tr>';}).join('')+'</tbody></table>';
+      tassoRows.map(function(e,i){var fat=e[1].fat,pag=e[1].pag,ins=fat-pag;var tasso=fat>0?(pag/fat*100).toFixed(1):0;var col=tasso>=90?'var(--green)':tasso>=70?'#D97706':'var(--red)';return '<tr style="border-bottom:1px solid var(--border)'+(i%2?';background:var(--surface2)':'')+'"><td style="padding:6px 10px;font-weight:700">'+e[0]+'</td><td style="padding:6px 10px;text-align:right">€ '+fmtNum(fat)+'</td><td style="padding:6px 10px;text-align:right;color:var(--green);font-weight:600">€ '+fmtNum(pag)+'</td><td style="padding:6px 10px;text-align:right;color:var(--red)">€ '+fmtNum(ins)+'</td><td style="padding:6px 10px;text-align:right"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px"><div style="width:60px;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:'+tasso+'%;height:100%;background:'+col+';border-radius:3px"></div></div><strong style="color:'+col+'">'+tasso+'%</strong></div></td></tr>';}).join('')+'</tbody></table>';
   }
 }
 
@@ -269,10 +292,11 @@ function incassiChartMensile() {
 function incassiChartMensileSepa() {
   var ctxEl=G('inc-chart-sepa'); if(!ctxEl)return;
   var sepaMap={},cassaMap={}; for(var m=1;m<=12;m++){sepaMap[m]=0;cassaMap[m]=0;}
-  incassiFiltrati.forEach(function(r){var m=r.mese;if(m<1||m>12)return;if(incassiMetodo(r)==='SEPA')sepaMap[m]+=(parseFloat(r.avere)||0);else cassaMap[m]+=(parseFloat(r.avere)||0);});
-  var sv=[],cv=[]; for(var i=1;i<=12;i++){sv.push(sepaMap[i]);cv.push(cassaMap[i]);}
+  var bonMap={}; for(var m3=1;m3<=12;m3++) bonMap[m3]=0;
+  incassiFiltrati.forEach(function(r){var m=r.mese;if(m<1||m>12)return;var met=incassiMetodo(r);if(met==='SEPA')sepaMap[m]+=(parseFloat(r.avere)||0);else if(met==='Bonifico')bonMap[m]+=(parseFloat(r.avere)||0);else cassaMap[m]+=(parseFloat(r.avere)||0);});
+  var sv=[],cv=[],bv=[]; for(var i=1;i<=12;i++){sv.push(sepaMap[i]);cv.push(cassaMap[i]);bv.push(bonMap[i]);}
   if(incassiCharts.sepa){try{incassiCharts.sepa.destroy();}catch(e){}}
-  incassiCharts.sepa=new Chart(ctxEl,{type:'bar',data:{labels:MESI.slice(1),datasets:[{label:'SEPA',data:sv,backgroundColor:'rgba(142,0,26,0.85)',borderRadius:3},{label:'Cassa',data:cv,backgroundColor:'rgba(255,179,0,0.85)',borderRadius:3}]},
+  incassiCharts.sepa=new Chart(ctxEl,{type:'bar',data:{labels:MESI.slice(1),datasets:[{label:'SEPA (Dom.)',data:sv,backgroundColor:'rgba(37,99,235,0.85)',borderRadius:3},{label:'Cassa',data:cv,backgroundColor:'rgba(255,179,0,0.85)',borderRadius:3},{label:'Bonifico',data:bv,backgroundColor:'rgba(124,58,237,0.75)',borderRadius:3}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': €'+fmtNum(c.raw);}}}},scales:{x:{stacked:true},y:{stacked:true,beginAtZero:true,ticks:{callback:function(v){return '€'+fmtInt(v);}}}}}});
 }
 
@@ -281,8 +305,8 @@ function incassiChartMetodo() {
   var ts=0,tc=0;
   incassiFiltrati.forEach(function(r){if(incassiMetodo(r)==='SEPA')ts+=(parseFloat(r.avere)||0);else tc+=(parseFloat(r.avere)||0);});
   if(incassiCharts.metodo){try{incassiCharts.metodo.destroy();}catch(e){}}
-  incassiCharts.metodo=new Chart(ctxEl,{type:'doughnut',data:{labels:['SEPA','Cassa'],datasets:[{data:[ts,tc],backgroundColor:['rgb(142,0,26)','rgb(255,179,0)'],borderWidth:3}]},
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:12},boxWidth:14,padding:16}},tooltip:{callbacks:{label:function(c){return c.label+': €'+fmtNum(c.raw)+' ('+((c.raw/(ts+tc||1))*100).toFixed(1)+'%)';}}}},cutout:'65%'}});
+  var totTot2=ts+tc+tb||1;incassiCharts.metodo=new Chart(ctxEl,{type:'doughnut',data:{labels:['SEPA (Dom.)','Cassa','Bonifico'],datasets:[{data:[ts,tc,tb],backgroundColor:['rgb(37,99,235)','rgb(255,179,0)','rgb(124,58,237)'],borderWidth:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:12},boxWidth:14,padding:16}},tooltip:{callbacks:{label:function(c){return c.label+': €'+fmtNum(c.raw)+' ('+(c.raw/totTot2*100).toFixed(1)+'%)';}}}},cutout:'65%'}});
 }
 
 function incassiChartTopClienti() {
