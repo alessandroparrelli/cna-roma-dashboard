@@ -5,8 +5,10 @@
 
 var incassiLoaded   = false;
 var incassiLoading  = false;
-var allIncassi      = [];   // righe aggregate {anno,mese,codice_azienda,tipo_pagamento,unita_operativa,codice_cliente,cliente,avere,n}
+var allIncassi      = [];   // righe aggregate {anno,mese,codice_azienda,tipo_pagamento,unita_operativa,avere,n}
 var allTasso        = [];   // [{anno,fatturato,incassato}]
+var allTopClienti   = [];   // [{codice_cliente,cliente,avere}]
+var allClientiUnici = 0;
 var incassiFiltrati = [];
 var incassiCharts   = {};
 
@@ -38,8 +40,10 @@ async function incassiLoad(force) {
   if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + await r.text());
   var data = await r.json();
 
-  allIncassi = data.per_anno_mese || [];
-  allTasso   = data.tasso_per_anno || [];
+  allIncassi      = data.per_anno_mese || [];
+  allTasso        = data.tasso_per_anno || [];
+  allTopClienti   = data.top_clienti || [];
+  allClientiUnici = parseInt(data.clienti_unici) || 0;
 
   incassiLoaded = true;
   incassiBuildFilters();
@@ -129,9 +133,9 @@ function incassiRenderKPI() {
   var data    = incassiFiltrati;
   var totale  = data.reduce(function(s,r){ return s+(parseFloat(r.avere)||0); }, 0);
   var numPag  = data.reduce(function(s,r){ return s+(parseInt(r.n)||0); }, 0);
-  var clientiSet = {};
-  data.forEach(function(r){ if(r.codice_cliente) clientiSet[r.codice_cliente]=1; });
-  var clientiUnici = Object.keys(clientiSet).length;
+  // Clienti unici: usa il dato globale dalla RPC (filtri per anno/mese cambiano questa stima)
+  // Per ora mostriamo il totale globale come indicatore
+  var clientiUnici = allClientiUnici;
   var mediaXCliente = clientiUnici > 0 ? totale/clientiUnici : 0;
   var totSepa  = data.filter(function(r){ return incassiMetodo(r)==='SEPA'; }).reduce(function(s,r){ return s+(parseFloat(r.avere)||0); },0);
   var totG1    = data.filter(function(r){ return r.codice_azienda==='G1000001'; }).reduce(function(s,r){ return s+(parseFloat(r.avere)||0); },0);
@@ -278,9 +282,14 @@ function incassiChartMetodo() {
 
 function incassiChartTopClienti() {
   var ctxEl=G('inc-chart-top'); if(!ctxEl)return;
-  var byCl={};
-  incassiFiltrati.forEach(function(r){var k=(r.cliente||r.codice_cliente||'N/D').trim();byCl[k]=(byCl[k]||0)+(parseFloat(r.avere)||0);});
-  var top=Object.entries(byCl).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  // Usa top clienti pre-aggregati dalla RPC (più accurati, non dipendono dai filtri)
+  var top = allTopClienti.slice(0,10).map(function(t){ return [t.cliente||t.codice_cliente||'N/D', parseFloat(t.avere)||0]; });
+  if(!top.length) {
+    // Fallback: aggrega dai dati filtrati (quando filtri riducono il set)
+    var byCl={};
+    incassiFiltrati.forEach(function(r){var k=(r.unita_operativa||'N/D').trim();byCl[k]=(byCl[k]||0)+(parseFloat(r.avere)||0);});
+    top=Object.entries(byCl).sort(function(a,b){return b[1]-a[1];}).slice(0,10);
+  }
   var maxV=top.length?top[0][1]:1;
   if(incassiCharts.top){try{incassiCharts.top.destroy();}catch(e){}}
   incassiCharts.top=new Chart(ctxEl,{type:'bar',data:{labels:top.map(function(x){return x[0].length>32?x[0].substring(0,30)+'…':x[0];}),datasets:[{label:'Totale €',data:top.map(function(x){return x[1];}),backgroundColor:top.map(function(x){return 'rgba(124,58,237,'+(0.4+0.6*x[1]/maxV).toFixed(2)+')';}),borderRadius:4}]},
