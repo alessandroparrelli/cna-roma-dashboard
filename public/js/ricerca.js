@@ -5,7 +5,7 @@
 
 function _riEsc(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function _riFmt(d){ if(!d)return '—'; var x=new Date(d); if(isNaN(x))return d; return ('0'+x.getDate()).slice(-2)+'/'+('0'+(x.getMonth()+1)).slice(-2)+'/'+x.getFullYear(); }
-function _riEur(n){ var v=parseFloat(n)||0; return '€ '+v.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function _riEur(n){ var v=parseFloat(n)||0; return '<span class="amt">€ '+v.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>'; }
 
 async function riCerca() {
   var ragione = (G('ri-ragione')||{value:''}).value.trim();

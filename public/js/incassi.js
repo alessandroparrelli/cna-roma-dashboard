@@ -367,7 +367,7 @@ function incassiExport() {
 }
 
 // ─── Tiny HTML helpers ─────────────────────────────────────
-function N(n){return Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function N(n){return '<span class="amt">'+Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2})+'</span>';}
 function I(n){return Number(n||0).toLocaleString('it-IT');}
 function bar(pct){return '<div style="display:flex;align-items:center;justify-content:flex-end;gap:5px"><div style="width:44px;height:5px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:var(--blue)"></div></div>'+pct+'%</div>';}
 function row(i,cells){return '<tr style="border-bottom:1px solid var(--border)'+(i%2?';background:var(--surface2)':'')+'">'+cells.map(function(c,j){return '<td style="padding:6px 10px'+(j>0?';text-align:right':'')+'">'+c+'</td>';}).join('')+'</tr>';}
