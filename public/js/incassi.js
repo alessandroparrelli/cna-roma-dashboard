@@ -87,7 +87,9 @@ function incassiApply() {
     if (f.societa && r.codice_azienda !== f.societa) return false;
     return true;
   });
+  _clCache = {};
   incassiRender();
+  incassiAggiornaCl();
 }
 
 function incassiReset() {
@@ -120,20 +122,52 @@ var SVG = {
   cal:     '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="3" y1="10" x2="21" y2="10"/></svg>'
 };
 
-// ─── Clienti unici dai dati filtrati ───────────────────────
+// ─── Clienti unici — RPC con filtro anni ─────────────────
+var _clCache = {};  // cache risultati RPC per evitare fetch ripetuti
+var _clPending = false;
+
 function clientiUnici(societa) {
+  // Restituisce il valore in cache (aggiornato da incassiAggiornaCl)
+  var key = societa || 'all';
+  if (_clCache[key] !== undefined) return _clCache[key];
+  // Fallback: usa la cache per anno singolo
   var f = filtro();
-  // Filtra allClienti per anno/società
   var src = allClienti.filter(function(r){
-    if (societa && r.codice_azienda !== societa) return false;
-    if (f.annoDa && r.anno < f.annoDa) return false;
-    if (f.annoA  && r.anno > f.annoA)  return false;
+    if (r.codice_azienda !== societa) return false;
+    if (f.annoDa && f.annoA && f.annoDa === f.annoA) return r.anno === f.annoDa;
     return true;
   });
-  // Somma (approssimazione — clienti unici esatti richiederebbero la query raw)
-  // Per anno singolo è esatto; per range è approssimato (upper bound)
-  return src.reduce(function(s,r){return s+(parseInt(r.clienti_unici)||0);},0);
+  if (f.annoDa && f.annoA && f.annoDa === f.annoA) {
+    return src.reduce(function(s,r){return s+(parseInt(r.clienti_unici)||0);},0);
+  }
+  // Senza filtro anno: usa valore massimo anno più recente come stima
+  var sorted = src.slice().sort(function(a,b){return b.anno-a.anno;});
+  return sorted.length ? (parseInt(sorted[0].clienti_unici)||0) : 0;
 }
+
+// Chiamata asincrona RPC per clienti unici con filtro anni
+async function incassiAggiornaCl() {
+  if (_clPending) return;
+  _clPending = true;
+  try {
+    var f = filtro();
+    var body = {};
+    if (f.annoDa) body.p_anno_da = f.annoDa;
+    if (f.annoA)  body.p_anno_a  = f.annoA;
+    var r = await fetch(SB+'/rest/v1/rpc/get_clienti_unici_range', {
+      method:'POST', headers:H(), body:JSON.stringify(body)
+    });
+    if (!r.ok) return;
+    var d = await r.json();
+    _clCache['G1000001'] = parseInt(d.g1)||0;
+    _clCache['G1000003'] = parseInt(d.g3)||0;
+    // Aggiorna solo le KPI senza re-renderizzare tutto
+    var el = G('inc-kpi-container');
+    if (el) incassiRenderKPI();
+  } catch(e) { /* silenzioso */ }
+  finally { _clPending = false; }
+}
+
 
 // ─── RENDER ────────────────────────────────────────────────
 function incassiRender() {
@@ -168,10 +202,10 @@ function incassiRenderKPI() {
   el.innerHTML=
     kpi(SVG.euro,   'Totale Incassato', '€ '+N(tot),          trendSub,                             'var(--blue)')+
     kpi(SVG.receipt,'Fatture Saldate',   I(nFat),             '',                                    'var(--accent2)')+
-    kpi(SVG.euro,   'CNA Roma',          '€ '+N(totG1),       I(clG1)+' clienti',                    '#0284C7')+
-    kpi(SVG.euro,   'CNA CAF Lazio',     '€ '+N(totG3),       I(clG3)+' clienti',                    '#D97706')+
-    kpi(SVG.users,  'Clienti CNA Roma',  I(clG1),             'distinti nel periodo',                '#059669')+
-    kpi(SVG.users,  'Clienti CAF Lazio', I(clG3),             'distinti nel periodo',                '#7C3AED')+
+    kpi(SVG.euro,   'CNA Roma',   '€ '+N(totG1), I(clG1)+' clienti unici', '#0284C7')+
+    kpi(SVG.euro,   'CNA CAF Lazio', '€ '+N(totG3), I(clG3)+' clienti unici', '#D97706')+
+    kpi(SVG.users,  'Clienti unici CNA',        I(clG1), 'distinti nel periodo', '#059669')+
+    kpi(SVG.users,  'Clienti unici CNA CAF Lazio', I(clG3), 'distinti nel periodo', '#7C3AED')+
     kpi(SVG.sepa,   'SEPA',              '€ '+N(totSepa),     pctSepa+'% del totale',                '#2563EB')+
     kpi(SVG.cal,    'Mese Migliore',     mb?MESI[+mb[0]]:'—', mb?'€ '+N(mb[1]):'',                  '#059669');
 }
@@ -181,12 +215,7 @@ function incassiRenderStats() {
   var f=filtro();
   var tot=sum(filtrati,'avere');
 
-  // Per sede
-  var sBody=G('inc-sede-body');
-  if(sBody){
-    var bySede={};filtrati.forEach(function(r){var k=r.unita_operativa||'—';if(!bySede[k])bySede[k]={tot:0,n:0};bySede[k].tot+=(parseFloat(r.avere)||0);bySede[k].n+=(parseInt(r.n)||0);});
-    sBody.innerHTML=tbl(['Sede','Incassato','%','N°'],Object.entries(bySede).sort(function(a,b){return b[1].tot-a[1].tot;}).map(function(e,i){var p=tot>0?(e[1].tot/tot*100).toFixed(1):0;return row(i,[e[0],'<span style="font-weight:600;color:var(--blue)">€ '+N(e[1].tot)+'</span>',bar(p),I(e[1].n)]);}));
-  }
+  // Per sede: rimosso
 
   // Per metodo + società
   var mBody=G('inc-metodo-body');
@@ -211,7 +240,7 @@ function incassiRenderStats() {
       +'</div>':'';
   }
 
-  // Media mensile per anno
+  // Totale mensile per anno (ex "media" — ora totale effettivo)
   var mmBody=G('inc-mese-stats-body');
   if(mmBody){
     var anniD={};filtrati.forEach(function(r){if(r.anno)anniD[r.anno]=true;});
@@ -243,7 +272,6 @@ function incassiRenderStats() {
 function incassiRenderCharts() {
   chartMensile();
   chartMetodo();
-  chartTop();
   chartAnni();
 }
 
@@ -301,9 +329,9 @@ function chartAnni() {
   var f=filtro();
   var anniD={};filtrati.forEach(function(r){if(r.anno)anniD[r.anno]=true;});
   var anniL=Object.keys(anniD).map(Number).sort(function(a,b){return a-b;}).slice(-6);
-  if(anniL.length<2){
-    if(ctxEl.parentNode)ctxEl.parentNode.innerHTML='<p style="padding:16px;color:var(--text-dim);font-size:13px;text-align:center">Seleziona un range di più anni per vedere il confronto</p>';
-    return;
+  if(anniL.length===0) return;
+  if(anniL.length===1){
+    // Anno singolo: mostra solo quell'anno senza messaggio d'errore
   }
   var c=['#005CA9','#059669','#D97706','#7C3AED','#DC2626','#0891B2'];
   var ds=anniL.map(function(anno,idx){
