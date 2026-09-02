@@ -288,23 +288,48 @@ function incassiRenderCharts() {
 
 function chartMensile() {
   var ctxEl=G('inc-chart-mensile'); if(!ctxEl) return;
-  var sm={},cm={},bm={};
-  for(var m=1;m<=12;m++){sm[m]=0;cm[m]=0;bm[m]=0;}
-  filtrati.forEach(function(r){var m=r.mese;if(m<1||m>12)return;if(r.metodo==='SEPA')sm[m]+=(parseFloat(r.avere)||0);else if(r.metodo==='Bonifico')bm[m]+=(parseFloat(r.avere)||0);else cm[m]+=(parseFloat(r.avere)||0);});
-  var sv=[],cv=[],bv=[],tv=[];
-  for(var i=1;i<=12;i++){sv.push(sm[i]);cv.push(cm[i]);bv.push(bm[i]);tv.push(sm[i]+cm[i]+bm[i]);}
-  var nz=tv.filter(Boolean);var med=nz.length?nz.reduce(function(s,v){return s+v;},0)/nz.length:0;
+  var tot={};
+  for(var m=1;m<=12;m++) tot[m]=0;
+  filtrati.forEach(function(r){var m=r.mese;if(m>=1&&m<=12)tot[m]+=(parseFloat(r.avere)||0);});
+  var tv=[];for(var i=1;i<=12;i++)tv.push(tot[i]);
+
   if(charts.mensile){try{charts.mensile.destroy();}catch(e){}}
-  charts.mensile=new Chart(ctxEl,{type:'bar',
-    data:{labels:MESI.slice(1),datasets:[
-      {label:'SEPA',data:sv,backgroundColor:'rgba(37,99,235,.8)',borderRadius:3},
-      {label:'Cassa',data:cv,backgroundColor:'rgba(255,179,0,.8)',borderRadius:3},
-      {label:'Bonifico',data:bv,backgroundColor:'rgba(124,58,237,.75)',borderRadius:3},
-      {label:'Media',data:Array(12).fill(med),type:'line',borderColor:'#EF4444',borderWidth:2,borderDash:[5,4],pointRadius:0,fill:false}
-    ]},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index'},
-      plugins:{legend:{display:true,position:'top',labels:{font:{size:11},boxWidth:12}},tooltip:{callbacks:{label:function(c){return c.dataset.label+': €'+N(c.raw);}}}},
-      scales:{x:{stacked:true},y:{stacked:false,beginAtZero:true,ticks:{callback:function(v){return '€'+I(v);}}}}}});
+
+  // Gradiente fill come nel grafico area in immagine
+  var ctx2=ctxEl.getContext('2d');
+  var grad=ctx2.createLinearGradient(0,0,0,ctxEl.offsetHeight||280);
+  grad.addColorStop(0,'rgba(124,58,237,0.35)');
+  grad.addColorStop(1,'rgba(124,58,237,0.0)');
+
+  charts.mensile=new Chart(ctxEl,{type:'line',
+    data:{labels:MESI.slice(1),datasets:[{
+      label:'Totale incassato',
+      data:tv,
+      borderColor:'#7C3AED',
+      borderWidth:3,
+      backgroundColor:grad,
+      fill:true,
+      tension:0.4,
+      pointBackgroundColor:'#7C3AED',
+      pointBorderColor:'#fff',
+      pointBorderWidth:2.5,
+      pointRadius:6,
+      pointHoverRadius:8
+    }]},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{display:true,position:'bottom',labels:{font:{size:13,weight:'700'},boxWidth:14,padding:16,color:'#374151'}},
+        tooltip:{callbacks:{label:function(c){return ' €'+I(Math.round(c.raw));}}}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11},color:'#6B7280'}},
+        y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{callback:function(v){return '€'+I(v);}}}
+      }
+    }
+  });
 }
 
 function chartMetodo() {
