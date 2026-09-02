@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1788380922"></script>
+<script src="js/report-generator.js?v=1788381254"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1788380922">
-<link rel="stylesheet" href="css/assistant.css?v=1788380922">
+<link rel="stylesheet" href="css/main.css?v=1788381254">
+<link rel="stylesheet" href="css/assistant.css?v=1788381254">
 </head>
 <body>
 
@@ -72,7 +72,7 @@
     <button class="btn-login" id="btn-login">Accedi</button>
     <button type="button" class="btn-request-access" id="btn-open-richiesta-accesso">Richiedi password d'accesso</button>
     <div style="margin-top:30px;padding-top:20px;border-top:1px solid var(--border);text-align:center;font-size:11px;color:var(--text-dim)">
-      <div style="margin-bottom:8px">cnaflow v2026.55</div>
+      <div style="margin-bottom:8px">cnaflow v2026.56</div>
       <div>© 2026 CNA Roma - Confederazione Nazionale dell'Artigianato</div>
     </div>
   </div>
@@ -1181,9 +1181,9 @@
 
   <!-- FILTRI -->
   <div class="filters-bar">
-    <div class="filter-group"><label>Anno da</label><select id="inc-f-anno-da" onchange="incassiApply()"><option value="">Tutti</option></select></div>
-    <div class="filter-group"><label>Anno a</label><select id="inc-f-anno-a" onchange="incassiApply()"><option value="">Tutti</option></select></div>
-    <div class="filter-group"><label>Mese da</label><select id="inc-f-mese-da" onchange="incassiApply()">
+    <div class="filter-group"><label>Anno da</label><select id="inc-f-anno-da"><option value="">Tutti</option></select></div>
+    <div class="filter-group"><label>Anno a</label><select id="inc-f-anno-a"><option value="">Tutti</option></select></div>
+    <div class="filter-group"><label>Mese da</label><select id="inc-f-mese-da">
       <option value="">—</option>
       <option value="1">Gennaio</option><option value="2">Febbraio</option>
       <option value="3">Marzo</option><option value="4">Aprile</option>
@@ -1192,7 +1192,7 @@
       <option value="9">Settembre</option><option value="10">Ottobre</option>
       <option value="11">Novembre</option><option value="12">Dicembre</option>
     </select></div>
-    <div class="filter-group"><label>Mese a</label><select id="inc-f-mese-a" onchange="incassiApply()">
+    <div class="filter-group"><label>Mese a</label><select id="inc-f-mese-a">
       <option value="">—</option>
       <option value="1">Gennaio</option><option value="2">Febbraio</option>
       <option value="3">Marzo</option><option value="4">Aprile</option>
@@ -1201,27 +1201,31 @@
       <option value="9">Settembre</option><option value="10">Ottobre</option>
       <option value="11">Novembre</option><option value="12">Dicembre</option>
     </select></div>
-    <div class="filter-group"><label>Società</label><select id="inc-f-societa" onchange="incassiApply()">
+    <div class="filter-group"><label>Società</label><select id="inc-f-societa">
       <option value="">Tutte</option>
       <option value="G1000001">CNA Roma</option>
       <option value="G1000003">CNA CAF Lazio</option>
     </select></div>
-    <div class="filter-group"><label>Metodo</label><select id="inc-f-metodo" onchange="incassiApply()">
+    <div class="filter-group"><label>Metodo</label><select id="inc-f-metodo">
       <option value="">Tutti i metodi</option>
       <option value="SEPA">SEPA (Domiciliazione)</option>
       <option value="Cassa">Cassa</option>
       <option value="Bonifico">Bonifico</option>
     </select></div>
     <div class="filter-actions">
+      <button class="btn btn-primary" onclick="incassiApply()" id="inc-btn-applica" style="background:linear-gradient(135deg,#2563EB,#1D4ED8);box-shadow:0 2px 8px rgba(37,99,235,.3)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Applica filtri
+      </button>
       <button class="btn btn-secondary" onclick="incassiReset()">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         Reset
       </button>
       <button class="btn btn-secondary" onclick="incassiLoad(true)">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        Aggiorna
+        Ricarica DB
       </button>
-      <button class="btn btn-primary" onclick="incassiExport()">
+      <button class="btn btn-primary" onclick="incassiExport()" style="background:linear-gradient(135deg,#059669,#047857)">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export Excel
       </button>
@@ -1616,7 +1620,7 @@
     <div style="margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid var(--border)">
       <h3 style="margin:0 0 10px 0;font-size:14px;font-weight:700;color:#333">ERP CNA di Roma</h3>
       <div style="font-size:12px;color:var(--text-sub);line-height:1.6">
-        <div><strong>Versione:</strong> v2026.55</div>
+        <div><strong>Versione:</strong> v2026.56</div>
         <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
         <div><strong>Data rilascio:</strong> 06 August 2026</div>
         <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>
@@ -1628,7 +1632,7 @@
     <div style="font-size:11px;color:#444;line-height:1.8;max-height:420px;overflow-y:auto;border:1px solid #E5E7EB;border-radius:8px;padding:16px;background:#FAFBFF">
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#EFF6FF;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55 &#8212; 22 Giugno 2026 &#10003; ATTUALE</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56 &#8212; 22 Giugno 2026 &#10003; ATTUALE</div>
         <div style="color:#666;font-size:10px">
           &#10003; Fix deploy: rimossa property &quot;public&quot; da vercel.json (causa build failure silenzioso)<br>
           &#10003; Menu navbar ancorato all&apos;header: header + sidebar in unico contenitore #topbar fixed<br>
@@ -1638,7 +1642,7 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #9CA3AF;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55&#8211;21 &#8212; 9&#8211;22 Giugno 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56&#8211;21 &#8212; 9&#8211;22 Giugno 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Rinominato tab &quot;Analisi nuovi&quot; → &quot;Promotori&quot;<br>
           &#10003; Redesign menu navigazione: dropdown a gruppi (Home / Analisi / Archivio / Gestione / Amministrazione)<br>
@@ -1651,7 +1655,7 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#EFF6FF;border-left:4px solid #2563EB;border-radius:3px">
-        <div style="font-weight:700;color:#2563EB;font-size:11px;margin-bottom:3px">v2026.55 &#8212; 23 Luglio 2026 &#10003; ATTUALE</div>
+        <div style="font-weight:700;color:#2563EB;font-size:11px;margin-bottom:3px">v2026.56 &#8212; 23 Luglio 2026 &#10003; ATTUALE</div>
         <div style="color:#374151;font-size:10px">
           &#10003; Applicato sistema visivo cnaflow (font Outfit, blu elettrico #2563EB)<br>
           &#10003; Aggiornata palette brand: primary #2563EB, dark #1D4ED8, light #60A5FA<br>
@@ -1661,7 +1665,7 @@
         </div>
       </div>
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55 &#8212; 4 Giugno 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56 &#8212; 4 Giugno 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Scheda anagrafica: topbar riprogettata — logo a sinistra, nome impresa a destra<br>
           &#10003; Layout tabellare professionale (label/valore) in tutte le sezioni scheda<br>
@@ -1672,14 +1676,14 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55 &#8212; 4 Giugno 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56 &#8212; 4 Giugno 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Fix: rimossa funzione trigger pesante, sostituita con fn sincronizza_zone_da_cap() più efficiente
         </div>
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55 &#8212; 3 Giugno 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56 &#8212; 3 Giugno 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Archivio Imprese: aggiunta colonna Dipendenti (CCIAA) e Contratti attivi per impresa<br>
           &#10003; Stato Iscritto da tabella diretti, ordine colonne migliorato<br>
@@ -1690,7 +1694,7 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55 &#8212; 2 Giugno 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56 &#8212; 2 Giugno 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Tab Raggruppamenti e Zone: 3 KPI per card, barre sottili, badge sesso/stranieri/giovani<br>
           &#10003; Zone: nomi normalizzati, riga totali, filtri range mesi collassabili<br>
@@ -1700,14 +1704,14 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55 &#8212; 1 Giugno 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56 &#8212; 1 Giugno 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Fix menu mobile: label visibili accanto alle icone, Carica Dati e Reportistica in riga
         </div>
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55.31 &#8212; 31 Maggio 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56.31 &#8212; 31 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Tab Raggruppamenti e Zone: 7 sezioni (Zone, Commercio, Turismo, Donne, Stranieri, Cinema, Giovani)<br>
           &#10003; Fonte dati tesseramento_records; join codiceanagrafica&#8594;ATECO; zone da zonacliente<br>
@@ -1718,14 +1722,14 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55 &#8212; 30 Maggio 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56 &#8212; 30 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Guida contestuale per ogni tab: pannello "Cosa puoi fare / Spunti dai dati" (Livello 1)
         </div>
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55&#8211;28 &#8212; 28&#8211;29 Maggio 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56&#8211;28 &#8212; 28&#8211;29 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Tab Carica Dati: Normalizzatore tesseramento diretto integrato (tipo rete, promotore, ATECO, CF)<br>
           &#10003; Paginazione Archivio Imprese: 50 record per pagina<br>
@@ -1737,7 +1741,7 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55&#8211;19 &#8212; 27&#8211;28 Maggio 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56&#8211;19 &#8212; 27&#8211;28 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Tab Incassi &amp; Pagamenti: KPI, 4 grafici Chart.js, SEPA vs Cassa, filtri data<br>
           &#10003; Scheda anagrafica: restyling fullscreen, badge stato evidenti, sezione Pagamenti<br>
@@ -1748,7 +1752,7 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55.26 &#8212; 26 Maggio 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56.26 &#8212; 26 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Fix admin tabs Ruoli/Log: id btn-crea-utente mancante bloccava tutti i listener<br>
           &#10003; Fix ruolo commerciale in loadRuoli: badge e select corretti<br>
@@ -1757,7 +1761,7 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #6366f1;border-radius:3px">
-        <div style="font-weight:700;color:#6366f1;font-size:11px;margin-bottom:3px">v2026.55.18 &#8212; 18&#8211;24 Maggio 2026</div>
+        <div style="font-weight:700;color:#6366f1;font-size:11px;margin-bottom:3px">v2026.56.18 &#8212; 18&#8211;24 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; App rinominata: "ERP CNA di Roma"<br>
           &#10003; Header: font Black 900, 22px, hero titolo aggiornato<br>
@@ -1769,7 +1773,7 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #005CA9;border-radius:3px">
-        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.55.13 &#8212; 13 Maggio 2026</div>
+        <div style="font-weight:700;color:#005CA9;font-size:11px;margin-bottom:3px">v2026.56.13 &#8212; 13 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; RLS attivato su tutte le 31 tabelle Supabase<br>
           &#10003; Login protetto tramite Edge Function server-side<br>
@@ -1851,7 +1855,7 @@
       </div>
 
       <div style="margin-bottom:10px;padding:10px 12px;background:#fff;border-left:4px solid #2026.05.07.1;border-radius:3px;border-left-color:#6366f1">
-        <div style="font-weight:700;color:#6366f1;font-size:11px;margin-bottom:3px">v2026.55.07.1 &#8212; 7 Maggio 2026</div>
+        <div style="font-weight:700;color:#6366f1;font-size:11px;margin-bottom:3px">v2026.56.07.1 &#8212; 7 Maggio 2026</div>
         <div style="color:#666;font-size:10px">
           &#10003; Ruoli granulari: Commerciale e Operatore<br>
           &#10003; Sistema permessi personalizzabili (carica, interroga, export)<br>
@@ -1979,25 +1983,25 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1788380922"></script>
-<script src="js/auth.js?v=1788380922"></script>
-<script src="js/dashboard.js?v=1788380922"></script>
-<script src="js/nav.js?v=1788380922"></script>
-<script src="js/admin.js?v=1788380922"></script>
-<script src="js/anagrafiche.js?v=1788380922"></script>
-<script src="js/contratti.js?v=1788380922"></script>
-<script src="js/consulenti.js?v=1788380922"></script>
-<script src="js/import.js?v=1788380922"></script>
-<script src="js/trasformatore.js?v=1788380922"></script>
-<script src="js/scheda.js?v=1788380922"></script>
-<script src="js/mestieri.js?v=1788380922"></script>
-<script src="js/ateco.js?v=1788380922"></script>
-<script src="js/raggruppamenti.js?v=1788380922"></script>
-<script src="js/storica.js?v=1788380922"></script>
-<script src="js/reportistica.js?v=1788380922"></script>
-<script src="js/ricerca.js?v=1788380922"></script>
-<script src="js/incassi.js?v=1788380922"></script>
-<script src="js/assistant.js?v=1788380922"></script>
+<script src="js/config.js?v=1788381254"></script>
+<script src="js/auth.js?v=1788381254"></script>
+<script src="js/dashboard.js?v=1788381254"></script>
+<script src="js/nav.js?v=1788381254"></script>
+<script src="js/admin.js?v=1788381254"></script>
+<script src="js/anagrafiche.js?v=1788381254"></script>
+<script src="js/contratti.js?v=1788381254"></script>
+<script src="js/consulenti.js?v=1788381254"></script>
+<script src="js/import.js?v=1788381254"></script>
+<script src="js/trasformatore.js?v=1788381254"></script>
+<script src="js/scheda.js?v=1788381254"></script>
+<script src="js/mestieri.js?v=1788381254"></script>
+<script src="js/ateco.js?v=1788381254"></script>
+<script src="js/raggruppamenti.js?v=1788381254"></script>
+<script src="js/storica.js?v=1788381254"></script>
+<script src="js/reportistica.js?v=1788381254"></script>
+<script src="js/ricerca.js?v=1788381254"></script>
+<script src="js/incassi.js?v=1788381254"></script>
+<script src="js/assistant.js?v=1788381254"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">

@@ -72,8 +72,15 @@ function filtro() {
   };
 }
 
-function incassiApply() {
+async function incassiApply() {
+  _clCache = {};
   var f = filtro();
+
+  // Feedback visivo sul pulsante
+  var btn = G('inc-btn-applica');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Calcolo…'; }
+
+  // 1. Filtra i dati aggregati dalla cache locale (istantaneo)
   filtrati = allStats.filter(function(r) {
     var a = r.anno||0, m = r.mese||0;
     if (f.annoDa && a < f.annoDa) return false;
@@ -87,9 +94,30 @@ function incassiApply() {
     if (f.societa && r.codice_azienda !== f.societa) return false;
     return true;
   });
-  _clCache = {};
+
+  // 2. Carica clienti unici con filtro anni PRIMA del render (valore esatto)
+  try {
+    var body = {};
+    if (f.annoDa) body.p_anno_da = f.annoDa;
+    if (f.annoA)  body.p_anno_a  = f.annoA;
+    var rCl = await fetch(SB+'/rest/v1/rpc/get_clienti_unici_range', {
+      method:'POST', headers:H(), body:JSON.stringify(body)
+    });
+    if (rCl.ok) {
+      var dCl = await rCl.json();
+      _clCache['G1000001'] = parseInt(dCl.g1)||0;
+      _clCache['G1000003'] = parseInt(dCl.g3)||0;
+    }
+  } catch(e) { /* usa fallback dalla cache locale */ }
+
+  // 3. Render completo — tutti i dati sono pronti
   incassiRender();
-  incassiAggiornaCl();
+
+  // Ripristina pulsante
+  if (btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> Applica filtri';
+  }
 }
 
 function incassiReset() {
@@ -124,7 +152,6 @@ var SVG = {
 
 // ─── Clienti unici — RPC con filtro anni ─────────────────
 var _clCache = {};  // cache risultati RPC per evitare fetch ripetuti
-var _clPending = false;
 
 function clientiUnici(societa) {
   // Restituisce il valore in cache (aggiornato da incassiAggiornaCl)
@@ -145,28 +172,7 @@ function clientiUnici(societa) {
   return sorted.length ? (parseInt(sorted[0].clienti_unici)||0) : 0;
 }
 
-// Chiamata asincrona RPC per clienti unici con filtro anni
-async function incassiAggiornaCl() {
-  if (_clPending) return;
-  _clPending = true;
-  try {
-    var f = filtro();
-    var body = {};
-    if (f.annoDa) body.p_anno_da = f.annoDa;
-    if (f.annoA)  body.p_anno_a  = f.annoA;
-    var r = await fetch(SB+'/rest/v1/rpc/get_clienti_unici_range', {
-      method:'POST', headers:H(), body:JSON.stringify(body)
-    });
-    if (!r.ok) return;
-    var d = await r.json();
-    _clCache['G1000001'] = parseInt(d.g1)||0;
-    _clCache['G1000003'] = parseInt(d.g3)||0;
-    // Aggiorna solo le KPI senza re-renderizzare tutto
-    var el = G('inc-kpi-container');
-    if (el) incassiRenderKPI();
-  } catch(e) { /* silenzioso */ }
-  finally { _clPending = false; }
-}
+// incassiAggiornaCl rimossa — logica integrata in incassiApply async
 
 
 // ─── RENDER ────────────────────────────────────────────────
