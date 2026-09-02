@@ -259,7 +259,28 @@ function incassiRenderStats() {
     var byAM={};anniL.forEach(function(a){byAM[a]={};for(var m=1;m<=12;m++)byAM[a][m]=0;});
     filtrati.forEach(function(r){if(byAM[r.anno]&&r.mese)byAM[r.anno][r.mese]+=(parseFloat(r.avere)||0);});
     var c=['#005CA9','#059669','#D97706','#7C3AED','#DC2626'];
-    mmBody.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:11px"><thead><tr style="background:var(--surface2)"><th style="padding:6px 8px;text-align:left">Mese</th>'+anniL.map(function(a,i){return '<th style="padding:6px 8px;text-align:right;color:'+c[i]+'">'+a+'</th>';}).join('')+'</tr></thead><tbody>'+[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m,mi){return '<tr style="border-bottom:1px solid var(--border)'+(mi%2?';background:var(--surface2)':'')+'"><td style="padding:5px 8px;font-weight:600">'+MESI[m]+'</td>'+anniL.map(function(a,i){var v=(byAM[a]||{})[m]||0;return '<td style="padding:5px 8px;text-align:right;color:'+(v>0?c[i]:'var(--text-dim)')+'">'+( v>0?'€ '+N(v):'—')+'</td>';}).join('')+'</tr>';}).join('')+'</tbody></table>';
+    // Calcola totali per colonna anno
+    var totAnno={};anniL.forEach(function(a){totAnno[a]=Object.values(byAM[a]).reduce(function(s,v){return s+v;},0);});
+
+    var righe=[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m,mi){
+      return '<tr style="border-bottom:1px solid var(--border)'+(mi%2?';background:var(--surface2)':'')+'">' +
+        '<td style="padding:5px 8px;font-weight:600">'+MESI[m]+'</td>'+
+        anniL.map(function(a,i){var v=(byAM[a]||{})[m]||0;return '<td style="padding:5px 8px;text-align:right;color:'+(v>0?c[i]:'var(--text-dim)')+'">'+( v>0?'€ '+N(v):'—')+'</td>';}).join('')+
+      '</tr>';
+    }).join('');
+
+    // Riga totali in fondo
+    var rigaTot='<tr style="border-top:2px solid var(--border);background:var(--surface2)">'+
+      '<td style="padding:7px 8px;font-weight:800;font-size:12px">TOTALE</td>'+
+      anniL.map(function(a,i){return '<td style="padding:7px 8px;text-align:right;font-weight:800;font-size:12px;color:'+c[i]+'">€ '+N(totAnno[a])+'</td>';}).join('')+
+    '</tr>';
+
+    mmBody.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:11px">'+
+      '<thead><tr style="background:var(--surface2)"><th style="padding:6px 8px;text-align:left">Mese</th>'+
+      anniL.map(function(a,i){return '<th style="padding:6px 8px;text-align:right;color:'+c[i]+'">'+a+'</th>';}).join('')+
+      '</tr></thead>'+
+      '<tbody>'+righe+rigaTot+'</tbody>'+
+    '</table>';
   }
 
   // Tasso incasso per anno
