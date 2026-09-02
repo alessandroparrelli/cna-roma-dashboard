@@ -59,6 +59,11 @@ function incassiBuildFilters() {
     sel.innerHTML='<option value="">—</option>';
     anni.forEach(function(a){ sel.innerHTML+='<option value="'+a+'"'+(String(cur)===String(a)?' selected':'')+'>'+a+'</option>'; });
   });
+  // Default: anno corrente in entrambi i select (solo al primo caricamento)
+  var annoCorrente = String(new Date().getFullYear());
+  var da = G('inc-f-anno-da'), ao = G('inc-f-anno-a');
+  if (da && !da.value) da.value = annoCorrente;
+  if (ao && !ao.value) ao.value = annoCorrente;
 }
 
 function filtro() {

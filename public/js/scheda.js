@@ -153,7 +153,7 @@ async function openAnagraficaModal(anaIdx) {
   }
 
   function fmtEur(n) {
-    return '€\u00a0' + Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+    return '<span class="amt">€\u00a0' + Number(n||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</span>';
   }
 
   // Compatibilità backward per field() (usata nelle sezioni contratti/pagamenti)
