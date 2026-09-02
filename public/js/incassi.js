@@ -362,25 +362,83 @@ function chartTop() {
 
 function chartAnni() {
   var ctxEl=G('inc-chart-anni'); if(!ctxEl) return;
-  var f=filtro();
   var anniD={};filtrati.forEach(function(r){if(r.anno)anniD[r.anno]=true;});
   var anniL=Object.keys(anniD).map(Number).sort(function(a,b){return a-b;}).slice(-6);
-  if(anniL.length===0) return;
-  if(anniL.length===1){
-    // Anno singolo: mostra solo quell'anno senza messaggio d'errore
-  }
-  var c=['#005CA9','#059669','#D97706','#7C3AED','#DC2626','#0891B2'];
+  if(!anniL.length) return;
+
+  // Palette vivace — una per anno
+  var palette=[
+    {line:'#2563EB',fill:'rgba(37,99,235,0.08)'},    // blu
+    {line:'#059669',fill:'rgba(5,150,105,0.08)'},    // verde
+    {line:'#D97706',fill:'rgba(217,119,6,0.08)'},    // arancio
+    {line:'#7C3AED',fill:'rgba(124,58,237,0.08)'},   // viola
+    {line:'#DC2626',fill:'rgba(220,38,38,0.08)'},    // rosso
+    {line:'#0891B2',fill:'rgba(8,145,178,0.08)'}     // ciano
+  ];
+
+  var ctx2=ctxEl.getContext('2d');
   var ds=anniL.map(function(anno,idx){
+    var col=palette[idx%palette.length];
     var mm={}; for(var m=1;m<=12;m++) mm[m]=null;
-    filtrati.filter(function(r){return r.anno===anno;}).forEach(function(r){if(r.mese>=1&&r.mese<=12)mm[r.mese]=(mm[r.mese]||0)+(parseFloat(r.avere)||0);});
-    return {label:String(anno),data:Object.values(mm),borderColor:c[idx%c.length],borderWidth:2.5,pointRadius:3,tension:0.35,fill:false};
+    filtrati.filter(function(r){return r.anno===anno;}).forEach(function(r){
+      if(r.mese>=1&&r.mese<=12) mm[r.mese]=(mm[r.mese]||0)+(parseFloat(r.avere)||0);
+    });
+
+    // Gradiente fill per ogni anno
+    var grad=ctx2.createLinearGradient(0,0,0,ctxEl.offsetHeight||280);
+    grad.addColorStop(0,col.fill.replace('0.08','0.22'));
+    grad.addColorStop(1,col.fill.replace('0.08','0.0'));
+
+    return {
+      label: String(anno),
+      data: Object.values(mm),
+      borderColor: col.line,
+      borderWidth: 2.5,
+      backgroundColor: anniL.length===1 ? grad : 'transparent',
+      fill: anniL.length===1,
+      tension: 0.35,
+      pointBackgroundColor: col.line,
+      pointBorderColor: '#fff',
+      pointBorderWidth: 2,
+      pointRadius: 5,
+      pointHoverRadius: 7
+    };
   });
+
   if(charts.anni){try{charts.anni.destroy();}catch(e){}}
-  charts.anni=new Chart(ctxEl,{type:'line',data:{labels:MESI.slice(1),datasets:ds},
-    options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index'},
-      plugins:{legend:{display:true,position:'top',labels:{font:{size:11},boxWidth:14,padding:10}},
-        tooltip:{callbacks:{label:function(c){return c.dataset.label+': €'+N(c.raw);}}}},
-      scales:{y:{beginAtZero:true,ticks:{callback:function(v){return '€'+I(v);}}}}}});
+  charts.anni=new Chart(ctxEl,{type:'line',
+    data:{labels:MESI.slice(1),datasets:ds},
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{
+          display:true,
+          position:'top',
+          labels:{
+            font:{size:12,weight:'600'},
+            boxWidth:16,
+            padding:14,
+            usePointStyle:false,
+            generateLabels:function(chart){
+              return chart.data.datasets.map(function(ds,i){
+                return {text:ds.label,fillStyle:ds.borderColor,strokeStyle:ds.borderColor,lineWidth:2,hidden:false,datasetIndex:i};
+              });
+            }
+          }
+        },
+        tooltip:{callbacks:{
+          title:function(items){return items[0].label;},
+          label:function(c){return ' '+c.dataset.label+':  €'+I(Math.round(c.raw));}
+        }}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{font:{size:11},color:'#6B7280',maxRotation:30}},
+        y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{callback:function(v){return '€'+I(v);}}}
+      }
+    }
+  });
 }
 
 // ─── Export ────────────────────────────────────────────────
