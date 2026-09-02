@@ -7,8 +7,10 @@ var incassiLoaded   = false;
 var incassiLoading  = false;
 var allIncassi      = [];   // righe aggregate {anno,mese,codice_azienda,tipo_pagamento,unita_operativa,avere,n}
 var allTasso        = [];   // [{anno,fatturato,incassato}]
-var allTopClienti   = [];   // [{codice_cliente,cliente,avere}]
-var allClientiUnici = 0;
+var allTopClienti     = [];   // [{codice_cliente,cliente,avere}]
+var allClientiUnici   = 0;
+var allClientiUniciG1 = 0;   // CNA Roma
+var allClientiUniciG3 = 0;   // CNA CAF Lazio
 var incassiFiltrati = [];
 var incassiCharts   = {};
 
@@ -40,10 +42,12 @@ async function incassiLoad(force) {
   if (!r.ok) throw new Error('HTTP ' + r.status + ': ' + await r.text());
   var data = await r.json();
 
-  allIncassi      = data.per_anno_mese || [];
-  allTasso        = data.tasso_per_anno || [];
-  allTopClienti   = data.top_clienti || [];
-  allClientiUnici = parseInt(data.clienti_unici) || 0;
+  allIncassi        = data.per_anno_mese || [];
+  allTasso          = data.tasso_per_anno || [];
+  allTopClienti     = data.top_clienti || [];
+  allClientiUniciG1 = parseInt(data.clienti_unici_g1) || 0;
+  allClientiUniciG3 = parseInt(data.clienti_unici_g3) || 0;
+  allClientiUnici   = allClientiUniciG1 + allClientiUniciG3;
 
   incassiLoaded = true;
   incassiBuildFilters();
@@ -67,9 +71,7 @@ function incassiBuildFilters() {
       sel.innerHTML += '<option value="'+a+'"'+(cur==a?' selected':'')+'>'+a+'</option>';
     });
   });
-  var da = G('inc-f-anno-da'), ao = G('inc-f-anno-a');
-  if (da && !da.value && anni.length) da.value = anni[anni.length-1];
-  if (ao && !ao.value && anni.length) ao.value = anni[0];
+  // Nessun default: l'utente sceglie il range, di default carica Tutti gli anni
 }
 
 function incassiApply() {
@@ -141,6 +143,7 @@ function incassiRenderKPI() {
   var totG1    = data.filter(function(r){ return r.codice_azienda==='G1000001'; }).reduce(function(s,r){ return s+(parseFloat(r.avere)||0); },0);
   var totG3    = data.filter(function(r){ return r.codice_azienda==='G1000003'; }).reduce(function(s,r){ return s+(parseFloat(r.avere)||0); },0);
   var pctSepa  = totale>0?(totSepa/totale*100).toFixed(1):0;
+  // KPI riga 1 usa solo numeri aggregati già disponibili
 
   // Trend YoY
   var annoDa=parseInt((G('inc-f-anno-da')||{}).value||'0')||0;
@@ -166,8 +169,10 @@ function incassiRenderKPI() {
     kpiCard(ISVG.avg,     'Media / Cliente',    '€ '+fmtNum(mediaXCliente),'',                      'var(--green)')+
     kpiCard(ISVG.euro,    'CNA Roma',           '€ '+fmtNum(totG1),        'G1000001',              '#0284C7')+
     kpiCard(ISVG.euro,    'CNA CAF Lazio',      '€ '+fmtNum(totG3),        'G1000003',              '#D97706')+
-    kpiCard(ISVG.sepa,    'SEPA',               '€ '+fmtNum(totSepa),      pctSepa+'% del totale',  '#7C3AED')+
-    kpiCard(ISVG.calendar,'Mese Migliore',      meseMiglVal,               meseMiglImpo,            '#059669');
+    kpiCard(ISVG.users,   'Clienti CNA Roma',   fmtInt(allClientiUniciG1), 'G1000001 — Tesseramento','#059669')+
+    kpiCard(ISVG.users,   'Clienti CAF Lazio',  fmtInt(allClientiUniciG3), 'G1000003 — Servizi fiscali','#7C3AED')+
+    kpiCard(ISVG.sepa,    'SEPA',               '€ '+fmtNum(totSepa),      pctSepa+'% del totale',  '#D97706')+
+    kpiCard(ISVG.calendar,'Mese Migliore',       meseMiglVal,              meseMiglImpo,            '#059669');
 }
 
 // ─────────────────────────────────────────────
