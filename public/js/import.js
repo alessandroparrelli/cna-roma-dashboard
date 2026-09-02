@@ -1371,6 +1371,12 @@ async function pandoraStartImport() {
 
     pandoraSetProgress(100, 'Import completato ✓');
     pandoraLog('\n══ COMPLETATO ══', 'ok');
+    // Aggiorna cache statistiche incassi (asincrono, non bloccante)
+    pandoraLog('Aggiornamento cache statistiche…', 'info');
+    refreshIncassiCache().then(function(){
+      pandoraLog('✓ Cache statistiche aggiornata', 'ok');
+      incassiLoaded = false; // forza ricaricamento alla prossima apertura tab
+    }).catch(function(e){ pandoraLog('⚠ Cache non aggiornata: '+e.message, 'warn'); });
 
     var sc = document.getElementById('pandora-summary');
     var cards = document.getElementById('pandora-summary-cards');
@@ -1408,4 +1414,12 @@ async function pandoraStartImport() {
 
   if (btn) { btn.disabled = false; }
   document.getElementById('pandora-spin').style.display = 'none';
+}
+
+// ── Aggiorna cache statistiche incassi dopo import Pandora ──
+async function refreshIncassiCache() {
+  var r = await fetch(SB + '/rest/v1/rpc/refresh_incassi_cache', {
+    method: 'POST', headers: H(), body: '{}'
+  });
+  if (!r.ok) throw new Error('HTTP ' + r.status);
 }
