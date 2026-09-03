@@ -313,44 +313,26 @@ function chartMensile() {
   for(var m=1;m<=12;m++) tot[m]=0;
   filtrati.forEach(function(r){var m=r.mese;if(m>=1&&m<=12)tot[m]+=(parseFloat(r.avere)||0);});
   var tv=[];for(var i=1;i<=12;i++)tv.push(tot[i]);
-
   if(charts.mensile){try{charts.mensile.destroy();}catch(e){}}
-
-  // Gradiente fill come nel grafico area in immagine
   var ctx2=ctxEl.getContext('2d');
-  var grad=ctx2.createLinearGradient(0,0,0,ctxEl.offsetHeight||280);
-  grad.addColorStop(0,'rgba(124,58,237,0.35)');
-  grad.addColorStop(1,'rgba(124,58,237,0.0)');
-
-  charts.mensile=new Chart(ctxEl,{type:'line',
-    data:{labels:MESI.slice(1),datasets:[{
-      label:'Totale incassato',
-      data:tv,
-      borderColor:'#7C3AED',
-      borderWidth:3,
-      backgroundColor:grad,
-      fill:true,
-      tension:0.4,
-      pointBackgroundColor:'#7C3AED',
-      pointBorderColor:'#fff',
-      pointBorderWidth:2.5,
-      pointRadius:6,
-      pointHoverRadius:8
-    }]},
-    options:{
-      responsive:true,
-      maintainAspectRatio:false,
-      interaction:{mode:'index',intersect:false},
-      plugins:{
-        legend:{display:true,position:'bottom',labels:{font:{size:13,weight:'700'},boxWidth:14,padding:16,color:'#374151'}},
-        tooltip:{callbacks:{label:function(c){return ' €'+I(Math.round(c.raw));}}}
-      },
-      scales:{
-        x:{grid:{display:false},ticks:{font:{size:11},color:'#6B7280'}},
-        y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{callback:function(v){return '€'+I(v);}}}
-      }
+  var h=ctxEl.offsetHeight||240;
+  var grad=ctx2.createLinearGradient(0,0,0,h);
+  grad.addColorStop(0,'rgba(94,196,210,0.5)');
+  grad.addColorStop(1,'rgba(94,196,210,0.0)');
+  charts.mensile=new Chart(ctxEl,{type:'line',data:{labels:MESI.slice(1),datasets:[{
+    label:'Totale incassato',data:tv,
+    borderColor:'rgba(94,196,210,0.9)',borderWidth:1.5,
+    backgroundColor:grad,fill:true,tension:0.4,
+    pointRadius:0,pointHoverRadius:4,
+    pointHoverBackgroundColor:'rgba(94,196,210,1)',
+    pointHoverBorderColor:'#fff',pointHoverBorderWidth:2
+  }]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},
+    plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' €'+I(Math.round(c.raw));}}}},
+    scales:{
+      x:{grid:{display:false},border:{display:false},ticks:{font:{size:11},color:'#9CA3AF'}},
+      y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)',drawBorder:false},border:{display:false},ticks:{callback:function(v){return '€'+I(v);},color:'#9CA3AF',font:{size:11}}}
     }
-  });
+  }});
 }
 
 function chartMetodo() {
@@ -360,7 +342,7 @@ function chartMetodo() {
   if(charts.metodo){try{charts.metodo.destroy();}catch(e){}}
   var tt=ts+tc+tb||1;
   charts.metodo=new Chart(ctxEl,{type:'doughnut',
-    data:{labels:['SEPA','Cassa','Bonifico'],datasets:[{data:[ts,tc,tb],backgroundColor:['rgb(37,99,235)','rgb(255,179,0)','rgb(124,58,237)'],borderWidth:3}]},
+    data:{labels:['SEPA','Cassa','Bonifico'],datasets:[{data:[ts,tc,tb],backgroundColor:['rgba(94,196,210,0.85)','rgba(246,173,85,0.85)','rgba(159,122,234,0.85)'],borderWidth:3}]},
     options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{font:{size:12},boxWidth:14,padding:12}},
       tooltip:{callbacks:{label:function(c){return c.label+': €'+N(c.raw)+' ('+(c.raw/tt*100).toFixed(1)+'%)';}}}},cutout:'65%'}});
 }
@@ -389,12 +371,12 @@ function chartAnni() {
 
   // Palette vivace — una per anno
   var palette=[
-    {line:'#2563EB',fill:'rgba(37,99,235,0.08)'},    // blu
-    {line:'#059669',fill:'rgba(5,150,105,0.08)'},    // verde
-    {line:'#D97706',fill:'rgba(217,119,6,0.08)'},    // arancio
-    {line:'#7C3AED',fill:'rgba(124,58,237,0.08)'},   // viola
-    {line:'#DC2626',fill:'rgba(220,38,38,0.08)'},    // rosso
-    {line:'#0891B2',fill:'rgba(8,145,178,0.08)'}     // ciano
+    {line:'rgba(94,196,210,0.95)',fill:'rgba(94,196,210,0.12)'},
+    {line:'rgba(99,179,148,0.95)',fill:'rgba(99,179,148,0.12)'},
+    {line:'rgba(159,122,234,0.95)',fill:'rgba(159,122,234,0.12)'},
+    {line:'rgba(246,173,85,0.95)',fill:'rgba(246,173,85,0.12)'},
+    {line:'rgba(252,129,129,0.95)',fill:'rgba(252,129,129,0.12)'},
+    {line:'rgba(99,155,234,0.95)',fill:'rgba(99,155,234,0.12)'}
   ];
 
   var ctx2=ctxEl.getContext('2d');
@@ -418,11 +400,11 @@ function chartAnni() {
       backgroundColor: anniL.length===1 ? grad : 'transparent',
       fill: anniL.length===1,
       tension: 0.35,
-      pointBackgroundColor: col.line,
-      pointBorderColor: '#fff',
-      pointBorderWidth: 2,
-      pointRadius: 5,
-      pointHoverRadius: 7
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      pointHoverBackgroundColor: col.line,
+      pointHoverBorderColor: '#fff',
+      pointHoverBorderWidth: 2
     };
   });
 
@@ -438,9 +420,10 @@ function chartAnni() {
           display:true,
           position:'top',
           labels:{
-            font:{size:12,weight:'600'},
-            boxWidth:16,
-            padding:14,
+            font:{size:11},
+            boxWidth:12,
+            padding:12,
+            color:'#6B7280',
             usePointStyle:false,
             generateLabels:function(chart){
               return chart.data.datasets.map(function(ds,i){
@@ -455,8 +438,8 @@ function chartAnni() {
         }}
       },
       scales:{
-        x:{grid:{display:false},ticks:{font:{size:11},color:'#6B7280',maxRotation:30}},
-        y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.05)'},ticks:{callback:function(v){return '€'+I(v);}}}
+        x:{grid:{display:false},border:{display:false},ticks:{font:{size:11},color:'#9CA3AF',maxRotation:30}},
+        y:{beginAtZero:true,grid:{color:'rgba(0,0,0,0.04)',drawBorder:false},border:{display:false},ticks:{callback:function(v){return '€'+I(v);},color:'#9CA3AF',font:{size:11}}}
       }
     }
   });
