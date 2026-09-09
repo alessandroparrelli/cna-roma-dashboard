@@ -952,7 +952,7 @@ async function repGeneraPDF() {
   showLoad('Preparazione PDF…');
   try {
     var anno=parseInt(G('rep-anno').value);
-    var mese=parseInt(G('rep-mese').value);
+    var _mr=repGetMeseRange(), _da=_mr[0], _a=_mr[1];
     var {jsPDF}=window.jspdf;
     var pdf=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
     var PW=297, PH=210;
