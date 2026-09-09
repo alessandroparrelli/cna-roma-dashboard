@@ -23,26 +23,46 @@ function buildReportisticaUI() {
   for (var y = 2026; y >= 2020; y--) {
     anniOpt += '<option value="' + y + '"' + (y === new Date().getFullYear() ? ' selected' : '') + '>' + y + '</option>';
   }
-  var mesiOpt = MESI.slice(1).map(function(m, i) {
+  var curMese = new Date().getMonth() + 1;
+  var mesiOptDa = MESI.slice(1).map(function(m, i) {
     var num = i + 1;
-    return '<option value="' + num + '"' + (num === new Date().getMonth() + 1 ? ' selected' : '') + '>' + m + '</option>';
+    return '<option value="' + num + '"' + (num === curMese ? ' selected' : '') + '>' + m + '</option>';
+  }).join('');
+  var mesiOptA = MESI.slice(1).map(function(m, i) {
+    var num = i + 1;
+    return '<option value="' + num + '"' + (num === curMese ? ' selected' : '') + '>' + m + '</option>';
   }).join('');
 
-  tab.innerHTML = '<div style="max-width:1100px;margin:0 auto;padding:24px 20px 60px">'
+  var selStyle = 'width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px';
+  var lblStyle = 'display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase';
+
+  tab.innerHTML = '<div style="max-width:1200px;margin:0 auto;padding:24px 20px 60px">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:12px">'
-    + '<div><h2 style="margin:0;font-size:22px;font-weight:800;color:var(--text)">📋 Generatore Report Mensile</h2>'
+    + '<div><h2 style="margin:0;font-size:22px;font-weight:800;color:var(--text)">📋 Generatore Report Mensile / Range</h2>'
     + '<p style="margin:4px 0 0;font-size:13px;color:var(--text-secondary)">Report professionale PDF — solo amministratori</p></div>'
     + '<span style="background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.2);border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;color:#EF4444">SOLO ADMIN</span></div>'
     + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:var(--shadow-sm)">'
     + '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">● Configurazione</div>'
-    + '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;align-items:end">'
-    + '<div><label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase">Anno</label>'
-    + '<select id="rep-anno" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px">' + anniOpt + '</select></div>'
-    + '<div><label style="display:block;font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:6px;text-transform:uppercase">Mese</label>'
-    + '<select id="rep-mese" style="width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--text);font-size:13px">' + mesiOpt + '</select></div>'
-    + '<div><button onclick="repCaricaEAnteprima()" id="rep-btn-carica" style="width:100%;padding:10px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🔄 Carica Dati</button></div>'
-    + '<div><button onclick="repGeneraPDF()" id="rep-btn-pdf" style="width:100%;padding:10px 16px;background:#1e293b;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📄 Genera PDF</button></div>'
-    + '<div><button onclick="repApriModaleStampa()" id="rep-btn-stampa" style="width:100%;padding:10px 16px;background:#005CA9;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🖨️ Stampa</button></div>'
+    + '<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:end">'
+    // Anno
+    + '<div style="min-width:130px;flex:0 0 130px"><label style="' + lblStyle + '">Anno</label>'
+    + '<select id="rep-anno" style="' + selStyle + '">' + anniOpt + '</select></div>'
+    // Toggle singolo/range
+    + '<div style="min-width:160px;flex:0 0 160px"><label style="' + lblStyle + '">Modalità</label>'
+    + '<div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;height:38px">'
+    + '<button id="rep-toggle-singolo" onclick="repSetModalita(false)" style="flex:1;padding:0 10px;background:var(--primary);color:white;border:none;font-weight:700;font-size:12px;cursor:pointer">Singolo</button>'
+    + '<button id="rep-toggle-range" onclick="repSetModalita(true)" style="flex:1;padding:0 10px;background:var(--surface);color:var(--text-secondary);border:none;border-left:1px solid var(--border);font-weight:700;font-size:12px;cursor:pointer">Range</button>'
+    + '</div></div>'
+    // Mese Da
+    + '<div style="min-width:150px;flex:1"><label id="rep-lbl-da" style="' + lblStyle + '">Mese</label>'
+    + '<select id="rep-mese-da" style="' + selStyle + '">' + mesiOptDa + '</select></div>'
+    // Mese A (nascosto in modalità singolo)
+    + '<div id="rep-col-a" style="min-width:150px;flex:1;display:none"><label style="' + lblStyle + '">Mese A</label>'
+    + '<select id="rep-mese-a" style="' + selStyle + '">' + mesiOptA + '</select></div>'
+    // Pulsanti
+    + '<div style="flex:1;min-width:140px"><button onclick="repCaricaEAnteprima()" id="rep-btn-carica" style="width:100%;padding:10px 16px;background:var(--primary);color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🔄 Carica Dati</button></div>'
+    + '<div style="flex:1;min-width:140px"><button onclick="repGeneraPDF()" id="rep-btn-pdf" style="width:100%;padding:10px 16px;background:#1e293b;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📄 Genera PDF</button></div>'
+    + '<div style="flex:1;min-width:140px"><button onclick="repApriModaleStampa()" id="rep-btn-stampa" style="width:100%;padding:10px 16px;background:#005CA9;color:white;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">🖨️ Stampa</button></div>'
     + '</div></div>'
     + '<div id="rep-status" style="display:none;padding:14px;background:var(--surface);border:1px solid var(--border);border-radius:10px;margin-bottom:16px">'
     + '<span id="rep-status-text" style="font-size:13px;color:var(--text-secondary)">Caricamento…</span></div>'
@@ -52,6 +72,40 @@ function buildReportisticaUI() {
 
   repCaricaEAnteprima();
 }
+
+// Attiva/disattiva modalità range
+var repIsRange = false;
+function repSetModalita(range) {
+  repIsRange = range;
+  var btnS = G('rep-toggle-singolo'), btnR = G('rep-toggle-range');
+  var colA = G('rep-col-a'), lblDa = G('rep-lbl-da');
+  if (range) {
+    btnS.style.background = 'var(--surface)'; btnS.style.color = 'var(--text-secondary)';
+    btnR.style.background = 'var(--primary)'; btnR.style.color = 'white';
+    colA.style.display = 'block';
+    if (lblDa) lblDa.textContent = 'Mese Da';
+  } else {
+    btnS.style.background = 'var(--primary)'; btnS.style.color = 'white';
+    btnR.style.background = 'var(--surface)'; btnR.style.color = 'var(--text-secondary)';
+    colA.style.display = 'none';
+    if (lblDa) lblDa.textContent = 'Mese';
+  }
+}
+
+// Restituisce [meseDA, meseA] — in modalità singolo meseDA === meseA
+function repGetMeseRange() {
+  var da = parseInt(G('rep-mese-da').value);
+  var a  = repIsRange ? parseInt(G('rep-mese-a').value) : da;
+  if (a < da) { var tmp = da; da = a; a = tmp; }
+  return [da, a];
+}
+
+// Stringa periodo leggibile
+function repPeriodoStr(anno, meseDA, meseA) {
+  if (meseDA === meseA) return MESI[meseDA] + ' ' + anno;
+  return MESI[meseDA] + '–' + MESI[meseA] + ' ' + anno;
+}
+
 
 // Fetch paginato — stesso metodo di raggruppamenti.js, evita GET 400 da in.() lunghi
 async function repFetchAll(table) {
@@ -73,7 +127,9 @@ async function repCaricaEAnteprima() {
   if (reportisticaLoading) return;
   reportisticaLoading = true;
   var anno = parseInt(G('rep-anno').value);
-  var mese = parseInt(G('rep-mese').value);
+  var _meseRange = repGetMeseRange();
+  var meseDA = _meseRange[0], meseA = _meseRange[1];
+  var mese = meseA; // compatibilità: mese finale del range (usato per YTD e grafici)
   repSetStatus(true, 'Caricamento dati da Supabase…');
   G('rep-anteprima').style.display = 'none';
   try {
@@ -156,9 +212,9 @@ async function repCaricaEAnteprima() {
     });
 
     repSetStatus(true, 'Elaborazione e rendering…');
-    G('rep-periodo-label').textContent = MESI[mese] + ' ' + anno;
+    G('rep-periodo-label').textContent = repPeriodoStr(anno, meseDA, meseA);
     G('rep-pages-container').innerHTML = '';
-    var pages = repBuildAllPages(repAllData, anno, mese, repStoricaData);
+    var pages = repBuildAllPages(repAllData, anno, mese, repStoricaData, meseDA);
     pages.forEach(function(pageHtml, i) {
       var wrapper = document.createElement('div');
       wrapper.style.cssText = 'margin-bottom:28px;box-shadow:0 4px 24px rgba(0,0,0,0.13);border-radius:4px;overflow:hidden;background:white';
@@ -166,7 +222,7 @@ async function repCaricaEAnteprima() {
       wrapper.innerHTML = pageHtml;
       G('rep-pages-container').appendChild(wrapper);
     });
-    setTimeout(function(){ repRenderAllCharts(repAllData, anno, mese); }, 150);
+    setTimeout(function(){ repRenderAllCharts(repAllData, anno, mese, meseDA); }, 150);
     G('rep-anteprima').style.display = 'block';
     repSetStatus(false);
   } catch(e) {
@@ -190,13 +246,14 @@ function repSetStatus(show, msg) {
 // ══════════════════════════════════════════════════════════════════════════════
 var REP_TOTAL_PAGES = 16; // aggiornato dinamicamente in repBuildAllPages // copertina + 14 pagine dati (7 base + 4 Ateco mese + 4 Ateco anno — aggiornato dinamicamente)
 
-function repBuildAllPages(data, anno, mese, storicaData) {
+function repBuildAllPages(data, anno, mese, storicaData, meseDA) {
+  meseDA = meseDA || mese; // default: stesso mese (singolo)
   storicaData = storicaData || [];
   var basePages = [
-    repPag0_Copertina(anno, mese),                          // Copertina
-    repPag1_Mensile(data, anno, mese),                      // 1
+    repPag0_Copertina(anno, mese, meseDA),                  // Copertina
+    repPag1_Mensile(data, anno, mese, meseDA),              // 1
     repPag2_Annuale(data, anno, mese),                      // 2
-    repPag3_RaffrontoMese(data, anno, mese),                // 3
+    repPag3_RaffrontoMese(data, anno, mese, meseDA),        // 3
     repPag4_RaffrontoYTD(data, anno, mese),                 // 4
     repPag5_SchedeA(data, anno, mese),                      // 5
     repPag6_SchedeB(data, anno, mese),                      // 6
@@ -204,7 +261,7 @@ function repBuildAllPages(data, anno, mese, storicaData) {
     repPagPrevisione(storicaData, anno),                    // 8 — Previsione
   ];
   // Ateco mese: 4 pagine (KPI, Unione, Mestiere, Settore)
-  var atecoMese = repPagAtecoSplit(data, anno, mese, true);
+  var atecoMese = repPagAtecoSplit(data, anno, mese, true, meseDA);
   // Ateco anno: 4 pagine
   var atecoAnno = repPagAtecoSplit(data, anno, mese, false);
   var allPages = basePages.concat(atecoMese).concat(atecoAnno);
@@ -213,8 +270,8 @@ function repBuildAllPages(data, anno, mese, storicaData) {
   var pRaggMese  = String(allPages.length + 2);
   var pRaggAnno  = String(allPages.length + 3);
   allPages = allPages
-    .concat([repPagZone(data, anno, mese)])
-    .concat([repPagRaggruppamenti(data, anno, mese, true,  pRaggMese)])
+    .concat([repPagZone(data, anno, mese, meseDA)])
+    .concat([repPagRaggruppamenti(data, anno, mese, true,  pRaggMese, meseDA)])
     .concat([repPagRaggruppamenti(data, anno, mese, false, pRaggAnno)]);
   var totale = allPages.length;
   REP_TOTAL_PAGES = totale;
@@ -226,8 +283,9 @@ function repBuildAllPages(data, anno, mese, storicaData) {
 }
 
 // ── PAGINA 0: COPERTINA ───────────────────────────────────────────────────────
-function repPag0_Copertina(anno, mese) {
-  var meseStr = MESI[mese] + ' ' + anno;
+function repPag0_Copertina(anno, mese, meseDA) {
+  meseDA = meseDA || mese;
+  var meseStr = repPeriodoStr(anno, meseDA, mese);
   return '<div style="background:#005CA9;font-family:Inter,Helvetica,Arial,sans-serif;width:1060px;height:740px;display:flex;flex-direction:column">'
     // Contenuto centrato verticalmente — flex:1 occupa lo spazio, footer rimane in fondo
     + '<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">'
@@ -262,8 +320,9 @@ var REP_TAB_INFO = {
   'raggruppamenti':                  ['Raggruppamenti e Zone', 'Analisi dei nuovi associati per categoria speciale'],
 };
 
-function repHeader(titoloPagina, anno, mese) {
-  var meseStr = MESI[mese] + ' ' + anno;
+function repHeader(titoloPagina, anno, mese, meseDA) {
+  meseDA = meseDA || mese;
+  var meseStr = repPeriodoStr(anno, meseDA, mese);
 
   // Trova il tab info corrispondente al titolo pagina
   var tabInfo = null;
@@ -318,10 +377,13 @@ function repPagePortrait(header, body, footer) {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
-function repFiltro(data, anno, mese, soloMese) {
+function repFiltro(data, anno, mese, soloMese, meseDA) {
+  meseDA = meseDA || mese;
   return data.filter(function(r) {
     if (parseInt(r.anno) !== anno) return false;
-    return soloMese ? (parseInt(r.mese) === mese) : (parseInt(r.mese) <= mese);
+    var m = parseInt(r.mese);
+    // soloMese=true → range [meseDA, mese]; soloMese=false → YTD fino a mese
+    return soloMese ? (m >= meseDA && m <= mese) : (m <= mese);
   });
 }
 
@@ -419,8 +481,9 @@ function repKpiDB(data) {
 }
 
 // ── PAGINA 1: DATO MENSILE ────────────────────────────────────────────────────
-function repPag1_Mensile(data, anno, mese) {
-  var rec = repFiltro(data, anno, mese, true);
+function repPag1_Mensile(data, anno, mese, meseDA) {
+  meseDA = meseDA || mese;
+  var rec = repFiltro(data, anno, mese, true, meseDA);
   var tot = rec.reduce(function(s,r){return s+(parseFloat(r.importo)||0);},0);
   var cnt = rec.length;
   var avg = cnt>0?tot/cnt:0;
@@ -445,7 +508,7 @@ function repPag1_Mensile(data, anno, mese) {
     + repCardSezione('Promotore','#EC4899','👤',Object.keys(byPromo).length+' voci',repDimTable(byPromo,tot,'#EC4899'),'rep-c1-promo')
     + '</div>';
 
-  return repPage(repHeader('Dato mensile: '+MESI[mese], anno, mese), body, repFooter('2'));
+  return repPage(repHeader('Dato ' + (meseDA===mese ? 'mensile: '+MESI[mese] : 'periodo: '+MESI[meseDA]+'–'+MESI[mese]), anno, mese), body, repFooter('2'));
 }
 
 // ── PAGINA 2: DATO ANNUALE ────────────────────────────────────────────────────
@@ -479,14 +542,15 @@ function repPag2_Annuale(data, anno, mese) {
 }
 
 // ── HELPER: TABELLA CONFRONTO ANNI ───────────────────────────────────────────
-function repBuildConfronto(data, anno, mese, soloMese, trendId) {
+function repBuildConfronto(data, anno, mese, soloMese, trendId, meseDA) {
+  meseDA = meseDA || mese;
   var anniSet={};
   data.forEach(function(r){if(r.anno)anniSet[r.anno]=1;});
   var anni = Object.keys(anniSet).map(Number).sort();
 
   var promoSet={};
   data.forEach(function(r){
-    if(soloMese&&parseInt(r.mese)!==mese) return;
+    if(soloMese&&(parseInt(r.mese)<meseDA||parseInt(r.mese)>mese)) return;
     if(!soloMese&&parseInt(r.mese)>mese) return;
     var p=r.promotore||r.a_cura_di||'N/D';
     promoSet[p]=1;
@@ -496,7 +560,7 @@ function repBuildConfronto(data, anno, mese, soloMese, trendId) {
   var matrix={}, totPerAnno={};
   data.forEach(function(r){
     var a=parseInt(r.anno), m=parseInt(r.mese);
-    if(soloMese&&m!==mese) return;
+    if(soloMese&&(m<meseDA||m>mese)) return;
     if(!soloMese&&m>mese) return;
     var p=r.promotore||r.a_cura_di||'N/D';
     if(!matrix[p]) matrix[p]={};
@@ -555,17 +619,19 @@ function repBuildConfronto(data, anno, mese, soloMese, trendId) {
   var trend='<div style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:white">'
     +'<div style="background:#8B5CF6;padding:9px 14px;display:flex;align-items:center;justify-content:space-between">'
     +'<span style="color:white;font-size:12px;font-weight:700">📈 Trend numerico per anno</span>'
-    +'<span style="background:rgba(255,255,255,0.2);color:white;font-size:10px;padding:2px 10px;border-radius:20px">'+(soloMese?MESI[mese]+' → '+MESI[mese]:'Gennaio → '+MESI[mese])+'</span></div>'
+    +'<span style="background:rgba(255,255,255,0.2);color:white;font-size:10px;padding:2px 10px;border-radius:20px">'+(soloMese?(meseDA===mese?MESI[mese]+' → '+MESI[mese]:MESI[meseDA]+' – '+MESI[mese]):'Gennaio → '+MESI[mese])+'</span></div>'
     +'<div style="padding:10px"><canvas id="'+trendId+'" height="110"></canvas></div></div>';
 
   return tabella + trend;
 }
 
 // ── PAGINA 3: RAFFRONTO MESE ──────────────────────────────────────────────────
-function repPag3_RaffrontoMese(data, anno, mese) {
+function repPag3_RaffrontoMese(data, anno, mese, meseDA) {
+  meseDA = meseDA || mese;
+  var titolo = meseDA === mese ? 'Raffronto mese: '+MESI[mese] : 'Raffronto periodo: '+MESI[meseDA]+'–'+MESI[mese];
   return repPage(
-    repHeader('Raffronto mesi con anni precedenti: '+MESI[mese], anno, mese),
-    repBuildConfronto(data, anno, mese, true, 'rep-c3-trend'),
+    repHeader(titolo, anno, mese),
+    repBuildConfronto(data, anno, mese, true, 'rep-c3-trend', meseDA),
     repFooter('4')
   );
 }
@@ -806,7 +872,8 @@ function repPag8_SerieStoricaTabella(storicaData, anno, mese) {
 // ══════════════════════════════════════════════════════════════════════════════
 // RENDER CHART.JS
 // ══════════════════════════════════════════════════════════════════════════════
-function repRenderAllCharts(data, anno, mese) {
+function repRenderAllCharts(data, anno, mese, meseDA) {
+  meseDA = meseDA || mese;
   function mkBar(id, labels, values, colors) {
     var el=G(id); if(!el) return;
     var ck='repCh_'+id;
@@ -844,8 +911,8 @@ function repRenderAllCharts(data, anno, mese) {
     });
   }
 
-  // P1: mensile
-  var recM=repFiltro(data,anno,mese,true);
+  // P1: periodo/mensile
+  var recM=repFiltro(data,anno,mese,true,meseDA);
   var rM=repGetRete(recM); var pM=repGetPromo(recM);
   var rkM=Object.keys(rM).sort(function(a,b){return rM[b].tot-rM[a].tot;});
   mkBar('rep-c1-rete',rkM,rkM.map(function(k){return rM[k].tot;}),['#3B82F6','#F59E0B','#10B981','#8B5CF6','#EC4899']);
@@ -864,7 +931,7 @@ function repRenderAllCharts(data, anno, mese) {
   var anniSet={};
   data.forEach(function(r){if(r.anno)anniSet[r.anno]=1;});
   var anni=Object.keys(anniSet).map(Number).sort();
-  mkLine('rep-c3-trend',anni.map(String),anni.map(function(a){return data.filter(function(r){return parseInt(r.anno)===a&&parseInt(r.mese)===mese;}).length;}),'#8B5CF6');
+  mkLine('rep-c3-trend',anni.map(String),anni.map(function(a){return data.filter(function(r){var m=parseInt(r.mese);return parseInt(r.anno)===a&&m>=meseDA&&m<=mese;}).length;}),'#8B5CF6');
   mkLine('rep-c4-trend',anni.map(String),anni.map(function(a){return data.filter(function(r){return parseInt(r.anno)===a&&parseInt(r.mese)<=mese;}).length;}),'#8B5CF6');
 
   // P5/P6: sparklines
@@ -906,7 +973,9 @@ async function repGeneraPDF() {
       var x=(PW-iw)/2, y=(PH-ih)/2;
       pdf.addImage(id,'JPEG',x,y,iw,ih);
     }
-    var fname='Report_CNA_Roma_'+MESI[mese]+'_'+anno+'.pdf';
+    var _mr = repGetMeseRange();
+    var _da = _mr[0], _a = _mr[1];
+    var fname = 'Report_CNA_Roma_' + (_da===_a ? MESI[_a] : MESI[_da]+'-'+MESI[_a]) + '_' + anno + '.pdf';
     pdf.save(fname);
     toast('✓ PDF generato: '+fname,'success');
   } catch(e){
@@ -1232,14 +1301,15 @@ function repPagPrevisione(storicaData, anno) {
 }
 
 // ── PAGINE ATECO — 3 pagine per periodo ──────────────────────────────────────
-function repPagAtecoSplit(data, anno, mese, soloMese) {
-  var periodoLabel = soloMese ? MESI[mese] + ' ' + anno : 'Anno ' + anno;
+function repPagAtecoSplit(data, anno, mese, soloMese, meseDA) {
+  meseDA = meseDA || mese;
+  var periodoLabel = soloMese ? (meseDA === mese ? MESI[mese] + ' ' + anno : MESI[meseDA] + '–' + MESI[mese] + ' ' + anno) : 'Anno ' + anno;
   var prefisso = 'Analisi Ateco · ' + periodoLabel + ' · ';
 
   var rec = data.filter(function(r) {
     var a = parseInt(r.anno), m = parseInt(r.mese);
     if (a !== anno) return false;
-    return soloMese ? m === mese : true;
+    return soloMese ? (m >= meseDA && m <= mese) : true;
   });
 
   var tot = rec.length;
@@ -1359,8 +1429,10 @@ function repPagAtecoSplit(data, anno, mese, soloMese) {
 }
 
 // ── PAGINA ZONE (solo mese selezionato) ──────────────────────────────────────
-function repPagZone(data, anno, mese) {
-  var titolo = 'Zone · ' + MESI[mese] + ' ' + anno;
+function repPagZone(data, anno, mese, meseDA) {
+  meseDA = meseDA || mese;
+  var periodoZona = meseDA === mese ? MESI[mese] + ' ' + anno : MESI[meseDA] + '–' + MESI[mese] + ' ' + anno;
+  var titolo = 'Zone · ' + periodoZona;
 
   // Palette identica alla tab
   var PALETTE = ['#005CA9','#3B82F6','#10B981','#F59E0B','#8B5CF6',
@@ -1381,7 +1453,7 @@ function repPagZone(data, anno, mese) {
   }
 
   // Filtra solo il mese
-  var rec = data.filter(function(r){ return parseInt(r.anno)===anno && parseInt(r.mese)===mese; });
+  var rec = data.filter(function(r){ var m=parseInt(r.mese); return parseInt(r.anno)===anno && m>=meseDA && m<=mese; });
   var tot = rec.length;
 
   // Aggrega per zona
@@ -1497,13 +1569,15 @@ function repPagZone(data, anno, mese) {
 }
 
 
-function repPagRaggruppamenti(data, anno, mese, soloMese, nPag) {
-  var periodoLabel = soloMese ? MESI[mese] + ' ' + anno : 'Anno ' + anno;
+function repPagRaggruppamenti(data, anno, mese, soloMese, nPag, meseDA) {
+  meseDA = meseDA || mese;
+  var periodoLabel = soloMese ? (meseDA === mese ? MESI[mese] + ' ' + anno : MESI[meseDA] + '–' + MESI[mese] + ' ' + anno) : 'Anno ' + anno;
   var titolo = 'Raggruppamenti e Zone · ' + periodoLabel;
 
   var rec = data.filter(function(r) {
     if (parseInt(r.anno) !== anno) return false;
-    if (soloMese) return parseInt(r.mese) === mese;
+    var m = parseInt(r.mese);
+    if (soloMese) return m >= meseDA && m <= mese;
     return true;
   });
 
