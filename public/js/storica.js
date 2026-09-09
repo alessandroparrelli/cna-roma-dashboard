@@ -123,9 +123,14 @@ async function storicaRender(data) {
   var matrix = {};
   data.forEach(function(r) {
     var rm = parseInt(r.mese), ra = parseInt(r.anno);
+    if (rm === 8) rm = 7; // agosto accorpato con luglio (Luglio/Ago)
     anniSet[ra] = 1;
     if (!matrix[rm]) matrix[rm] = {};
-    matrix[rm][ra] = { v: r.valore||0, auto: r.auto_calcolato };
+    if (!matrix[rm][ra]) {
+      matrix[rm][ra] = { v: r.valore||0, auto: r.auto_calcolato };
+    } else {
+      matrix[rm][ra].v += r.valore||0; // somma luglio + agosto
+    }
   });
   var anni = Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
   // Per la tabella: anni dal più recente al più vecchio (es. 2026, 2025, 2024...)
@@ -362,8 +367,13 @@ function storicaCambiaMese(val) {
   var matrix = {};
   storicaData.forEach(function(r){
     var rm2=parseInt(r.mese), ra2=parseInt(r.anno);
+    if (rm2===8) rm2=7;
     if(!matrix[rm2]) matrix[rm2]={};
-    matrix[rm2][ra2]={v:r.valore||0,auto:r.auto_calcolato};
+    if(!matrix[rm2][ra2]) {
+      matrix[rm2][ra2]={v:r.valore||0,auto:r.auto_calcolato};
+    } else {
+      matrix[rm2][ra2].v += r.valore||0;
+    }
   });
   var anniSet={};
   storicaData.forEach(function(r){anniSet[r.anno]=1;});
@@ -390,8 +400,13 @@ function storicaRicalcolaObiettivo() {
   var matrix = {};
   storicaData.forEach(function(r){
     var rm=parseInt(r.mese), ra=parseInt(r.anno);
+    if (rm===8) rm=7;
     if(!matrix[rm]) matrix[rm]={};
-    matrix[rm][ra]={v:r.valore||0,auto:r.auto_calcolato};
+    if(!matrix[rm][ra]) {
+      matrix[rm][ra]={v:r.valore||0,auto:r.auto_calcolato};
+    } else {
+      matrix[rm][ra].v += r.valore||0;
+    }
   });
   var anniSet={};
   storicaData.forEach(function(r){anniSet[parseInt(r.anno)]=1;});
