@@ -382,11 +382,12 @@ function storicaRicalcolaObiettivo() {
   if (!storicaData.length) return;
   var matrix = {};
   storicaData.forEach(function(r){
-    if(!matrix[r.mese]) matrix[r.mese]={};
-    matrix[r.mese][r.anno]={v:r.valore,auto:r.auto_calcolato};
+    var rm=parseInt(r.mese), ra=parseInt(r.anno);
+    if(!matrix[rm]) matrix[rm]={};
+    matrix[rm][ra]={v:r.valore||0,auto:r.auto_calcolato};
   });
   var anniSet={};
-  storicaData.forEach(function(r){anniSet[r.anno]=1;});
+  storicaData.forEach(function(r){anniSet[parseInt(r.anno)]=1;});
   var anni=Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
   storicaRenderPrevisione(storicaData, matrix, anni);
 }
@@ -406,7 +407,7 @@ function storicaRenderPrevisione(data, matrix, anni) {
 
   // Valori reali anno corrente già disponibili
   var realiCur = {};
-  data.forEach(function(r){ if(r.anno===ANNO_CUR) realiCur[r.mese]=r.valore; });
+  data.forEach(function(r){ if(parseInt(r.anno)===ANNO_CUR) realiCur[parseInt(r.mese)]=r.valore||0; });
   var totReale = Object.values(realiCur).reduce(function(s,v){return s+v;},0);
   var mesiReali = Object.keys(realiCur).map(Number).sort(function(a,b){return a-b;});
   var mesiFuturi = MESI_ORD_P.filter(function(m){ return !realiCur.hasOwnProperty(m); });
@@ -505,7 +506,9 @@ function storicaRenderPrevisione(data, matrix, anni) {
       +'</div>';
   }
 
-  var meseLabel = mesiReali.length>0 ? NOMI_P[mesiReali[0]].substring(0,3)+'–'+NOMI_P[mesiReali[mesiReali.length-1]].substring(0,3)+' '+ANNO_CUR : ANNO_CUR.toString();
+  var _ml0 = mesiReali.length>0 ? mesiReali[0] : null;
+  var _mlE = mesiReali.length>0 ? mesiReali[mesiReali.length-1] : null;
+  var meseLabel = (_ml0 && NOMI_P[_ml0] && NOMI_P[_mlE]) ? NOMI_P[_ml0].substring(0,3)+'–'+NOMI_P[_mlE].substring(0,3)+' '+ANNO_CUR : ANNO_CUR.toString();
   html += kpiCard('Già realizzati', totReale, meseLabel, '#3B82F6');
   html += kpiCard('Stima a fine anno', totStimaNaturale, totStimaNaturale>=OBIETTIVO?'✓ Sopra obiettivo':'▼ '+Math.abs(mancherannoCon)+' sotto obiettivo', colStima, colStima);
   html += kpiCard('Ancora da fare', mancanti, 'per arrivare a '+OBIETTIVO.toLocaleString('it-IT'), '#EF4444', '#EF4444');
