@@ -122,9 +122,10 @@ function storicaRender(data) {
   var anniSet = {};
   var matrix = {};
   data.forEach(function(r) {
-    anniSet[r.anno] = 1;
-    if (!matrix[r.mese]) matrix[r.mese] = {};
-    matrix[r.mese][r.anno] = { v: r.valore, auto: r.auto_calcolato };
+    var rm = parseInt(r.mese), ra = parseInt(r.anno);
+    anniSet[ra] = 1;
+    if (!matrix[rm]) matrix[rm] = {};
+    matrix[rm][ra] = { v: r.valore||0, auto: r.auto_calcolato };
   });
   var anni = Object.keys(anniSet).map(Number).sort(function(a,b){return a-b;});
   // Per la tabella: anni dal più recente al più vecchio (es. 2026, 2025, 2024...)
@@ -150,7 +151,10 @@ function storicaRender(data) {
 
   var kpiEl = G('storica-kpi');
   if (kpiEl) kpiEl.innerHTML =
-    storicaKPI('Totale '+annoCorrente, totCorr, 'Contratti YTD', '#3B82F6', dHtml)
+    storicaKPI('Totale '+annoCorrente, totCorr,
+      'Dati da ultima esecuzione ricalcolo',
+      '#3B82F6',
+      dHtml + '<div style="margin-top:6px;font-size:10px;color:#94a3b8">⚠ Aggiorna con "Ricalcola" per il valore live</div>')
     +storicaKPI('Anno record', maxAnno+' · '+totAnno[maxAnno], 'Contratti totali', '#10B981', '')
     +storicaKPI('Anno minore', minAnno+' · '+totAnno[minAnno], 'Contratti totali', '#F59E0B', '')
     +storicaKPI('Anni tracciati', anni.length, anni[0]+' → '+anni[anni.length-1], '#8B5CF6', '');
@@ -355,8 +359,9 @@ function storicaCambiaMese(val) {
   // Ricostruisce matrice dalla cache
   var matrix = {};
   storicaData.forEach(function(r){
-    if(!matrix[r.mese]) matrix[r.mese]={};
-    matrix[r.mese][r.anno]={v:r.valore,auto:r.auto_calcolato};
+    var rm2=parseInt(r.mese), ra2=parseInt(r.anno);
+    if(!matrix[rm2]) matrix[rm2]={};
+    matrix[rm2][ra2]={v:r.valore||0,auto:r.auto_calcolato};
   });
   var anniSet={};
   storicaData.forEach(function(r){anniSet[r.anno]=1;});
