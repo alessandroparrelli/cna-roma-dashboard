@@ -117,7 +117,7 @@ async function storicaLoad() {
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
-function storicaRender(data) {
+async function storicaRender(data) {
   // Costruisce matrice
   var anniSet = {};
   var matrix = {};
@@ -141,8 +141,13 @@ function storicaRender(data) {
 
   var annoCorrente = new Date().getFullYear();
 
-  // ── KPI ──
-  var totCorr = totAnno[annoCorrente] || 0;
+  // ── KPI — totale live dall'anno corrente (letto direttamente da TR) ──
+  var totCorrLive = 0;
+  try {
+    var liveRows = await sbGetAll(TR);
+    totCorrLive = liveRows.filter(function(r){ return parseInt(r.anno)===annoCorrente; }).length;
+  } catch(e) { totCorrLive = totAnno[annoCorrente] || 0; }
+  var totCorr = totCorrLive;
   var totPrecAnno = totAnno[annoCorrente-1] || 0;
   var delta = totPrecAnno>0 ? (totCorr-totPrecAnno)/totPrecAnno*100 : null;
   var dHtml = delta!==null ? '<span style="font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;background:'+(delta>=0?'#10B981':'#EF4444')+';color:white">'+(delta>=0?'▲':'▼')+' '+Math.abs(delta).toFixed(1)+'%</span>' : '';
@@ -151,10 +156,7 @@ function storicaRender(data) {
 
   var kpiEl = G('storica-kpi');
   if (kpiEl) kpiEl.innerHTML =
-    storicaKPI('Totale '+annoCorrente, totCorr,
-      'Dati da ultima esecuzione ricalcolo',
-      '#3B82F6',
-      dHtml + '<div style="margin-top:6px;font-size:10px;color:#94a3b8">⚠ Aggiorna con "Ricalcola" per il valore live</div>')
+    storicaKPI('Totale '+annoCorrente, totCorr, 'Contratti YTD (dato live)', '#3B82F6', dHtml)
     +storicaKPI('Anno record', maxAnno+' · '+totAnno[maxAnno], 'Contratti totali', '#10B981', '')
     +storicaKPI('Anno minore', minAnno+' · '+totAnno[minAnno], 'Contratti totali', '#F59E0B', '')
     +storicaKPI('Anni tracciati', anni.length, anni[0]+' → '+anni[anni.length-1], '#8B5CF6', '');
@@ -412,9 +414,17 @@ function storicaRenderPrevisione(data, matrix, anni) {
 
   // Valori reali anno corrente già disponibili
   var realiCur = {};
-  data.forEach(function(r){ if(parseInt(r.anno)===ANNO_CUR) realiCur[parseInt(r.mese)]=r.valore||0; });
+  data.forEach(function(r) {
+    if (parseInt(r.anno) !== ANNO_CUR) return;
+    var m = parseInt(r.mese);
+    if (m === 8) m = 7; // agosto accorpato con luglio nella serie storica
+    if (MESI_ORD_P.indexOf(m) === -1) return; // ignora mesi fuori dalla lista
+    realiCur[m] = (realiCur[m] || 0) + (r.valore || 0);
+  });
   var totReale = Object.values(realiCur).reduce(function(s,v){return s+v;},0);
-  var mesiReali = Object.keys(realiCur).map(Number).sort(function(a,b){return a-b;});
+  var mesiReali = Object.keys(realiCur).map(Number)
+    .filter(function(m){ return MESI_ORD_P.indexOf(m) !== -1; })
+    .sort(function(a,b){return a-b;});
   var mesiFuturi = MESI_ORD_P.filter(function(m){ return !realiCur.hasOwnProperty(m); });
 
   // Regressione lineare per ogni mese sugli ultimi 5 anni
@@ -549,7 +559,7 @@ function storicaRenderPrevisione(data, matrix, anni) {
   // Mesi già realizzati
   mesiReali.forEach(function(m){
     var v = realiCur[m];
-    var nat = stime[m].stima;
+    var nat = stime[m] ? stime[m].stima : 0;
     var vs = v-nat;
     var vsColor = vs>=0?'#10B981':'#EF4444';
     var vsSign = vs>=0?'+':'';
@@ -608,7 +618,7 @@ function storicaRenderPrevisione(data, matrix, anni) {
     var labelsAll = MESI_ORD_P.map(function(m){ return NOMI_P[m].substring(0,3); });
     var datiReali   = MESI_ORD_P.map(function(m){ return realiCur[m]!==undefined?realiCur[m]:null; });
     var datiTarget  = MESI_ORD_P.map(function(m){ return piano[m]?piano[m].target:null; });
-    var datiNat     = MESI_ORD_P.map(function(m){ return stime[m].stima; });
+    var datiNat     = MESI_ORD_P.map(function(m){ return stime[m] ? stime[m].stima : 0; });
     var gradDone = false;
     var ctx = cvs.getContext('2d');
     charts[ck] = new Chart(ctx, {
