@@ -27,13 +27,13 @@ async function doLogin(){
     });
     var result=await resp.json();
     if(!resp.ok||!result.user){
-      writeLog(null,email,null,'fallito');
+      writeLog(null,loginId,null,'fallito');
       errEl.textContent='Email o password non corretti';
       errEl.style.display='block';
       return;
     }
     var user=result.user;
-    writeLog(user.id,email,user.nome+' '+user.cognome,'successo');
+    writeLog(user.id,loginId,user.nome+' '+user.cognome,'successo');
     saveSession(user);
     showApp();
   }catch(e){
