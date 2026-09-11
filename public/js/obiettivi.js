@@ -180,6 +180,10 @@
       dd.innerHTML = matches.map(function(n){
         return '<div class="ob-dd-item" data-val="' + esc(n) + '">' + esc(n) + '</div>';
       }).join('');
+      var rect = inp.getBoundingClientRect();
+      dd.style.top  = (rect.bottom + 4) + 'px';
+      dd.style.left = rect.left + 'px';
+      dd.style.width = rect.width + 'px';
       dd.style.display = 'block';
     });
 
