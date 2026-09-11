@@ -58,6 +58,11 @@
   }
 
   /* ── Helpers UI ── */
+  function fmtEuro(v) {
+    if (v == null || v === '') return '—';
+    return '€ ' + Number(v).toLocaleString('it-IT', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  }
+
   function pct(val, tot) {
     if (!tot) return '—';
     return ((val / tot) * 100).toFixed(1) + '%';
@@ -119,6 +124,12 @@
       } else if (sort.col === 'delta') {
         av = calcolato ? ((a._fatti || 0) - (a.obiettivo || 0)) : 0;
         bv = calcolato ? ((b._fatti || 0) - (b.obiettivo || 0)) : 0;
+      } else if (sort.col === 'importo') {
+        av = calcolato ? (a._importo || 0) : 0;
+        bv = calcolato ? (b._importo || 0) : 0;
+      } else if (sort.col === 'euroctr') {
+        av = calcolato && a._fatti ? (a._importo || 0) / a._fatti : 0;
+        bv = calcolato && b._fatti ? (b._importo || 0) / b._fatti : 0;
       } else if (sort.col === 'pct') {
         av = calcolato && a.obiettivo ? (a._fatti || 0) / a.obiettivo : 0;
         bv = calcolato && b.obiettivo ? (b._fatti || 0) / b.obiettivo : 0;
@@ -263,12 +274,14 @@
       thSort('Fatti', 'fatti', 'f') +
       thSort('% su tot.', 'pct', 'f') +
       thSort('+/−', 'delta', 'f') +
+      thSort('Importo', 'importo', 'f') +
+      thSort('€/contr.', 'euroctr', 'f') +
       thSort('% obj.', 'pct', 'f') +
       '<th class="ob-col-bar">Progresso</th>' +
       '<th class="ob-col-act"></th></tr>';
 
     if (!obF.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="ob-empty">Nessun funzionario aggiunto. Usa il form qui sotto.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="ob-empty">Nessun funzionario aggiunto. Usa il form qui sotto.</td></tr>';
       tfoot.innerHTML = '';
       return;
     }
@@ -276,7 +289,8 @@
     var sorted = sortedRows(obF, sortF, calcolatoF, totFattiF);
     var totOb = 0, totF2 = 0;
     // totali sempre sul dataset originale (non sorted)
-    obF.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoF) totF2 += r._fatti||0; });
+    var totImpF = 0;
+    obF.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoF){ totF2 += r._fatti||0; totImpF += r._importo||0; } });
 
     tbody.innerHTML = sorted.map(function(row) {
       var fatti = calcolatoF ? (row._fatti || 0) : null;
@@ -296,6 +310,8 @@
         '<td class="ob-col-num">' + fattiCell + '</td>' +
         '<td class="ob-col-num">' + pctTot + '</td>' +
         '<td class="ob-col-num">' + dHtml + '</td>' +
+        '<td class="ob-col-num ob-euro">' + (calcolatoF && row._importo != null ? fmtEuro(row._importo) : '<span class="ob-nc">—</span>') + '</td>' +
+        '<td class="ob-col-num ob-euro">' + (calcolatoF && row._fatti ? fmtEuro(Math.round(row._importo / row._fatti)) : '<span class="ob-nc">—</span>') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(fatti, row.obiettivo, calcolatoF) + '</td>' +
         '<td class="ob-col-bar">' + barHtml + '</td>' +
         '<td class="ob-col-act"><button class="ob-btn-del" data-id="' + row.id + '" data-kind="f" title="Rimuovi">' +
@@ -311,6 +327,8 @@
         '<td class="ob-col-num"><strong>' + totF2 + '</strong></td>' +
         '<td class="ob-col-num">' + (totOb ? pct(totF2, totOb) : '—') + '</td>' +
         '<td class="ob-col-num">' + deltaHtml(totF2, totOb) + '</td>' +
+        '<td class="ob-col-num ob-euro">' + (calcolatoF ? fmtEuro(totImpF) : '—') + '</td>' +
+        '<td class="ob-col-num ob-euro">' + (calcolatoF && totF2 ? fmtEuro(Math.round(totImpF/totF2)) : '—') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(totF2, totOb, calcolatoF) + '</td>' +
         '<td class="ob-col-bar">' + progressBar(totF2, totOb) + '</td>' +
         '<td></td></tr>';
@@ -368,19 +386,22 @@
       thSort('Fatti', 'fatti', 'p') +
       thSort('% su tot.', 'pct', 'p') +
       thSort('+/−', 'delta', 'p') +
+      thSort('Importo', 'importo', 'p') +
+      thSort('€/contr.', 'euroctr', 'p') +
       thSort('% obj.', 'pct', 'p') +
       '<th class="ob-col-bar">Progresso</th>' +
       '<th class="ob-col-act"></th></tr>';
 
     if (!obP.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="ob-empty">Nessun promotore aggiunto. Usa il form qui sotto.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="ob-empty">Nessun promotore aggiunto. Usa il form qui sotto.</td></tr>';
       tfoot.innerHTML = '';
       return;
     }
 
     var sorted = sortedRows(obP, sortP, calcolatoP, totFattiP);
     var totOb = 0, totF2 = 0;
-    obP.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoP) totF2 += r._fatti||0; });
+    var totImpP = 0;
+    obP.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoP){ totF2 += r._fatti||0; totImpP += r._importo||0; } });
 
     tbody.innerHTML = sorted.map(function(row) {
       var fatti = calcolatoP ? (row._fatti || 0) : null;
@@ -400,6 +421,8 @@
         '<td class="ob-col-num">' + fattiCell + '</td>' +
         '<td class="ob-col-num">' + pctTot + '</td>' +
         '<td class="ob-col-num">' + dHtml + '</td>' +
+        '<td class="ob-col-num ob-euro">' + (calcolatoP && row._importo != null ? fmtEuro(row._importo) : '<span class="ob-nc">—</span>') + '</td>' +
+        '<td class="ob-col-num ob-euro">' + (calcolatoP && row._fatti ? fmtEuro(Math.round(row._importo / row._fatti)) : '<span class="ob-nc">—</span>') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(fatti, row.obiettivo, calcolatoP) + '</td>' +
         '<td class="ob-col-bar">' + barHtml + '</td>' +
         '<td class="ob-col-act"><button class="ob-btn-del" data-id="' + row.id + '" data-kind="p" title="Rimuovi">' +
@@ -415,6 +438,8 @@
         '<td class="ob-col-num"><strong>' + totF2 + '</strong></td>' +
         '<td class="ob-col-num">' + (totOb ? pct(totF2, totOb) : '—') + '</td>' +
         '<td class="ob-col-num">' + deltaHtml(totF2, totOb) + '</td>' +
+        '<td class="ob-col-num ob-euro">' + (calcolatoP ? fmtEuro(totImpP) : '—') + '</td>' +
+        '<td class="ob-col-num ob-euro">' + (calcolatoP && totF2 ? fmtEuro(Math.round(totImpP/totF2)) : '—') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(totF2, totOb, calcolatoP) + '</td>' +
         '<td class="ob-col-bar">' + progressBar(totF2, totOb) + '</td>' +
         '<td></td></tr>';
@@ -517,12 +542,16 @@
           p_acuradi: row.acuradi_match,
           p_anno_da: params.p_anno_da,
           p_anno_a:  params.p_anno_a,
-        }).then(function(v){ return { id: row.id, fatti: v }; });
+        }).then(function(v){ return { id: row.id, res: v }; });
       }));
       totFattiF = 0;
       results.forEach(function(r) {
         var row = obF.find(function(x){ return x.id === r.id; });
-        if (row) { row._fatti = r.fatti || 0; totFattiF += row._fatti; }
+        if (row) {
+          row._fatti   = (r.res && r.res.nr)      ? r.res.nr      : 0;
+          row._importo = (r.res && r.res.importo) ? r.res.importo : 0;
+          totFattiF += row._fatti;
+        }
       });
       calcolatoF = true;
       renderTableF();
@@ -545,12 +574,16 @@
           p_raggruppamento: row.raggruppamento_match,
           p_anno_da: params.p_anno_da,
           p_anno_a:  params.p_anno_a,
-        }).then(function(v){ return { id: row.id, fatti: v }; });
+        }).then(function(v){ return { id: row.id, res: v }; });
       }));
       totFattiP = 0;
       results.forEach(function(r) {
         var row = obP.find(function(x){ return x.id === r.id; });
-        if (row) { row._fatti = r.fatti || 0; totFattiP += row._fatti; }
+        if (row) {
+          row._fatti   = (r.res && r.res.nr)      ? r.res.nr      : 0;
+          row._importo = (r.res && r.res.importo) ? r.res.importo : 0;
+          totFattiP += row._fatti;
+        }
       });
       calcolatoP = true;
       renderTableP();
@@ -612,9 +645,9 @@
       alignment: { horizontal: align || 'left', vertical: 'center' }
     }); };
     var COLS = isFun
-      ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.']
-      : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.'];
-    var ALIGNS = ['left','center','center','center','center','center','left','center'];
+      ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', 'Importo', '€/contr.', '% obj.', 'Progresso', '% ragg.']
+      : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', 'Importo', '€/contr.', '% obj.', 'Progresso', '% ragg.'];
+    var ALIGNS = ['left','center','center','center','center','right','right','center','left','center'];
     COLS.forEach(function(h, c) { setCell(R, c, h, hStyle(ALIGNS[c])); });
     R++;
 
@@ -673,29 +706,44 @@
         alignment: { horizontal: 'center', vertical: 'center' }
       }));
 
-      // Col 5: % obiettivo personale
-      setCell(R, 5, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
+      // Col 5: Importo totale
+      var impVal = (calcolato && row._importo != null) ? row._importo : null;
+      var euroCtr = (calcolato && row._fatti && row._importo) ? Math.round(row._importo / row._fatti) : null;
+      setCell(R, 5, impVal != null ? impVal : '—', borderAll({
+        font: { sz: 10, color: { rgb: C_TEXT } },
+        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
+        alignment: { horizontal: 'right', vertical: 'center' }
+      }));
+
+      // Col 6: €/contratto
+      setCell(R, 6, euroCtr != null ? euroCtr : '—', borderAll({
+        font: { sz: 10, color: { rgb: C_TEXT } },
+        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
+        alignment: { horizontal: 'right', vertical: 'center' }
+      }));
+
+      // Col 7: % obiettivo personale
+      setCell(R, 7, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
         font: { sz: 10, bold: pctRagVal != null && pctRagVal >= 100,
                 color: { rgb: pctRagVal != null ? (pctRagVal >= 100 ? C_POS : pctRagVal >= 70 ? C_BLUE : C_NEG) : C_MUTED } },
         fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
         alignment: { horizontal: 'center', vertical: 'center' }
       }));
 
-      // Col 6: Barra progresso (testo visuale con sfondo colorato proporzionale)
-      // Usiamo un carattere blocco ripetuto per simulare la barra
-      var BAR_TOTAL = 20; // caratteri totali barra
+      // Col 8: Barra progresso
+      var BAR_TOTAL = 20;
       var filled = calcolato ? Math.round(barPct / 100 * BAR_TOTAL) : 0;
       var barText = calcolato
         ? ('█'.repeat(filled) + '░'.repeat(BAR_TOTAL - filled) + '  ' + barPct + '%')
         : '—';
-      setCell(R, 6, barText, borderAll({
+      setCell(R, 8, barText, borderAll({
         font: { sz: 9, color: { rgb: barColor }, name: 'Courier New' },
         fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
         alignment: { horizontal: 'left', vertical: 'center' }
       }));
 
-      // Col 7: % raggiungimento (ridondante — già in col 5, la teniamo per chiarezza)
-      setCell(R, 7, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
+      // Col 9: % raggiungimento
+      setCell(R, 9, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
         font: { sz: 10, bold: pctRagVal != null && pctRagVal >= 100,
                 color: { rgb: pctRagVal != null ? (pctRagVal >= 100 ? C_POS : pctRagVal >= 70 ? C_BLUE : C_NEG) : C_MUTED } },
         fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
@@ -727,19 +775,22 @@
     setCell(R, 3, totOb && calcolato ? (totF2/totOb*100).toFixed(1)+'%' : '—', totStyle('center'));
     setCell(R, 4, calcolato ? ((totDelta>=0?'+':'')+totDelta) : '—',
       totStyle('center', totDelta >= 0 ? C_POS : C_NEG));
-    setCell(R, 5, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
+    var totImpExcel = calcolato ? rows.reduce(function(s,r){ return s+(r._importo||0); }, 0) : null;
+    setCell(R, 5, totImpExcel != null ? totImpExcel : '—', totStyle('right'));
+    setCell(R, 6, (totImpExcel != null && totF2) ? Math.round(totImpExcel/totF2) : '—', totStyle('right'));
+    setCell(R, 7, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
       totStyle('center', totPctRag != null ? (totPctRag >= 100 ? C_POS : totPctRag >= 70 ? C_BLUE : C_NEG) : C_TOTALE_FG));
-    setCell(R, 6, calcolato ? totBarText : '—', borderAll({
+    setCell(R, 8, calcolato ? totBarText : '—', borderAll({
       font: { bold: true, sz: 9, color: { rgb: totBarColor }, name: 'Courier New' },
       fill: { patternType: 'solid', fgColor: { rgb: C_TOTALE_BG } },
       alignment: { horizontal: 'left', vertical: 'center' }
     }));
-    setCell(R, 7, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
+    setCell(R, 9, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
       totStyle('center', totPctRag != null ? (totPctRag >= 100 ? C_POS : totPctRag >= 70 ? C_BLUE : C_NEG) : C_TOTALE_FG));
 
     // ── Range e colonne ──
-    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: R, c: 7 } });
-    ws['!cols'] = [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 10 }, { wch: 28 }, { wch: 12 }];
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: R, c: 9 } });
+    ws['!cols'] = [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 13 }, { wch: 11 }, { wch: 10 }, { wch: 28 }, { wch: 12 }];
     ws['!rows'] = [];
     for (var ri = 0; ri <= R; ri++) ws['!rows'].push({ hpt: 18 }); // altezza fissa righe
 
@@ -768,7 +819,7 @@
               '<label>Periodo:</label>' +
               '<select id="ob-f-anno-tipo">' +
                 '<option value="tutti">Tutti gli anni</option>' +
-                '<option value="anno">Anno specifico</option>' +
+                '<option value="anno" selected>Anno specifico</option>' +
                 '<option value="range">Intervallo anni</option>' +
               '</select>' +
               '<div id="ob-f-anno-fields" style="display:none;gap:6px;align-items:center;display:flex"></div>' +
@@ -785,7 +836,7 @@
         '</div>' +
         '<div class="admin-card-body" style="padding:0">' +
           '<table class="ob-table"><thead id="ob-f-thead"></thead>' +
-          '<tbody id="ob-f-tbody"><tr><td colspan="8" class="ob-loading">Caricamento…</td></tr></tbody>' +
+          '<tbody id="ob-f-tbody"><tr><td colspan="10" class="ob-loading">Caricamento…</td></tr></tbody>' +
           '<tfoot id="ob-f-tfoot"></tfoot></table>' +
           '<div class="ob-add-row">' +
             '<div class="ob-add-inner">' +
@@ -821,7 +872,7 @@
               '<label>Periodo:</label>' +
               '<select id="ob-p-anno-tipo">' +
                 '<option value="tutti">Tutti gli anni</option>' +
-                '<option value="anno">Anno specifico</option>' +
+                '<option value="anno" selected>Anno specifico</option>' +
                 '<option value="range">Intervallo anni</option>' +
               '</select>' +
               '<div id="ob-p-anno-fields" style="display:none;gap:6px;align-items:center;display:flex"></div>' +
@@ -838,7 +889,7 @@
         '</div>' +
         '<div class="admin-card-body" style="padding:0">' +
           '<table class="ob-table"><thead id="ob-p-thead"></thead>' +
-          '<tbody id="ob-p-tbody"><tr><td colspan="8" class="ob-loading">Caricamento…</td></tr></tbody>' +
+          '<tbody id="ob-p-tbody"><tr><td colspan="10" class="ob-loading">Caricamento…</td></tr></tbody>' +
           '<tfoot id="ob-p-tfoot"></tfoot></table>' +
           '<div class="ob-add-row">' +
             '<div class="ob-add-inner">' +
@@ -864,18 +915,21 @@
 
       '</div>'; // .ob-wrap
 
-    // Carica dati e aggancia eventi
-    Promise.all([loadObF(), loadObP()]).then(function(res) {
+    // Carica dati, aggancia eventi e ricalcola subito sull'anno corrente
+    setupAnnoCtrl('f');
+    setupAnnoCtrl('p');
+
+    Promise.all([loadObF(), loadObP()]).then(async function(res) {
       obF = res[0]; obP = res[1];
       calcolatoF = false; calcolatoP = false;
       renderTableF();
       renderTableP();
+      // Ricalcolo automatico iniziale (anno corrente già impostato nel select)
+      if (obF.length) await ricalcolaF();
+      if (obP.length) await ricalcolaP();
     }).catch(function(e) {
       console.error('Errore caricamento obiettivi:', e);
     });
-
-    setupAnnoCtrl('f');
-    setupAnnoCtrl('p');
 
     setupAutocomplete('ob-f-add-nome', 'ob-f-dropdown', getAcuradiList);
     setupAutocomplete('ob-p-add-nome', 'ob-p-dropdown', getRaggrList);
