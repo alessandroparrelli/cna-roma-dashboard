@@ -643,10 +643,10 @@
     if (!XLSX) { alert('Libreria Excel non disponibile.'); return; }
 
     // ── Colori identici alla tabella ──
-    var C_HEADER_BG  = '1D3557';   // header navy
+    var C_HEADER_BG  = isFun ? '1E3A8A' : '14532D';   // blu per funzionari, verde per promotori
     var C_HEADER_FG  = 'FFFFFF';
-    var C_TOTALE_BG  = 'EFF6FF';   // riga totale azzurrina
-    var C_TOTALE_FG  = '1E3A5F';
+    var C_TOTALE_BG  = isFun ? 'EFF6FF' : 'F0FDF4';   // azzurro per fun, verdino per prom
+    var C_TOTALE_FG  = isFun ? '1E3A5F' : '14532D';
     var C_POS        = '16A34A';   // verde (raggiunto)
     var C_NEG        = 'DC2626';   // rosso
     var C_BLUE       = '2563EB';   // blu (parziale 70-99%)
@@ -674,11 +674,14 @@
     }
 
     // ── Riga intestazione ──
-    var hStyle = function(align) { return borderAll({
+    var hStyle = function(align, bg) { return borderAll({
       font: { bold: true, color: { rgb: C_HEADER_FG }, sz: 10 },
-      fill: { patternType: 'solid', fgColor: { rgb: C_HEADER_BG } },
+      fill: { patternType: 'solid', fgColor: { rgb: bg || C_HEADER_BG } },
       alignment: { horizontal: align || 'left', vertical: 'center' }
     }); };
+    // Colore header sfumato simulato: colonna nome più scuro, resto leggermente più chiaro
+    var C_HEADER_LIGHT = isFun ? '2563EB' : '16A34A';
+    var C_HEADER_PREV  = '64748B';  // colonne anni precedenti
     var COLS = isFun
       ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.']
       : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.', String(annoRifP-1), String(annoRifP-2)];
@@ -686,7 +689,11 @@
     var ALIGNS = isFun
       ? ['left','center','center','center','center','center','left','center']
       : ['left','center','center','center','center','center','left','center','center','center'];
-    COLS.forEach(function(h, c) { setCell(R, c, h, hStyle(ALIGNS[c])); });
+    COLS.forEach(function(h, c) {
+      var isPrev = !isFun && c >= 8;
+      var bg = isPrev ? C_HEADER_PREV : (c === 0 ? C_HEADER_BG : C_HEADER_LIGHT);
+      setCell(R, c, h, hStyle(ALIGNS[c], bg));
+    });
     R++;
 
     // ── Righe dati ──
@@ -904,7 +911,7 @@
       '</div>' +
 
       // ── Tabella Promotori
-      '<div class="admin-card-new ob-section" style="margin-top:24px">' +
+      '<div class="admin-card-new ob-section ob-section-promotori" style="margin-top:24px">' +
         '<div class="admin-card-head">' +
           '<div class="admin-card-head-icon" style="background:rgba(22,163,74,.1)">' +
             '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>' +
