@@ -210,9 +210,20 @@ function showApp(){
   // Avatar nel chip
   updateChipAvatar();
   
-  // Header drawer: nome e ruolo
-  var dName = G('drawer-user-name'); if(dName) dName.textContent = session.nome || session.cognome || 'Utente';
+  // Header drawer: nome, ruolo, avatar
+  var dName = G('drawer-user-name'); if(dName) dName.textContent = (session.nome||'') + ' ' + (session.cognome||'');
   var dRole = G('drawer-user-role'); if(dRole) dRole.textContent = (session.ruolo||'').charAt(0).toUpperCase() + (session.ruolo||'').slice(1);
+  // Avatar nel drawer
+  var dAvImg  = G('drawer-avatar-img');
+  var dAvInit = G('drawer-avatar-initials');
+  if(dAvImg && dAvInit){
+    if(session.avatar_base64){
+      dAvImg.src = session.avatar_base64; dAvImg.style.display='block'; dAvInit.style.display='none';
+    } else {
+      var ini = ((session.nome||'').charAt(0) + (session.cognome||'').charAt(0)).toUpperCase() || '?';
+      dAvInit.textContent = ini; dAvInit.style.display='block'; dAvImg.style.display='none';
+    }
+  }
 
   if(isAdmin()){
     var aa=G('mobile-admin-actions'); if(aa) aa.style.display='flex';
@@ -224,8 +235,6 @@ function showApp(){
   // Obiettivi: visibile ad admin e supervisore
   if(isAdmin() || isSupervisore()){
     var obBtn = G('sb-obiettivi-btn'); if(obBtn) obBtn.style.display='flex';
-    var mbOb  = G('mb-obiettivi-btn'); if(mbOb)  mbOb.style.display='flex';
-    var toolsSec = G('drawer-tools-section'); if(toolsSec) toolsSec.style.display='flex';
   }
   
   // Export solo per admin e supervisore
@@ -265,6 +274,16 @@ function updateChipAvatar() {
   } else {
     img.style.display = 'none';
     G('chip-initials').style.display = 'block';
+  }
+  // Aggiorna anche avatar nel drawer
+  var dAvImg  = G('drawer-avatar-img');
+  var dAvInit = G('drawer-avatar-initials');
+  if(dAvImg && dAvInit){
+    if(session.avatar_base64){
+      dAvImg.src = session.avatar_base64; dAvImg.style.display='block'; dAvInit.style.display='none';
+    } else {
+      dAvInit.textContent = initials; dAvInit.style.display='block'; dAvImg.style.display='none';
+    }
   }
 }
 

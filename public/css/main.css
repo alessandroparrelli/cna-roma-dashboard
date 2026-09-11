@@ -3066,3 +3066,15 @@ body.admin-open #admin-panel { display: block !important; margin-top: 0 !importa
   text-align: center;
 }
 .ob-prev-nr { font-weight: 500; }
+
+/* Avatar nell'header del drawer */
+.drawer-header-profile {
+  display: flex; align-items: center; gap: 14px; flex: 1;
+}
+.drawer-avatar {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  border: 2px solid rgba(255,255,255,.5);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; overflow: hidden;
+}

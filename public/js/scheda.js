@@ -25,6 +25,9 @@ G('btn-logout').addEventListener('click',function(){closeDrawer();doLogout();});
 G('btn-reset').addEventListener('click',function(){closeDrawer();G('btn-reset').click();});
 G('btn-go-admin').addEventListener('click',function(){closeDrawer();showAdminPanel();});
 G('file-add').addEventListener('change',function(e){handleFile(e.target.files[0],true);e.target.value='';closeDrawer();});
+// Impostazioni profilo nel drawer
+var drawerBtnProfilo = G('drawer-btn-profilo');
+if(drawerBtnProfilo) drawerBtnProfilo.addEventListener('click',function(){closeDrawer();if(typeof openProfilo==='function') openProfilo();});
 
 // sync mobile admin visibility with desktop
 function syncMobileAdmin(){
