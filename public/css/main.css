@@ -27,7 +27,7 @@ header {
   top: auto !important;
 }
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.103 "cnaflow Design System"
+   CNA ROMA DASHBOARD — v2026.98 "cnaflow Design System"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2854,3 +2854,83 @@ body.admin-open #upload-zone { display: none !important; }
 }
 .rep-print-zone-a5:first-child{ border-right:0.2mm dashed #cbd5e1; }
 body.admin-open #admin-panel { display: block !important; margin-top: 0 !important; padding-top: 28px; }
+
+/* ════════════ OBIETTIVI TESSERAMENTO ════════════ */
+.ob-wrap { padding: 0 2px; }
+.ob-section .admin-card-head { flex-wrap: wrap; gap: 8px; }
+.ob-head-actions {
+  display: flex; align-items: center; gap: 10px;
+  margin-left: auto; flex-wrap: wrap;
+}
+.ob-anno-ctrl {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-secondary);
+}
+.ob-anno-ctrl label { white-space: nowrap; }
+.ob-anno-ctrl select { font-size: 12px; padding: 4px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); }
+
+/* Tabella */
+.ob-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.ob-table thead th {
+  padding: 9px 14px; text-align: left;
+  background: var(--bg); color: var(--text-secondary);
+  font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase;
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1;
+}
+.ob-table tbody tr { border-bottom: 1px solid var(--border-light, #f1f5f9); }
+.ob-table tbody tr:hover { background: rgba(37,99,235,.03); }
+.ob-table td { padding: 8px 14px; vertical-align: middle; }
+.ob-table tfoot td { padding: 10px 14px; border-top: 2px solid var(--border); background: var(--bg); }
+.ob-tfoot-row td { font-size: 13px; }
+
+.ob-col-num { text-align: right; width: 90px; }
+.ob-col-bar { width: 160px; }
+.ob-col-act { width: 36px; text-align: center; }
+
+.ob-name-cell { display: flex; flex-direction: column; gap: 2px; }
+.ob-name { font-weight: 500; color: var(--text); }
+.ob-match { font-size: 10px; color: var(--text-tertiary); }
+
+/* Input inline */
+.ob-input { padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text); font-size: 13px; }
+.ob-inline-input { width: 72px; text-align: right; }
+
+/* Colori stato */
+.ob-pos { color: #16a34a; font-weight: 600; }
+.ob-neg { color: #dc2626; font-weight: 600; }
+.ob-nc { color: var(--text-tertiary); }
+.ob-fatti-num { font-weight: 600; }
+
+/* Barra progresso */
+.ob-bar-wrap { position: relative; height: 14px; background: var(--border); border-radius: 99px; overflow: hidden; min-width: 80px; }
+.ob-bar-fill { height: 100%; border-radius: 99px; transition: width .3s; }
+.ob-bar-label { display: none; } /* la % è già in colonna */
+
+/* Pulsante elimina */
+.ob-btn-del {
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border: none; border-radius: 6px;
+  background: rgba(239,68,68,.08); color: #dc2626; cursor: pointer;
+  transition: background .15s;
+}
+.ob-btn-del:hover { background: rgba(239,68,68,.18); }
+
+/* Add row */
+.ob-add-row { padding: 14px 16px; background: var(--bg); border-top: 1px solid var(--border); }
+.ob-add-inner { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.ob-add-field { display: flex; flex-direction: column; gap: 4px; }
+.ob-add-field label { font-size: 11px; color: var(--text-secondary); font-weight: 500; }
+.ob-add-field-sm { width: 150px; }
+
+/* Dropdown autocomplete */
+.ob-dropdown {
+  position: absolute; top: calc(100% + 2px); left: 0; z-index: 999;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12);
+  max-height: 240px; overflow-y: auto; min-width: 260px;
+}
+.ob-dd-item { padding: 8px 12px; font-size: 12px; cursor: pointer; color: var(--text); transition: background .1s; }
+.ob-dd-item:hover { background: var(--bg); }
+
+/* Stato vuoto / loading */
+.ob-empty, .ob-loading { padding: 32px; text-align: center; color: var(--text-tertiary); font-size: 13px; }
