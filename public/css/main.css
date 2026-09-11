@@ -2934,3 +2934,9 @@ body.admin-open #admin-panel { display: block !important; margin-top: 0 !importa
 
 /* Stato vuoto / loading */
 .ob-empty, .ob-loading { padding: 32px; text-align: center; color: var(--text-tertiary); font-size: 13px; }
+
+/* Sort icons nelle intestazioni tabella obiettivi */
+.ob-col-sortable { white-space: nowrap; }
+.ob-col-sortable:hover { background: rgba(37,99,235,.06); }
+.ob-sort-icon { font-style: normal; font-size: 11px; margin-left: 3px; opacity: .4; }
+.ob-sort-asc, .ob-sort-desc { opacity: 1; color: var(--primary, #2563eb); }

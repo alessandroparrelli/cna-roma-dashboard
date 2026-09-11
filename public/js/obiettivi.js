@@ -91,6 +91,47 @@
   var calcolatoF = false;
   var calcolatoP = false;
 
+  // Stato ordinamento: { col: 'nome'|'obiettivo'|'fatti'|'delta'|'pct', dir: 1|-1 }
+  var sortF = { col: null, dir: 1 };
+  var sortP = { col: null, dir: 1 };
+
+  function sortedRows(rows, sort, calcolato, totFatti) {
+    if (!sort.col) return rows.slice();
+    return rows.slice().sort(function(a, b) {
+      var av, bv;
+      if (sort.col === 'nome') {
+        av = (a.nome_display || '').toLowerCase();
+        bv = (b.nome_display || '').toLowerCase();
+        return sort.dir * av.localeCompare(bv, 'it');
+      }
+      if (sort.col === 'obiettivo') {
+        av = a.obiettivo || 0; bv = b.obiettivo || 0;
+      } else if (sort.col === 'fatti') {
+        av = calcolato ? (a._fatti || 0) : 0;
+        bv = calcolato ? (b._fatti || 0) : 0;
+      } else if (sort.col === 'delta') {
+        av = calcolato ? ((a._fatti || 0) - (a.obiettivo || 0)) : 0;
+        bv = calcolato ? ((b._fatti || 0) - (b.obiettivo || 0)) : 0;
+      } else if (sort.col === 'pct') {
+        av = calcolato && a.obiettivo ? (a._fatti || 0) / a.obiettivo : 0;
+        bv = calcolato && b.obiettivo ? (b._fatti || 0) / b.obiettivo : 0;
+      }
+      return sort.dir * (av - bv);
+    });
+  }
+
+  function sortIcon(sort, col) {
+    if (sort.col !== col) return '<span class="ob-sort-icon ob-sort-none">↕</span>';
+    return sort.dir === 1
+      ? '<span class="ob-sort-icon ob-sort-asc">↑</span>'
+      : '<span class="ob-sort-icon ob-sort-desc">↓</span>';
+  }
+
+  function thSort(label, col, prefix) {
+    return '<th class="ob-col-th ob-col-sortable" data-col="' + col + '" data-prefix="' + prefix + '" style="cursor:pointer;user-select:none">' +
+      label + ' ' + sortIcon(prefix === 'f' ? sortF : sortP, col) + '</th>';
+  }
+
   /* ── Lettura periodo dall'UI ── */
   function getAnnoParams(prefix) {
     var tipo = document.getElementById('ob-' + prefix + '-anno-tipo').value;
@@ -203,9 +244,20 @@
 
   /* ═══════════ RENDER TABELLA FUNZIONARI ═══════════ */
   function renderTableF() {
+    var thead = document.getElementById('ob-f-thead');
     var tbody = document.getElementById('ob-f-tbody');
     var tfoot = document.getElementById('ob-f-tfoot');
     if (!tbody) return;
+
+    // Header con sort
+    if (thead) thead.innerHTML = '<tr>' +
+      thSort('Funzionario', 'nome', 'f') +
+      thSort('Obiettivo', 'obiettivo', 'f') +
+      thSort('Fatti', 'fatti', 'f') +
+      thSort('% su tot.', 'pct', 'f') +
+      thSort('+/−', 'delta', 'f') +
+      '<th class="ob-col-bar">Progresso</th>' +
+      '<th class="ob-col-act"></th></tr>';
 
     if (!obF.length) {
       tbody.innerHTML = '<tr><td colspan="7" class="ob-empty">Nessun funzionario aggiunto. Usa il form qui sotto.</td></tr>';
@@ -213,16 +265,16 @@
       return;
     }
 
+    var sorted = sortedRows(obF, sortF, calcolatoF, totFattiF);
     var totOb = 0, totF2 = 0;
-    tbody.innerHTML = obF.map(function(row) {
-      totOb += row.obiettivo || 0;
-      var fatti = calcolatoF ? (row._fatti || 0) : null;
-      if (calcolatoF) totF2 += fatti;
+    // totali sempre sul dataset originale (non sorted)
+    obF.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoF) totF2 += r._fatti||0; });
 
+    tbody.innerHTML = sorted.map(function(row) {
+      var fatti = calcolatoF ? (row._fatti || 0) : null;
       var fattiCell = calcolatoF
         ? '<span class="ob-fatti-num' + (fatti >= row.obiettivo ? ' ob-pos' : '') + '">' + fatti + '</span>'
         : '<span class="ob-nc">—</span>';
-
       var pctTot  = (calcolatoF && totFattiF) ? pct(fatti, totFattiF) : '—';
       var dHtml   = calcolatoF ? deltaHtml(fatti, row.obiettivo) : '—';
       var barHtml = calcolatoF ? progressBar(fatti, row.obiettivo) : '';
@@ -256,6 +308,16 @@
       tfoot.innerHTML = '';
     }
 
+    // Click sort header
+    if (thead) thead.querySelectorAll('.ob-col-sortable').forEach(function(th) {
+      th.addEventListener('click', function() {
+        var col = th.dataset.col;
+        if (sortF.col === col) sortF.dir *= -1;
+        else { sortF.col = col; sortF.dir = 1; }
+        renderTableF();
+      });
+    });
+
     // Inline edit
     tbody.querySelectorAll('.ob-inline-input').forEach(function(inp) {
       inp.addEventListener('change', async function() {
@@ -285,9 +347,19 @@
 
   /* ═══════════ RENDER TABELLA PROMOTORI ═══════════ */
   function renderTableP() {
+    var thead = document.getElementById('ob-p-thead');
     var tbody = document.getElementById('ob-p-tbody');
     var tfoot = document.getElementById('ob-p-tfoot');
     if (!tbody) return;
+
+    if (thead) thead.innerHTML = '<tr>' +
+      thSort('Promotore', 'nome', 'p') +
+      thSort('Obiettivo', 'obiettivo', 'p') +
+      thSort('Fatti', 'fatti', 'p') +
+      thSort('% su tot.', 'pct', 'p') +
+      thSort('+/−', 'delta', 'p') +
+      '<th class="ob-col-bar">Progresso</th>' +
+      '<th class="ob-col-act"></th></tr>';
 
     if (!obP.length) {
       tbody.innerHTML = '<tr><td colspan="7" class="ob-empty">Nessun promotore aggiunto. Usa il form qui sotto.</td></tr>';
@@ -295,16 +367,15 @@
       return;
     }
 
+    var sorted = sortedRows(obP, sortP, calcolatoP, totFattiP);
     var totOb = 0, totF2 = 0;
-    tbody.innerHTML = obP.map(function(row) {
-      totOb += row.obiettivo || 0;
-      var fatti = calcolatoP ? (row._fatti || 0) : null;
-      if (calcolatoP) totF2 += fatti;
+    obP.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoP) totF2 += r._fatti||0; });
 
+    tbody.innerHTML = sorted.map(function(row) {
+      var fatti = calcolatoP ? (row._fatti || 0) : null;
       var fattiCell = calcolatoP
         ? '<span class="ob-fatti-num' + (fatti >= row.obiettivo ? ' ob-pos' : '') + '">' + fatti + '</span>'
         : '<span class="ob-nc">—</span>';
-
       var pctTot  = (calcolatoP && totFattiP) ? pct(fatti, totFattiP) : '—';
       var dHtml   = calcolatoP ? deltaHtml(fatti, row.obiettivo) : '—';
       var barHtml = calcolatoP ? progressBar(fatti, row.obiettivo) : '';
@@ -337,6 +408,15 @@
     } else {
       tfoot.innerHTML = '';
     }
+
+    if (thead) thead.querySelectorAll('.ob-col-sortable').forEach(function(th) {
+      th.addEventListener('click', function() {
+        var col = th.dataset.col;
+        if (sortP.col === col) sortP.dir *= -1;
+        else { sortP.col = col; sortP.dir = 1; }
+        renderTableP();
+      });
+    });
 
     tbody.querySelectorAll('.ob-inline-input').forEach(function(inp) {
       inp.addEventListener('change', async function() {
@@ -543,10 +623,7 @@
           '</div>' +
         '</div>' +
         '<div class="admin-card-body" style="padding:0">' +
-          '<table class="ob-table"><thead><tr>' +
-            '<th>Funzionario</th><th class="ob-col-num">Obiettivo</th><th class="ob-col-num">Fatti</th>' +
-            '<th class="ob-col-num">% su tot.</th><th class="ob-col-num">+/−</th><th class="ob-col-bar">Progresso</th><th class="ob-col-act"></th>' +
-          '</tr></thead>' +
+          '<table class="ob-table"><thead id="ob-f-thead"></thead>' +
           '<tbody id="ob-f-tbody"><tr><td colspan="7" class="ob-loading">Caricamento…</td></tr></tbody>' +
           '<tfoot id="ob-f-tfoot"></tfoot></table>' +
           '<div class="ob-add-row">' +
@@ -599,10 +676,7 @@
           '</div>' +
         '</div>' +
         '<div class="admin-card-body" style="padding:0">' +
-          '<table class="ob-table"><thead><tr>' +
-            '<th>Promotore / Raggruppamento</th><th class="ob-col-num">Obiettivo</th><th class="ob-col-num">Fatti</th>' +
-            '<th class="ob-col-num">% su tot.</th><th class="ob-col-num">+/−</th><th class="ob-col-bar">Progresso</th><th class="ob-col-act"></th>' +
-          '</tr></thead>' +
+          '<table class="ob-table"><thead id="ob-p-thead"></thead>' +
           '<tbody id="ob-p-tbody"><tr><td colspan="7" class="ob-loading">Caricamento…</td></tr></tbody>' +
           '<tfoot id="ob-p-tfoot"></tfoot></table>' +
           '<div class="ob-add-row">' +
