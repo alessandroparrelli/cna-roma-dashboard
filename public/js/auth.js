@@ -217,6 +217,11 @@ function showApp(){
     // Inizializza il modulo reportistica
     setTimeout(function(){ if(typeof reportisticaInit==='function') reportisticaInit(); }, 500);
   }
+  // Obiettivi: visibile ad admin e supervisore
+  if(isAdmin() || isSupervisore()){
+    var obBtn = G('sb-obiettivi-btn'); if(obBtn) obBtn.style.display='flex';
+    var mbOb  = G('mb-obiettivi-btn'); if(mbOb)  mbOb.style.display='flex';
+  }
   
   // Export solo per admin e supervisore
   var canExport = isAdmin() || isSupervisore();
