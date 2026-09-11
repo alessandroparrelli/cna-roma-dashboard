@@ -41,7 +41,7 @@
 
   async function getAcuradiList() {
     if (_acuradiList) return _acuradiList;
-    var rows = await obFetch('diretti?select=acuradi&acuradi=neq.&acuradi=not.is.null&limit=5000');
+    var rows = await obFetch('tesseramento_records?select=acuradi&acuradi=neq.&acuradi=not.is.null&limit=5000');
     var set = {};
     rows.forEach(function(r){ var v=(r.acuradi||'').trim(); if(v) set[v]=1; });
     _acuradiList = Object.keys(set).sort(function(a,b){return a.localeCompare(b,'it');});
@@ -50,9 +50,9 @@
 
   async function getRaggrList() {
     if (_raggrList) return _raggrList;
-    var rows = await obFetch('diretti?select=raggruppamento&raggruppamento=neq.&raggruppamento=not.is.null&limit=5000');
+    var rows = await obFetch('tesseramento_records?select=promotore&promotore=neq.&promotore=not.is.null&limit=5000');
     var set = {};
-    rows.forEach(function(r){ var v=(r.raggruppamento||'').trim(); if(v) set[v]=1; });
+    rows.forEach(function(r){ var v=(r.promotore||''  ).trim(); if(v) set[v]=1; });
     _raggrList = Object.keys(set).sort(function(a,b){return a.localeCompare(b,'it');});
     return _raggrList;
   }
@@ -545,7 +545,7 @@
           '<div class="ob-add-row">' +
             '<div class="ob-add-inner">' +
               '<div class="ob-add-field">' +
-                '<label>Funzionario (da diretti.acuradi)</label>' +
+                '<label>Funzionario (da tesseramento)</label>' +
                 '<div style="position:relative">' +
                   '<input type="text" id="ob-f-add-nome" placeholder="Cerca funzionario…" autocomplete="off" class="ob-input" style="min-width:240px">' +
                   '<div id="ob-f-dropdown" class="ob-dropdown" style="display:none"></div>' +
