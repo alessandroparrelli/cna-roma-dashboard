@@ -323,8 +323,7 @@ function openProfilo() {
   if(inp('profilo-input-email'))    inp('profilo-input-email').value    = session.email    || '';
   if(inp('profilo-input-username'))  inp('profilo-input-username').value  = session.username  || '';
   if(inp('profilo-input-telefono')) inp('profilo-input-telefono').value = session.cellulare || '';
-  if(inp('profilo-input-telefono') && !inp('profilo-input-telefono').value)
-    inp('profilo-input-telefono').value = session.telefono || '';
+
   if(inp('profilo-ruolo'))          inp('profilo-ruolo').value          = session.ruolo    || '';
   if(inp('profilo-input-password'))  inp('profilo-input-password').value  = '';
   if(inp('profilo-input-password2')) inp('profilo-input-password2').value = '';
@@ -363,7 +362,7 @@ async function salvaProfiloUtente() {
 
   showLoad('Salvataggio in corso…');
   try {
-    var patch = { nome: nome, cognome: cognome, email: email, cellulare: cellulare, telefono: cellulare, username: username || null };
+    var patch = { nome: nome, cognome: cognome, email: email, cellulare: cellulare, username: username || null };
 
     // Hash SHA-256 della password se fornita
     if (pwd) {
@@ -379,7 +378,7 @@ async function salvaProfiloUtente() {
 
     // Aggiorna sessione locale
     session.nome = nome; session.cognome = cognome;
-    session.email = email; session.cellulare = cellulare; session.telefono = cellulare; session.username = username || '';
+    session.email = email; session.cellulare = cellulare; session.username = username || '';
     saveSession(session);
 
     // Aggiorna UI
