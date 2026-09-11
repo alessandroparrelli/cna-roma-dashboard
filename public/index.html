@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1789139749"></script>
+<script src="js/report-generator.js?v=1789139984"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1789139749">
-<link rel="stylesheet" href="css/assistant.css?v=1789139749">
+<link rel="stylesheet" href="css/main.css?v=1789139984">
+<link rel="stylesheet" href="css/assistant.css?v=1789139984">
 </head>
 <body>
 
@@ -330,53 +330,49 @@
 <!-- TAB: HOME -->
 <div class="page active" id="tab-home">
   <!-- RICERCA IMPRESA HOMEPAGE -->
-  <div style="max-width:780px;margin:0 auto 28px">
-    <div style="background:#fff;border:1.5px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.07)">
-      <div style="background:linear-gradient(135deg,#2563EB,#1D4ED8);padding:20px 28px;display:flex;align-items:center;gap:14px">
-        <div style="width:40px;height:40px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        </div>
-        <div>
-          <h3 style="color:#fff;font-size:18px;font-weight:800;margin:0;letter-spacing:-.3px">Cerca Impresa</h3>
-          <p style="color:rgba(255,255,255,.75);font-size:12px;margin:2px 0 0">Ricerca nell'archivio CNA Roma per ragione sociale, P.IVA, titolare o codice fiscale</p>
-        </div>
+  <div style="max-width:900px;margin:0 auto 20px">
+    <div style="background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.06)">
+      <!-- Header compatto -->
+      <div style="background:linear-gradient(135deg,#2563EB,#1D4ED8);padding:12px 20px;display:flex;align-items:center;gap:10px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span style="color:#fff;font-size:15px;font-weight:800;letter-spacing:-.2px">Cerca Impresa</span>
+        <span style="color:rgba(255,255,255,.65);font-size:12px;margin-left:4px">— ragione sociale, P.IVA, titolare, codice fiscale</span>
       </div>
-      <div style="padding:24px 28px">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-bottom:18px">
+      <!-- Campi in 3 colonne, 2 righe -->
+      <div style="padding:14px 20px">
+        <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px 14px;margin-bottom:12px">
           <div>
-            <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Ragione Sociale</label>
+            <label class="hm-label">Ragione Sociale</label>
             <input type="text" id="hm-ragione" placeholder="Es. Rossi SRL, Pastificio..." class="hm-input" onkeydown="if(event.key==='Enter')hmCerca()">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Partita IVA</label>
-            <input type="text" id="hm-piva" placeholder="Es. 12345678901" class="hm-input" style="font-family:monospace" maxlength="11" onkeydown="if(event.key==='Enter')hmCerca()">
+            <label class="hm-label">Partita IVA</label>
+            <input type="text" id="hm-piva" placeholder="12345678901" class="hm-input" style="font-family:monospace" maxlength="11" onkeydown="if(event.key==='Enter')hmCerca()">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Nome Titolare</label>
-            <input type="text" id="hm-nome" placeholder="Es. Mario" class="hm-input" onkeydown="if(event.key==='Enter')hmCerca()">
+            <label class="hm-label">Codice Fiscale</label>
+            <input type="text" id="hm-cf" placeholder="RSSMRA..." class="hm-input" style="font-family:monospace;text-transform:uppercase" maxlength="16" onkeydown="if(event.key==='Enter')hmCerca()">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Cognome Titolare</label>
-            <input type="text" id="hm-cognome" placeholder="Es. Rossi" class="hm-input" onkeydown="if(event.key==='Enter')hmCerca()">
-          </div>
-          <div>
-            <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Comune / Indirizzo</label>
+            <label class="hm-label">Comune / Indirizzo</label>
             <input type="text" id="hm-comune" placeholder="Es. Roma, Via Tuscolana..." class="hm-input" onkeydown="if(event.key==='Enter')hmCerca()">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:5px">Codice Fiscale</label>
-            <input type="text" id="hm-cf" placeholder="Es. RSSMRA..." class="hm-input" style="font-family:monospace;text-transform:uppercase" maxlength="16" onkeydown="if(event.key==='Enter')hmCerca()">
+            <label class="hm-label">Nome Titolare</label>
+            <input type="text" id="hm-nome" placeholder="Es. Mario" class="hm-input" onkeydown="if(event.key==='Enter')hmCerca()">
+          </div>
+          <div>
+            <label class="hm-label">Cognome Titolare</label>
+            <input type="text" id="hm-cognome" placeholder="Es. Rossi" class="hm-input" onkeydown="if(event.key==='Enter')hmCerca()">
           </div>
         </div>
-        <div style="display:flex;gap:10px;align-items:center">
-          <button class="btn btn-primary" onclick="hmCerca()" style="padding:10px 28px;font-size:14px;font-weight:700;min-width:130px">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button class="btn btn-primary" onclick="hmCerca()" style="padding:8px 24px;font-size:13px;font-weight:700">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
             Cerca
           </button>
-          <button onclick="hmReset()" style="padding:10px 18px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--text-sub);font-size:13px;cursor:pointer;font-family:inherit;font-weight:500">
-            ↺ Azzera
-          </button>
-          <span id="hm-status" style="font-size:13px;color:var(--text-dim);margin-left:4px"></span>
+          <button onclick="hmReset()" style="padding:8px 16px;border:1.5px solid var(--border);border-radius:8px;background:transparent;color:var(--text-sub);font-size:12px;cursor:pointer;font-family:inherit;font-weight:500">↺ Azzera</button>
+          <span id="hm-status" style="font-size:12px;color:var(--text-dim);margin-left:4px"></span>
         </div>
       </div>
     </div>
@@ -389,11 +385,15 @@
 
   <style>
     .hm-input {
-      width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:8px;
-      font-family:inherit;font-size:14px;color:var(--text);background:#fff;outline:none;
-      transition:border-color .15s;box-sizing:border-box;
+      width:100%;padding:7px 11px;border:1.5px solid var(--border);border-radius:8px;
+      font-family:inherit;font-size:13px;color:var(--text);background:#f8fafc;outline:none;
+      transition:border-color .15s,background .15s;box-sizing:border-box;
     }
-    .hm-input:focus { border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1); }
+    .hm-input:focus { border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.1);background:#fff; }
+    .hm-label {
+      font-size:10px;font-weight:700;color:var(--text-tertiary);
+      text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:4px;
+    }
   </style>
   <style>
     /* ── Nascondi importi ── */
@@ -2019,26 +2019,26 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1789139749"></script>
-<script src="js/auth.js?v=1789139749"></script>
-<script src="js/dashboard.js?v=1789139749"></script>
-<script src="js/nav.js?v=1789139749"></script>
-<script src="js/admin.js?v=1789139749"></script>
-<script src="js/anagrafiche.js?v=1789139749"></script>
-<script src="js/contratti.js?v=1789139749"></script>
-<script src="js/consulenti.js?v=1789139749"></script>
-<script src="js/import.js?v=1789139749"></script>
-<script src="js/trasformatore.js?v=1789139749"></script>
-<script src="js/scheda.js?v=1789139749"></script>
-<script src="js/mestieri.js?v=1789139749"></script>
-<script src="js/ateco.js?v=1789139749"></script>
-<script src="js/raggruppamenti.js?v=1789139749"></script>
-<script src="js/storica.js?v=1789139749"></script>
-<script src="js/reportistica.js?v=1789139749"></script>
-<script src="js/ricerca.js?v=1789139749"></script>
-<script src="js/incassi.js?v=1789139749"></script>
-<script src="js/assistant.js?v=1789139749"></script>
-<script src="js/obiettivi.js?v=1789139749"></script>
+<script src="js/config.js?v=1789139984"></script>
+<script src="js/auth.js?v=1789139984"></script>
+<script src="js/dashboard.js?v=1789139984"></script>
+<script src="js/nav.js?v=1789139984"></script>
+<script src="js/admin.js?v=1789139984"></script>
+<script src="js/anagrafiche.js?v=1789139984"></script>
+<script src="js/contratti.js?v=1789139984"></script>
+<script src="js/consulenti.js?v=1789139984"></script>
+<script src="js/import.js?v=1789139984"></script>
+<script src="js/trasformatore.js?v=1789139984"></script>
+<script src="js/scheda.js?v=1789139984"></script>
+<script src="js/mestieri.js?v=1789139984"></script>
+<script src="js/ateco.js?v=1789139984"></script>
+<script src="js/raggruppamenti.js?v=1789139984"></script>
+<script src="js/storica.js?v=1789139984"></script>
+<script src="js/reportistica.js?v=1789139984"></script>
+<script src="js/ricerca.js?v=1789139984"></script>
+<script src="js/incassi.js?v=1789139984"></script>
+<script src="js/assistant.js?v=1789139984"></script>
+<script src="js/obiettivi.js?v=1789139984"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">
