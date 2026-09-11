@@ -37,6 +37,12 @@ function showObiettiviPanel(){
     }
   }
 
+  // Titolo header
+  var hTitle = document.getElementById('admin-header-title');
+  var hSub   = document.getElementById('admin-header-subtitle');
+  if(hTitle) hTitle.textContent = 'Obiettivi Tesseramento';
+  if(hSub)   hSub.textContent   = 'Calcolo raggiungimento obiettivi per funzionario e promotore';
+
   // Chiudi drawer mobile se aperto
   var drawer = document.getElementById('mobile-drawer');
   if(drawer) drawer.classList.remove('open');

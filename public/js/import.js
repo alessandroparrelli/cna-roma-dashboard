@@ -1028,6 +1028,20 @@ document.addEventListener('click', function(e){
   if(tc) tc.classList.add('active');
   if(tabId==='atab-logs') loadLogs();
   if(tabId==='atab-ruoli') loadRuoli();
+  // Titolo dinamico header
+  var hTitle = G('admin-header-title');
+  var hSub   = G('admin-header-subtitle');
+  if(tabId==='atab-obiettivi'){
+    if(hTitle) hTitle.textContent = 'Obiettivi Tesseramento';
+    if(hSub)   hSub.textContent   = 'Calcolo raggiungimento obiettivi per funzionario e promotore';
+    if(tc && !tc.dataset.loaded){
+      tc.dataset.loaded = '1';
+      if(window.ObiettiviFunzionari) window.ObiettiviFunzionari.render();
+    }
+  } else {
+    if(hTitle) hTitle.textContent = 'Pannello Amministratore';
+    if(hSub)   hSub.textContent   = 'Gestione utenti, ruoli e accessi al sistema';
+  }
 });
 
 // LOG FILTERS

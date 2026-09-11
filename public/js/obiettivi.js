@@ -161,15 +161,18 @@
     var dd  = document.getElementById(dropdownId);
     var allNames = [];
 
-    inp.addEventListener('focus', async function() {
+    async function loadNames() {
       if (!allNames.length) {
         inp.placeholder = 'Caricamento…';
         try { allNames = await listFn(); } catch(e) { console.error(e); }
         inp.placeholder = inputId.includes('-f-') ? 'Cerca funzionario…' : 'Cerca raggruppamento…';
       }
-    });
+    }
+    inp.addEventListener('focus', loadNames);
+    inp.addEventListener('click', loadNames);
 
-    inp.addEventListener('input', function() {
+    inp.addEventListener('input', async function() {
+      if (!allNames.length) await loadNames();
       var q = inp.value.trim().toLowerCase();
       if (!q || !allNames.length) { dd.style.display = 'none'; return; }
       var matches = allNames.filter(function(n){ return n.toLowerCase().indexOf(q) !== -1; }).slice(0, 14);
