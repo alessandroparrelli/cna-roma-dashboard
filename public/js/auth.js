@@ -316,7 +316,7 @@ function openProfilo() {
   if(inp('profilo-input-nome'))     inp('profilo-input-nome').value     = session.nome     || '';
   if(inp('profilo-input-cognome'))  inp('profilo-input-cognome').value  = session.cognome  || '';
   if(inp('profilo-input-email'))    inp('profilo-input-email').value    = session.email    || '';
-  if(inp('profilo-input-telefono')) inp('profilo-input-telefono').value = session.telefono || '';
+  if(inp('profilo-input-telefono')) inp('profilo-input-telefono').value = session.cellulare || '';
   if(inp('profilo-ruolo'))          inp('profilo-ruolo').value          = session.ruolo    || '';
   if(inp('profilo-input-password'))  inp('profilo-input-password').value  = '';
   if(inp('profilo-input-password2')) inp('profilo-input-password2').value = '';
@@ -334,7 +334,7 @@ async function salvaProfiloUtente() {
   var nome     = inp('profilo-input-nome').trim();
   var cognome  = inp('profilo-input-cognome').trim();
   var email    = inp('profilo-input-email').trim();
-  var telefono = inp('profilo-input-telefono').trim();
+  var cellulare = inp('profilo-input-telefono').trim();
   var pwd      = inp('profilo-input-password');
   var pwd2     = inp('profilo-input-password2');
 
@@ -354,18 +354,28 @@ async function salvaProfiloUtente() {
 
   showLoad('Salvataggio in corso…');
   try {
-    var patch = { nome: nome, cognome: cognome, email: email, telefono: telefono };
-    if (pwd) patch.password = pwd;
+    var patch = { nome: nome, cognome: cognome, email: email, cellulare: cellulare };
+
+    // Hash SHA-256 della password se fornita
+    if (pwd) {
+      var encoder = new TextEncoder();
+      var data = encoder.encode(pwd);
+      var hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      var hashArray = Array.from(new Uint8Array(hashBuffer));
+      var hashHex = hashArray.map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+      patch.password_sha256 = hashHex;
+    }
+
     await sbPatch('cna_users?id=eq.' + session.id, patch);
 
     // Aggiorna sessione locale
     session.nome = nome; session.cognome = cognome;
-    session.email = email; session.telefono = telefono;
+    session.email = email; session.cellulare = cellulare;
     saveSession(session);
 
     // Aggiorna UI
     updateChipAvatar();
-    openProfilo(); // ricarica i display
+    openProfilo();
 
     showMsg('✓ Profilo aggiornato con successo!', true);
     toast('Profilo aggiornato', 'success');
