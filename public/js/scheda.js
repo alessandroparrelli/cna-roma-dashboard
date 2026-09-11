@@ -3,13 +3,11 @@ function closeDrawer(){
   hamburger.classList.remove('open');
   drawer.classList.remove('open');
   if(overlay) overlay.classList.remove('open');
-  document.body.style.overflow='';
 }
 function openDrawer(){
   hamburger.classList.add('open');
   drawer.classList.add('open');
   if(overlay) overlay.classList.add('open');
-  document.body.style.overflow='hidden';
 }
 hamburger.addEventListener('click',function(){
   drawer.classList.contains('open') ? closeDrawer() : openDrawer();
@@ -20,7 +18,7 @@ if(overlay) overlay.addEventListener('click', closeDrawer);
 var drawerCloseBtn = G('drawer-close-btn');
 if(drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
 // ESC chiude
-document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDrawer(); });
+document.addEventListener('keydown', function(e){ if(e.key==='Escape' && drawer.classList.contains('open')) closeDrawer(); });
 
 // Wire mobile drawer buttons to main handlers
 G('btn-logout').addEventListener('click',function(){closeDrawer();doLogout();});

@@ -342,9 +342,10 @@ body.dark-mode .mobile-drawer { background: #0f1a2e; }
   position: fixed; inset: 0;
   background: rgba(15,23,42,.32);
   z-index: 398;
+  pointer-events: none;   /* non blocca click quando chiuso */
   animation: fadeIn .2s ease;
 }
-.mobile-drawer-overlay.open { display: block; }
+.mobile-drawer-overlay.open { display: block; pointer-events: auto; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* Header drawer */
