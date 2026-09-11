@@ -290,24 +290,89 @@ function updateChipAvatar() {
 function openProfilo() {
   var modal = G('modal-profilo-bg');
   modal.style.display = 'flex';
-  
+
   var initials = getInitials();
+
+  // Avatar
   G('profilo-initials').textContent = initials;
-  G('profilo-nome').textContent = session.nome + ' ' + session.cognome;
-  G('profilo-email').textContent = session.email;
-  G('profilo-ruolo').textContent = session.ruolo;
-  
   var img = G('profilo-avatar-img');
-  var btnRimuovi = G('btn-rimuovi-avatar');
   if (session.avatar_base64) {
-    img.src = session.avatar_base64;
-    img.style.display = 'block';
+    img.src = session.avatar_base64; img.style.display = 'block';
     G('profilo-initials').style.display = 'none';
-    btnRimuovi.style.display = 'block';
+    G('btn-rimuovi-avatar').style.display = 'flex';
   } else {
     img.style.display = 'none';
     G('profilo-initials').style.display = 'block';
-    btnRimuovi.style.display = 'none';
+    G('btn-rimuovi-avatar').style.display = 'none';
+  }
+
+  // Nome display nell'header
+  var nomeDisplay = ((session.nome||'') + ' ' + (session.cognome||'')).trim();
+  var nd = G('profilo-nome-display'); if(nd) nd.textContent = nomeDisplay || '—';
+  var rd = G('profilo-ruolo-display'); if(rd) rd.textContent = (session.ruolo||'');
+
+  // Popola form
+  var inp = function(id){ return document.getElementById(id); };
+  if(inp('profilo-input-nome'))     inp('profilo-input-nome').value     = session.nome     || '';
+  if(inp('profilo-input-cognome'))  inp('profilo-input-cognome').value  = session.cognome  || '';
+  if(inp('profilo-input-email'))    inp('profilo-input-email').value    = session.email    || '';
+  if(inp('profilo-input-telefono')) inp('profilo-input-telefono').value = session.telefono || '';
+  if(inp('profilo-ruolo'))          inp('profilo-ruolo').value          = session.ruolo    || '';
+  if(inp('profilo-input-password'))  inp('profilo-input-password').value  = '';
+  if(inp('profilo-input-password2')) inp('profilo-input-password2').value = '';
+
+  // Nascondi messaggio
+  var msg = G('profilo-msg'); if(msg){ msg.style.display='none'; msg.textContent=''; }
+
+  // Compat vecchio codice
+  if(G('profilo-nome'))  G('profilo-nome').textContent  = nomeDisplay;
+  if(G('profilo-email')) G('profilo-email').textContent = session.email || '';
+}
+
+async function salvaProfiloUtente() {
+  var inp = function(id){ return (document.getElementById(id)||{}).value || ''; };
+  var nome     = inp('profilo-input-nome').trim();
+  var cognome  = inp('profilo-input-cognome').trim();
+  var email    = inp('profilo-input-email').trim();
+  var telefono = inp('profilo-input-telefono').trim();
+  var pwd      = inp('profilo-input-password');
+  var pwd2     = inp('profilo-input-password2');
+
+  var msg = G('profilo-msg');
+  function showMsg(text, ok) {
+    msg.style.display = 'block';
+    msg.style.background = ok ? '#f0fdf4' : '#fef2f2';
+    msg.style.color = ok ? '#16a34a' : '#dc2626';
+    msg.style.border = '1px solid ' + (ok ? '#bbf7d0' : '#fecaca');
+    msg.textContent = text;
+  }
+
+  if (!nome || !cognome) { showMsg('Nome e cognome sono obbligatori.', false); return; }
+  if (!email)            { showMsg('Email obbligatoria.', false); return; }
+  if (pwd && pwd !== pwd2) { showMsg('Le password non coincidono.', false); return; }
+  if (pwd && pwd.length < 6) { showMsg('La password deve essere di almeno 6 caratteri.', false); return; }
+
+  showLoad('Salvataggio in corso…');
+  try {
+    var patch = { nome: nome, cognome: cognome, email: email, telefono: telefono };
+    if (pwd) patch.password = pwd;
+    await sbPatch('cna_users?id=eq.' + session.id, patch);
+
+    // Aggiorna sessione locale
+    session.nome = nome; session.cognome = cognome;
+    session.email = email; session.telefono = telefono;
+    saveSession(session);
+
+    // Aggiorna UI
+    updateChipAvatar();
+    openProfilo(); // ricarica i display
+
+    showMsg('✓ Profilo aggiornato con successo!', true);
+    toast('Profilo aggiornato', 'success');
+  } catch(e) {
+    showMsg('Errore: ' + e.message, false);
+  } finally {
+    hideLoad();
   }
 }
 

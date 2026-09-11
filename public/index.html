@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1789138723"></script>
+<script src="js/report-generator.js?v=1789138873"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1789138723">
-<link rel="stylesheet" href="css/assistant.css?v=1789138723">
+<link rel="stylesheet" href="css/main.css?v=1789138873">
+<link rel="stylesheet" href="css/assistant.css?v=1789138873">
 </head>
 <body>
 
@@ -1839,54 +1839,109 @@
 </div>
 
 <!-- MODAL PROFILO UTENTE -->
-<div id="modal-profilo-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:8000;display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)">
-  <div style="background:#fff;border-radius:16px;padding:30px;width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3);position:relative">
-    <button onclick="document.getElementById('modal-profilo-bg').style.display='none'" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:#999">×</button>
-    <h3 style="margin:0 0 20px 0;font-size:16px;font-weight:700;color:#005CA9;text-align:center">Profilo Utente</h3>
-    
-    <!-- Avatar grande con upload -->
-    <div style="text-align:center;margin-bottom:20px">
-      <div id="profilo-avatar-container" style="width:100px;height:100px;border-radius:50%;background:#E0E7FF;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;overflow:hidden;border:3px solid #005CA9;cursor:pointer;position:relative" title="Clicca per cambiare foto">
-        <span id="profilo-initials" style="font-size:32px;font-weight:700;color:#005CA9">–</span>
-        <img id="profilo-avatar-img" style="width:100%;height:100%;object-fit:cover;display:none" alt="">
-        <div style="position:absolute;bottom:0;left:0;right:0;background:rgba(0,92,169,.7);color:#fff;font-size:9px;padding:4px 0;text-align:center;font-weight:600">CAMBIA FOTO</div>
+<div id="modal-profilo-bg" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:8000;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+  <div class="profilo-modal">
+    <!-- X chiudi -->
+    <button onclick="document.getElementById('modal-profilo-bg').style.display='none'" class="profilo-close-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <!-- Header con avatar -->
+    <div class="profilo-header">
+      <div id="profilo-avatar-container" class="profilo-avatar" title="Clicca per cambiare foto">
+        <span id="profilo-initials">–</span>
+        <img id="profilo-avatar-img" style="display:none" alt="">
+        <div class="profilo-avatar-overlay">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
       </div>
       <input type="file" id="avatar-file-input" accept="image/*" style="display:none">
-      <div style="font-size:10px;color:#999">Clicca sull'immagine per caricare una foto</div>
+      <div id="profilo-nome-display" class="profilo-nome-display"></div>
+      <div id="profilo-ruolo-display" class="profilo-ruolo-display"></div>
     </div>
-    
-    <!-- Info utente -->
-    <div style="background:#F8FAFF;border-radius:10px;padding:16px;margin-bottom:16px">
-      <div style="margin-bottom:8px"><span style="font-size:11px;color:#666;font-weight:600">Nome:</span> <span id="profilo-nome" style="font-size:13px;font-weight:600;color:#333"></span></div>
-      <div style="margin-bottom:8px"><span style="font-size:11px;color:#666;font-weight:600">Email:</span> <span id="profilo-email" style="font-size:13px;color:#333"></span></div>
-      <div><span style="font-size:11px;color:#666;font-weight:600">Ruolo:</span> <span id="profilo-ruolo" style="font-size:13px;color:#333;text-transform:capitalize"></span></div>
+
+    <!-- Form modifica -->
+    <div class="profilo-body">
+      <div class="profilo-section-label">Dati personali</div>
+
+      <div class="profilo-row">
+        <div class="profilo-field">
+          <label class="profilo-label">Nome</label>
+          <input type="text" id="profilo-input-nome" class="profilo-input" placeholder="Nome">
+        </div>
+        <div class="profilo-field">
+          <label class="profilo-label">Cognome</label>
+          <input type="text" id="profilo-input-cognome" class="profilo-input" placeholder="Cognome">
+        </div>
+      </div>
+
+      <div class="profilo-field">
+        <label class="profilo-label">Email</label>
+        <input type="email" id="profilo-input-email" class="profilo-input" placeholder="email@cnaroma.it">
+      </div>
+
+      <div class="profilo-field">
+        <label class="profilo-label">Telefono</label>
+        <input type="tel" id="profilo-input-telefono" class="profilo-input" placeholder="+39 06 000000">
+      </div>
+
+      <div class="profilo-field">
+        <label class="profilo-label">Ruolo</label>
+        <input type="text" id="profilo-ruolo" class="profilo-input" disabled style="opacity:.5;cursor:not-allowed">
+      </div>
+
+      <div class="profilo-section-label" style="margin-top:20px">Cambia password</div>
+      <div class="profilo-field">
+        <label class="profilo-label">Nuova password</label>
+        <input type="password" id="profilo-input-password" class="profilo-input" placeholder="Lascia vuoto per non cambiare">
+      </div>
+      <div class="profilo-field">
+        <label class="profilo-label">Conferma password</label>
+        <input type="password" id="profilo-input-password2" class="profilo-input" placeholder="Ripeti la nuova password">
+      </div>
+
+      <div id="profilo-msg" style="display:none;margin-top:8px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500"></div>
     </div>
-    
-    <!-- Bottone rimuovi foto -->
-    <button id="btn-rimuovi-avatar" onclick="rimuoviAvatar()" style="display:none;width:100%;padding:8px;background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;border-radius:8px;cursor:pointer;font-size:11px;font-weight:600">Rimuovi foto profilo</button>
+
+    <!-- Footer -->
+    <div class="profilo-footer">
+      <button id="btn-rimuovi-avatar" onclick="rimuoviAvatar()" style="display:none" class="profilo-btn-danger">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+        Rimuovi foto
+      </button>
+      <button onclick="document.getElementById('modal-profilo-bg').style.display='none'" class="profilo-btn-cancel">Annulla</button>
+      <button onclick="salvaProfiloUtente()" class="profilo-btn-save">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2l11 0 5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Salva modifiche
+      </button>
+    </div>
+
+    <!-- elementi nascosti compatibilità vecchio codice -->
+    <span id="profilo-nome" style="display:none"></span>
+    <span id="profilo-email" style="display:none"></span>
   </div>
 </div>
 
-<script src="js/config.js?v=1789138723"></script>
-<script src="js/auth.js?v=1789138723"></script>
-<script src="js/dashboard.js?v=1789138723"></script>
-<script src="js/nav.js?v=1789138723"></script>
-<script src="js/admin.js?v=1789138723"></script>
-<script src="js/anagrafiche.js?v=1789138723"></script>
-<script src="js/contratti.js?v=1789138723"></script>
-<script src="js/consulenti.js?v=1789138723"></script>
-<script src="js/import.js?v=1789138723"></script>
-<script src="js/trasformatore.js?v=1789138723"></script>
-<script src="js/scheda.js?v=1789138723"></script>
-<script src="js/mestieri.js?v=1789138723"></script>
-<script src="js/ateco.js?v=1789138723"></script>
-<script src="js/raggruppamenti.js?v=1789138723"></script>
-<script src="js/storica.js?v=1789138723"></script>
-<script src="js/reportistica.js?v=1789138723"></script>
-<script src="js/ricerca.js?v=1789138723"></script>
-<script src="js/incassi.js?v=1789138723"></script>
-<script src="js/assistant.js?v=1789138723"></script>
-<script src="js/obiettivi.js?v=1789138723"></script>
+<script src="js/config.js?v=1789138873"></script>
+<script src="js/auth.js?v=1789138873"></script>
+<script src="js/dashboard.js?v=1789138873"></script>
+<script src="js/nav.js?v=1789138873"></script>
+<script src="js/admin.js?v=1789138873"></script>
+<script src="js/anagrafiche.js?v=1789138873"></script>
+<script src="js/contratti.js?v=1789138873"></script>
+<script src="js/consulenti.js?v=1789138873"></script>
+<script src="js/import.js?v=1789138873"></script>
+<script src="js/trasformatore.js?v=1789138873"></script>
+<script src="js/scheda.js?v=1789138873"></script>
+<script src="js/mestieri.js?v=1789138873"></script>
+<script src="js/ateco.js?v=1789138873"></script>
+<script src="js/raggruppamenti.js?v=1789138873"></script>
+<script src="js/storica.js?v=1789138873"></script>
+<script src="js/reportistica.js?v=1789138873"></script>
+<script src="js/ricerca.js?v=1789138873"></script>
+<script src="js/incassi.js?v=1789138873"></script>
+<script src="js/assistant.js?v=1789138873"></script>
+<script src="js/obiettivi.js?v=1789138873"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">

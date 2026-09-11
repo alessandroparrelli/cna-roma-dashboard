@@ -1621,6 +1621,19 @@ document.addEventListener('DOMContentLoaded', function() {
       document.getElementById('avatar-file-input').click();
     });
   }
+  // Aggiorna nome display in tempo reale
+  ['profilo-input-nome','profilo-input-cognome'].forEach(function(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('input', function(){
+      var nd = document.getElementById('profilo-nome-display');
+      if(nd){
+        var n = (document.getElementById('profilo-input-nome')||{}).value||'';
+        var c = (document.getElementById('profilo-input-cognome')||{}).value||'';
+        nd.textContent = (n+' '+c).trim() || '—';
+      }
+    });
+  });
   
   // File selezionato → upload
   var fileInput = document.getElementById('avatar-file-input');
