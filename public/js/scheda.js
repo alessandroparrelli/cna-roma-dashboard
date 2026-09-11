@@ -1,12 +1,26 @@
-var hamburger=G('hamburger-btn'),drawer=G('mobile-drawer');
-function closeDrawer(){hamburger.classList.remove('open');drawer.classList.remove('open');}
+var hamburger=G('hamburger-btn'),drawer=G('mobile-drawer'),overlay=G('drawer-overlay');
+function closeDrawer(){
+  hamburger.classList.remove('open');
+  drawer.classList.remove('open');
+  if(overlay) overlay.classList.remove('open');
+  document.body.style.overflow='';
+}
+function openDrawer(){
+  hamburger.classList.add('open');
+  drawer.classList.add('open');
+  if(overlay) overlay.classList.add('open');
+  document.body.style.overflow='hidden';
+}
 hamburger.addEventListener('click',function(){
-  hamburger.classList.toggle('open');
-  drawer.classList.toggle('open');
+  drawer.classList.contains('open') ? closeDrawer() : openDrawer();
 });
-document.addEventListener('click',function(e){
-  if(drawer.classList.contains('open')&&!drawer.contains(e.target)&&!hamburger.contains(e.target))closeDrawer();
-});
+// Overlay click chiude
+if(overlay) overlay.addEventListener('click', closeDrawer);
+// Pulsante X nel drawer
+var drawerCloseBtn = G('drawer-close-btn');
+if(drawerCloseBtn) drawerCloseBtn.addEventListener('click', closeDrawer);
+// ESC chiude
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeDrawer(); });
 
 // Wire mobile drawer buttons to main handlers
 G('btn-logout').addEventListener('click',function(){closeDrawer();doLogout();});

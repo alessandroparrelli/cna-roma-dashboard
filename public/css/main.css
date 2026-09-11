@@ -315,26 +315,86 @@ body.dark-mode .user-chip{background:linear-gradient(120deg,rgba(171,174,243,.45
 .hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
 
 /* ── DRAWER MENU ── */
-.mobile-drawer{
-  display:none;position:fixed;top:var(--header-h);right:0;
-  width:260px;
-  background:rgba(255,255,255,.96);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
-  border-left:1px solid var(--border);border-bottom:1px solid var(--border);
-  border-radius:0 0 0 var(--radius-xl);
-  z-index:199;
-  box-shadow:var(--shadow-lg);padding:16px;flex-direction:column;gap:6px;
-  animation:slideDown .2s ease;
+/* ── Menu Sandwich (drawer mobile) ── */
+.mobile-drawer {
+  display: none;
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: 300px;
+  max-width: 88vw;
+  background: #fff;
+  box-shadow: -4px 0 32px rgba(15,23,42,.14);
+  z-index: 399;
+  flex-direction: column;
+  overflow-y: auto;
+  animation: drawerIn .22s cubic-bezier(.4,0,.2,1);
 }
-body.dark-mode .mobile-drawer{background:rgba(17,26,46,.96);}
-@keyframes slideDown{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
-.mobile-drawer.open{display:flex;}
-.mobile-drawer .btn{width:100%;justify-content:flex-start;}
-.drawer-section-label{
-  font-size:10px;font-weight:700;color:var(--text-tertiary);
-  text-transform:uppercase;letter-spacing:.1em;
-  padding:4px 2px 6px;
+body.dark-mode .mobile-drawer { background: #0f1a2e; }
+@keyframes drawerIn {
+  from { opacity: 0; transform: translateX(32px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
-.drawer-divider{height:1px;background:var(--border);margin:4px 0;}
+.mobile-drawer.open { display: flex; }
+
+/* Overlay scuro dietro il drawer */
+.mobile-drawer-overlay {
+  display: none;
+  position: fixed; inset: 0;
+  background: rgba(15,23,42,.32);
+  z-index: 398;
+  animation: fadeIn .2s ease;
+}
+.mobile-drawer-overlay.open { display: block; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* Header drawer */
+.drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);
+  color: #fff;
+  position: sticky; top: 0; z-index: 1;
+}
+.drawer-header-title {
+  font-family: 'Outfit', system-ui, sans-serif;
+  font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.01em;
+}
+.drawer-header-sub { font-size: 11px; color: rgba(255,255,255,.7); margin-top: 1px; }
+.drawer-close-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: rgba(255,255,255,.15); border: none;
+  color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: background .15s;
+}
+.drawer-close-btn:hover { background: rgba(255,255,255,.28); }
+
+/* Corpo drawer */
+.drawer-body {
+  flex: 1; display: flex; flex-direction: column;
+  gap: 2px; padding: 12px;
+}
+
+/* Label sezione */
+.drawer-section-label {
+  font-size: 10px; font-weight: 700; color: var(--text-tertiary);
+  text-transform: uppercase; letter-spacing: .1em;
+  padding: 12px 8px 4px;
+}
+.drawer-divider { height: 1px; background: var(--border); margin: 6px 0; }
+
+/* Voci menu */
+.mobile-drawer .btn {
+  width: 100%; justify-content: flex-start;
+  padding: 11px 14px; border-radius: 10px;
+  font-size: 14px; font-weight: 500;
+  gap: 12px;
+}
+.mobile-drawer .btn .icon-badge {
+  width: 32px; height: 32px; border-radius: 8px; flex-shrink: 0;
+}
 
 /* ════════════ BUTTONS ════════════ */
 .btn{

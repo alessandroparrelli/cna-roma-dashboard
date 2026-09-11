@@ -210,6 +210,10 @@ function showApp(){
   // Avatar nel chip
   updateChipAvatar();
   
+  // Header drawer: nome e ruolo
+  var dName = G('drawer-user-name'); if(dName) dName.textContent = session.nome || session.cognome || 'Utente';
+  var dRole = G('drawer-user-role'); if(dRole) dRole.textContent = (session.ruolo||'').charAt(0).toUpperCase() + (session.ruolo||'').slice(1);
+
   if(isAdmin()){
     var aa=G('mobile-admin-actions'); if(aa) aa.style.display='flex';
     // Mostra sezione Amministrazione app solo agli admin
@@ -221,6 +225,7 @@ function showApp(){
   if(isAdmin() || isSupervisore()){
     var obBtn = G('sb-obiettivi-btn'); if(obBtn) obBtn.style.display='flex';
     var mbOb  = G('mb-obiettivi-btn'); if(mbOb)  mbOb.style.display='flex';
+    var toolsSec = G('drawer-tools-section'); if(toolsSec) toolsSec.style.display='flex';
   }
   
   // Export solo per admin e supervisore
