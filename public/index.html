@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1789138503"></script>
+<script src="js/report-generator.js?v=1789138554"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1789138503">
-<link rel="stylesheet" href="css/assistant.css?v=1789138503">
+<link rel="stylesheet" href="css/main.css?v=1789138554">
+<link rel="stylesheet" href="css/assistant.css?v=1789138554">
 </head>
 <body>
 
@@ -208,6 +208,12 @@
       </div>
     </div>
 
+    <!-- Voce Obiettivi: admin + supervisore -->
+    <button class="tab-btn sb-item" id="sb-obiettivi-btn" data-tab="tab-obiettivi" style="display:none">
+      <span class="sb-icon" style="background:#7C3AED"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+      <span class="sb-label">Obiettivi</span>
+    </button>
+
     <!-- Gruppo: Amministrazione (solo admin) -->
     <div class="sb-dropdown" id="sb-admin-section" data-dd="admin" style="display:none">
       <button type="button" class="sb-item sb-dd-toggle" aria-haspopup="true" aria-expanded="false">
@@ -226,12 +232,6 @@
       </button>
       </div>
     </div>
-
-    <!-- Voce Obiettivi: admin + supervisore -->
-    <button class="tab-btn sb-item" id="sb-obiettivi-btn" data-tab="tab-obiettivi" style="display:none">
-      <span class="sb-icon" style="background:#7C3AED"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-      <span class="sb-label">Obiettivi</span>
-    </button>
 
   </nav>
 </div>
@@ -256,6 +256,17 @@
   <div class="drawer-body">
 
     <!-- Sezione Admin (visibile solo agli admin) -->
+    <!-- Strumenti (admin + supervisore) -->
+    <div id="drawer-tools-section" style="display:none;flex-direction:column;gap:2px;width:100%">
+      <div class="drawer-section-label">Strumenti</div>
+      <button class="btn tab-btn" id="mb-obiettivi-btn" data-tab="tab-obiettivi" style="background:rgba(124,58,237,.08);color:#7C3AED;border:none">
+        <span class="icon-badge" style="background:rgba(124,58,237,.12);color:#7C3AED"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
+        Obiettivi
+      </button>
+      <div class="drawer-divider"></div>
+    </div>
+
+    <!-- Amministrazione (solo admin) -->
     <div id="mobile-admin-actions" style="display:none;flex-direction:column;gap:2px;width:100%">
       <div class="drawer-section-label">Amministrazione</div>
       <label class="btn btn-secondary" for="file-add" style="cursor:pointer">
@@ -270,16 +281,6 @@
       <button class="btn btn-danger" id="btn-reset">
         <span class="icon-badge" style="background:rgba(239,68,68,.12);color:var(--danger)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-4.79"/></svg></span>
         Reset DB
-      </button>
-      <div class="drawer-divider"></div>
-    </div>
-
-    <!-- Strumenti (admin + supervisore) -->
-    <div id="drawer-tools-section" style="display:none;flex-direction:column;gap:2px;width:100%">
-      <div class="drawer-section-label">Strumenti</div>
-      <button class="btn tab-btn" id="mb-obiettivi-btn" data-tab="tab-obiettivi" style="background:rgba(124,58,237,.08);color:#7C3AED;border:none">
-        <span class="icon-badge" style="background:rgba(124,58,237,.12);color:#7C3AED"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
-        Obiettivi
       </button>
       <div class="drawer-divider"></div>
     </div>
@@ -1867,26 +1868,26 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1789138503"></script>
-<script src="js/auth.js?v=1789138503"></script>
-<script src="js/dashboard.js?v=1789138503"></script>
-<script src="js/nav.js?v=1789138503"></script>
-<script src="js/admin.js?v=1789138503"></script>
-<script src="js/anagrafiche.js?v=1789138503"></script>
-<script src="js/contratti.js?v=1789138503"></script>
-<script src="js/consulenti.js?v=1789138503"></script>
-<script src="js/import.js?v=1789138503"></script>
-<script src="js/trasformatore.js?v=1789138503"></script>
-<script src="js/scheda.js?v=1789138503"></script>
-<script src="js/mestieri.js?v=1789138503"></script>
-<script src="js/ateco.js?v=1789138503"></script>
-<script src="js/raggruppamenti.js?v=1789138503"></script>
-<script src="js/storica.js?v=1789138503"></script>
-<script src="js/reportistica.js?v=1789138503"></script>
-<script src="js/ricerca.js?v=1789138503"></script>
-<script src="js/incassi.js?v=1789138503"></script>
-<script src="js/assistant.js?v=1789138503"></script>
-<script src="js/obiettivi.js?v=1789138503"></script>
+<script src="js/config.js?v=1789138554"></script>
+<script src="js/auth.js?v=1789138554"></script>
+<script src="js/dashboard.js?v=1789138554"></script>
+<script src="js/nav.js?v=1789138554"></script>
+<script src="js/admin.js?v=1789138554"></script>
+<script src="js/anagrafiche.js?v=1789138554"></script>
+<script src="js/contratti.js?v=1789138554"></script>
+<script src="js/consulenti.js?v=1789138554"></script>
+<script src="js/import.js?v=1789138554"></script>
+<script src="js/trasformatore.js?v=1789138554"></script>
+<script src="js/scheda.js?v=1789138554"></script>
+<script src="js/mestieri.js?v=1789138554"></script>
+<script src="js/ateco.js?v=1789138554"></script>
+<script src="js/raggruppamenti.js?v=1789138554"></script>
+<script src="js/storica.js?v=1789138554"></script>
+<script src="js/reportistica.js?v=1789138554"></script>
+<script src="js/ricerca.js?v=1789138554"></script>
+<script src="js/incassi.js?v=1789138554"></script>
+<script src="js/assistant.js?v=1789138554"></script>
+<script src="js/obiettivi.js?v=1789138554"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">
