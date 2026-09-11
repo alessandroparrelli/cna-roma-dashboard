@@ -274,8 +274,6 @@
       thSort('Fatti', 'fatti', 'f') +
       thSort('% su tot.', 'pct', 'f') +
       thSort('+/−', 'delta', 'f') +
-      thSort('Importo', 'importo', 'f') +
-      thSort('€/contr.', 'euroctr', 'f') +
       thSort('% obj.', 'pct', 'f') +
       '<th class="ob-col-bar">Progresso</th>' +
       '<th class="ob-col-act"></th></tr>';
@@ -310,8 +308,6 @@
         '<td class="ob-col-num">' + fattiCell + '</td>' +
         '<td class="ob-col-num">' + pctTot + '</td>' +
         '<td class="ob-col-num">' + dHtml + '</td>' +
-        '<td class="ob-col-num ob-euro">' + (calcolatoF && row._importo != null ? fmtEuro(row._importo) : '<span class="ob-nc">—</span>') + '</td>' +
-        '<td class="ob-col-num ob-euro">' + (calcolatoF && row._fatti ? fmtEuro(Math.round(row._importo / row._fatti)) : '<span class="ob-nc">—</span>') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(fatti, row.obiettivo, calcolatoF) + '</td>' +
         '<td class="ob-col-bar">' + barHtml + '</td>' +
         '<td class="ob-col-act"><button class="ob-btn-del" data-id="' + row.id + '" data-kind="f" title="Rimuovi">' +
@@ -327,8 +323,6 @@
         '<td class="ob-col-num"><strong>' + totF2 + '</strong></td>' +
         '<td class="ob-col-num">' + (totOb ? pct(totF2, totOb) : '—') + '</td>' +
         '<td class="ob-col-num">' + deltaHtml(totF2, totOb) + '</td>' +
-        '<td class="ob-col-num ob-euro">' + (calcolatoF ? fmtEuro(totImpF) : '—') + '</td>' +
-        '<td class="ob-col-num ob-euro">' + (calcolatoF && totF2 ? fmtEuro(Math.round(totImpF/totF2)) : '—') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(totF2, totOb, calcolatoF) + '</td>' +
         '<td class="ob-col-bar">' + progressBar(totF2, totOb) + '</td>' +
         '<td></td></tr>';
@@ -386,16 +380,14 @@
       thSort('Fatti', 'fatti', 'p') +
       thSort('% su tot.', 'pct', 'p') +
       thSort('+/−', 'delta', 'p') +
-      thSort('Importo', 'importo', 'p') +
-      thSort('€/contr.', 'euroctr', 'p') +
       thSort('% obj.', 'pct', 'p') +
       '<th class="ob-col-bar">Progresso</th>' +
-      '<th class="ob-col-prev" colspan="2" id="ob-p-th-anno1">Anno prec.</th>' +
-      '<th class="ob-col-prev" colspan="2" id="ob-p-th-anno2">2 anni fa</th>' +
+      '<th class="ob-col-prev" id="ob-p-th-anno1">Anno prec.</th>' +
+      '<th class="ob-col-prev" id="ob-p-th-anno2">2 anni fa</th>' +
       '<th class="ob-col-act"></th></tr>';
 
     if (!obP.length) {
-      tbody.innerHTML = '<tr><td colspan="14" class="ob-empty">Nessun promotore aggiunto. Usa il form qui sotto.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="10" class="ob-empty">Nessun promotore aggiunto. Usa il form qui sotto.</td></tr>';
       tfoot.innerHTML = '';
       return;
     }
@@ -423,14 +415,10 @@
         '<td class="ob-col-num">' + fattiCell + '</td>' +
         '<td class="ob-col-num">' + pctTot + '</td>' +
         '<td class="ob-col-num">' + dHtml + '</td>' +
-        '<td class="ob-col-num ob-euro">' + (calcolatoP && row._importo != null ? fmtEuro(row._importo) : '<span class="ob-nc">—</span>') + '</td>' +
-        '<td class="ob-col-num ob-euro">' + (calcolatoP && row._fatti ? fmtEuro(Math.round(row._importo / row._fatti)) : '<span class="ob-nc">—</span>') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(fatti, row.obiettivo, calcolatoP) + '</td>' +
         '<td class="ob-col-bar">' + barHtml + '</td>' +
         '<td class="ob-col-prev ob-prev-nr">' + (calcolatoP && row._anno1_nr != null ? row._anno1_nr : '<span class="ob-nc">—</span>') + '</td>' +
-        '<td class="ob-col-prev ob-euro">'   + (calcolatoP && row._anno1_imp ? fmtEuro(row._anno1_imp) : '<span class="ob-nc">—</span>') + '</td>' +
         '<td class="ob-col-prev ob-prev-nr">' + (calcolatoP && row._anno2_nr != null ? row._anno2_nr : '<span class="ob-nc">—</span>') + '</td>' +
-        '<td class="ob-col-prev ob-euro">'   + (calcolatoP && row._anno2_imp ? fmtEuro(row._anno2_imp) : '<span class="ob-nc">—</span>') + '</td>' +
         '<td class="ob-col-act"><button class="ob-btn-del" data-id="' + row.id + '" data-kind="p" title="Rimuovi">' +
           '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>' +
         '</button></td>' +
@@ -444,14 +432,10 @@
         '<td class="ob-col-num"><strong>' + totF2 + '</strong></td>' +
         '<td class="ob-col-num">' + (totOb ? pct(totF2, totOb) : '—') + '</td>' +
         '<td class="ob-col-num">' + deltaHtml(totF2, totOb) + '</td>' +
-        '<td class="ob-col-num ob-euro">' + (calcolatoP ? fmtEuro(totImpP) : '—') + '</td>' +
-        '<td class="ob-col-num ob-euro">' + (calcolatoP && totF2 ? fmtEuro(Math.round(totImpP/totF2)) : '—') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(totF2, totOb, calcolatoP) + '</td>' +
         '<td class="ob-col-bar">' + progressBar(totF2, totOb) + '</td>' +
         '<td class="ob-col-prev ob-prev-nr"><strong>' + (calcolatoP ? totA1nr : '—') + '</strong></td>' +
-        '<td class="ob-col-prev ob-euro"><strong>' + (calcolatoP ? fmtEuro(totA1imp) : '—') + '</strong></td>' +
         '<td class="ob-col-prev ob-prev-nr"><strong>' + (calcolatoP ? totA2nr : '—') + '</strong></td>' +
-        '<td class="ob-col-prev ob-euro"><strong>' + (calcolatoP ? fmtEuro(totA2imp) : '—') + '</strong></td>' +
         '<td></td></tr>';
     } else {
       tfoot.innerHTML = '';
@@ -696,9 +680,12 @@
       alignment: { horizontal: align || 'left', vertical: 'center' }
     }); };
     var COLS = isFun
-      ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', 'Importo', '€/contr.', '% obj.', 'Progresso', '% ragg.']
-      : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', 'Importo', '€/contr.', '% obj.', 'Progresso', '% ragg.'];
-    var ALIGNS = ['left','center','center','center','center','right','right','center','left','center'];
+      ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.']
+      : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.', String(annoRifP-1), String(annoRifP-2)];
+    var annoRifP = obP.length && obP[0]._ref_anno ? obP[0]._ref_anno : new Date().getFullYear();
+    var ALIGNS = isFun
+      ? ['left','center','center','center','center','center','left','center']
+      : ['left','center','center','center','center','center','left','center','center','center'];
     COLS.forEach(function(h, c) { setCell(R, c, h, hStyle(ALIGNS[c])); });
     R++;
 
@@ -757,24 +744,8 @@
         alignment: { horizontal: 'center', vertical: 'center' }
       }));
 
-      // Col 5: Importo totale
-      var impVal = (calcolato && row._importo != null) ? row._importo : null;
-      var euroCtr = (calcolato && row._fatti && row._importo) ? Math.round(row._importo / row._fatti) : null;
-      setCell(R, 5, impVal != null ? impVal : '—', borderAll({
-        font: { sz: 10, color: { rgb: C_TEXT } },
-        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
-        alignment: { horizontal: 'right', vertical: 'center' }
-      }));
-
-      // Col 6: €/contratto
-      setCell(R, 6, euroCtr != null ? euroCtr : '—', borderAll({
-        font: { sz: 10, color: { rgb: C_TEXT } },
-        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
-        alignment: { horizontal: 'right', vertical: 'center' }
-      }));
-
-      // Col 7: % obiettivo personale
-      setCell(R, 7, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
+      // Col 5: % obiettivo personale
+      setCell(R, 5, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
         font: { sz: 10, bold: pctRagVal != null && pctRagVal >= 100,
                 color: { rgb: pctRagVal != null ? (pctRagVal >= 100 ? C_POS : pctRagVal >= 70 ? C_BLUE : C_NEG) : C_MUTED } },
         fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
@@ -787,14 +758,14 @@
       var barText = calcolato
         ? ('█'.repeat(filled) + '░'.repeat(BAR_TOTAL - filled) + '  ' + barPct + '%')
         : '—';
-      setCell(R, 8, barText, borderAll({
+      setCell(R, 6, barText, borderAll({
         font: { sz: 9, color: { rgb: barColor }, name: 'Courier New' },
         fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
         alignment: { horizontal: 'left', vertical: 'center' }
       }));
 
       // Col 9: % raggiungimento
-      setCell(R, 9, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
+      setCell(R, 7, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
         font: { sz: 10, bold: pctRagVal != null && pctRagVal >= 100,
                 color: { rgb: pctRagVal != null ? (pctRagVal >= 100 ? C_POS : pctRagVal >= 70 ? C_BLUE : C_NEG) : C_MUTED } },
         fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
@@ -826,24 +797,45 @@
     setCell(R, 3, totOb && calcolato ? (totF2/totOb*100).toFixed(1)+'%' : '—', totStyle('center'));
     setCell(R, 4, calcolato ? ((totDelta>=0?'+':'')+totDelta) : '—',
       totStyle('center', totDelta >= 0 ? C_POS : C_NEG));
-    var totImpExcel = calcolato ? rows.reduce(function(s,r){ return s+(r._importo||0); }, 0) : null;
-    setCell(R, 5, totImpExcel != null ? totImpExcel : '—', totStyle('right'));
-    setCell(R, 6, (totImpExcel != null && totF2) ? Math.round(totImpExcel/totF2) : '—', totStyle('right'));
-    setCell(R, 7, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
+    setCell(R, 5, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
       totStyle('center', totPctRag != null ? (totPctRag >= 100 ? C_POS : totPctRag >= 70 ? C_BLUE : C_NEG) : C_TOTALE_FG));
-    setCell(R, 8, calcolato ? totBarText : '—', borderAll({
+    setCell(R, 6, calcolato ? totBarText : '—', borderAll({
       font: { bold: true, sz: 9, color: { rgb: totBarColor }, name: 'Courier New' },
       fill: { patternType: 'solid', fgColor: { rgb: C_TOTALE_BG } },
       alignment: { horizontal: 'left', vertical: 'center' }
     }));
-    setCell(R, 9, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
+    setCell(R, 7, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
       totStyle('center', totPctRag != null ? (totPctRag >= 100 ? C_POS : totPctRag >= 70 ? C_BLUE : C_NEG) : C_TOTALE_FG));
 
     // ── Range e colonne ──
-    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: R, c: 9 } });
-    ws['!cols'] = [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 13 }, { wch: 11 }, { wch: 10 }, { wch: 28 }, { wch: 12 }];
+    var maxCol = isFun ? 7 : 9;
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: R, c: maxCol } });
+    ws['!cols'] = isFun
+      ? [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 10 }, { wch: 28 }, { wch: 12 }]
+      : [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 10 }, { wch: 28 }, { wch: 12 }, { wch: 10 }, { wch: 10 }];
     ws['!rows'] = [];
     for (var ri = 0; ri <= R; ri++) ws['!rows'].push({ hpt: 18 }); // altezza fissa righe
+
+    // Anni precedenti solo per promotori
+    if (!isFun && calcolato) {
+      var refA = annoRifP;
+      sorted.forEach(function(row, idx) {
+        var excelR = idx + 1; // +1 per header
+        setCell(excelR, 8, row._anno1_nr || 0, borderAll({
+          font: { sz: 10, color: { rgb: C_TEXT } },
+          fill: { patternType: 'solid', fgColor: { rgb: idx%2===1 ? C_ROW_ALT : 'FFFFFF' } },
+          alignment: { horizontal: 'center', vertical: 'center' }
+        }));
+        setCell(excelR, 9, row._anno2_nr || 0, borderAll({
+          font: { sz: 10, color: { rgb: C_TEXT } },
+          fill: { patternType: 'solid', fgColor: { rgb: idx%2===1 ? C_ROW_ALT : 'FFFFFF' } },
+          alignment: { horizontal: 'center', vertical: 'center' }
+        }));
+      });
+      // tfoot anni
+      setCell(R, 8, obP.reduce(function(s,r){ return s+(r._anno1_nr||0); }, 0), totStyle('center'));
+      setCell(R, 9, obP.reduce(function(s,r){ return s+(r._anno2_nr||0); }, 0), totStyle('center'));
+    }
 
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, isFun ? 'Funzionari' : 'Promotori');
