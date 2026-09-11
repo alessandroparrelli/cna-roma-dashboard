@@ -970,6 +970,14 @@ document.querySelectorAll('.tab-btn[data-tab]').forEach(function(btn){
     if(tabId==='tab-overview' && typeof renderOverview === 'function'){ renderOverview(); }
     // Centra il tab attivo nelle frecce della top nav
     if(typeof sbScrollToActive === 'function') sbScrollToActive();
+    // Lazy-load obiettivi on first visit
+    if(tabId==='tab-obiettivi' && window.ObiettiviFunzionari){
+      var obPage = G('ob-page-content');
+      if(obPage && !obPage.dataset.loaded){
+        obPage.dataset.loaded = '1';
+        window.ObiettiviFunzionari.render();
+      }
+    }
   });
 });
 
@@ -1028,20 +1036,11 @@ document.addEventListener('click', function(e){
   if(tc) tc.classList.add('active');
   if(tabId==='atab-logs') loadLogs();
   if(tabId==='atab-ruoli') loadRuoli();
-  // Titolo dinamico header
+  // Ripristina sempre titolo pannello admin
   var hTitle = G('admin-header-title');
   var hSub   = G('admin-header-subtitle');
-  if(tabId==='atab-obiettivi'){
-    if(hTitle) hTitle.textContent = 'Obiettivi Tesseramento';
-    if(hSub)   hSub.textContent   = 'Calcolo raggiungimento obiettivi per funzionario e promotore';
-    if(tc && !tc.dataset.loaded){
-      tc.dataset.loaded = '1';
-      if(window.ObiettiviFunzionari) window.ObiettiviFunzionari.render();
-    }
-  } else {
-    if(hTitle) hTitle.textContent = 'Pannello Amministratore';
-    if(hSub)   hSub.textContent   = 'Gestione utenti, ruoli e accessi al sistema';
-  }
+  if(hTitle) hTitle.textContent = 'Pannello Amministratore';
+  if(hSub)   hSub.textContent   = 'Gestione utenti, ruoli e accessi al sistema';
 });
 
 // LOG FILTERS

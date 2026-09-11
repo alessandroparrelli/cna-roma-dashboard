@@ -9,44 +9,6 @@ function showAdminPanel(){
   loadLogs();
 }
 
-function showObiettiviPanel(){
-  // Apre il pannello admin e attiva direttamente la tab Obiettivi
-  document.body.classList.add('admin-open');
-  var nav = document.getElementById('sidebar');
-  if (nav) nav.style.display = 'none';
-  document.querySelectorAll('.page').forEach(function(p){ p.style.display = 'none'; });
-  var uploadZone = document.getElementById('upload-zone');
-  if (uploadZone) uploadZone.style.display = 'none';
-  document.getElementById('admin-panel').style.display = 'block';
-
-  // Attiva la tab Obiettivi
-  document.querySelectorAll('.admin-tab-new').forEach(function(btn){
-    btn.classList.remove('active');
-    if(btn.dataset.atab === 'atab-obiettivi') btn.classList.add('active');
-  });
-  document.querySelectorAll('.atab-content').forEach(function(el){
-    el.classList.remove('active');
-  });
-  var tabOb = document.getElementById('atab-obiettivi');
-  if(tabOb){
-    tabOb.classList.add('active');
-    // Prima apertura: render
-    if(!tabOb.dataset.loaded){
-      tabOb.dataset.loaded = '1';
-      if(window.ObiettiviFunzionari) window.ObiettiviFunzionari.render();
-    }
-  }
-
-  // Titolo header
-  var hTitle = document.getElementById('admin-header-title');
-  var hSub   = document.getElementById('admin-header-subtitle');
-  if(hTitle) hTitle.textContent = 'Obiettivi Tesseramento';
-  if(hSub)   hSub.textContent   = 'Calcolo raggiungimento obiettivi per funzionario e promotore';
-
-  // Chiudi drawer mobile se aperto
-  var drawer = document.getElementById('mobile-drawer');
-  if(drawer) drawer.classList.remove('open');
-}
 
 // ADMIN USERS
 var modalUserId = null;

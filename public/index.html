@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1789124524"></script>
+<script src="js/report-generator.js?v=1789124768"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1789124524">
-<link rel="stylesheet" href="css/assistant.css?v=1789124524">
+<link rel="stylesheet" href="css/main.css?v=1789124768">
+<link rel="stylesheet" href="css/assistant.css?v=1789124768">
 </head>
 <body>
 
@@ -224,7 +224,7 @@
         <span class="sb-icon" style="background:#DC2626"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="12" y1="9" x2="12" y2="13"/></svg></span>
         <span class="sb-label">Reportistica</span>
       </button>
-        <button class="sb-item" id="sb-btn-obiettivi" onclick="showObiettiviPanel()">
+        <button class="tab-btn sb-item" data-tab="tab-obiettivi">
         <span class="sb-icon" style="background:#7C3AED"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
         <span class="sb-label">Obiettivi</span>
       </button>
@@ -250,7 +250,7 @@
       Reset DB
     </button>
     <div class="drawer-section-label" style="margin-top:6px">Strumenti Admin</div>
-    <button class="btn" onclick="showObiettiviPanel()" style="justify-content:flex-start;background:rgba(124,58,237,.08);color:#7C3AED;border:none">
+    <button class="btn tab-btn" data-tab="tab-obiettivi" style="justify-content:flex-start;background:rgba(124,58,237,.08);color:#7C3AED;border:none">
       <span class="icon-badge" style="background:rgba(124,58,237,.12);color:#7C3AED"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></span>
       Obiettivi
     </button>
@@ -757,12 +757,7 @@
       </span>
       <span class="admin-tab-label">Log Connessioni</span>
     </button>
-    <button class="admin-tab-new" data-atab="atab-obiettivi">
-      <span class="admin-tab-icon">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-      </span>
-      <span class="admin-tab-label">Obiettivi</span>
-    </button>
+
   </div>
 
   <!-- TAB: GESTIONE UTENTI -->
@@ -947,11 +942,6 @@
       </div>
       <div id="log-pagination" style="padding:12px 18px;display:flex;align-items:center;gap:8px;border-top:1px solid var(--border);font-size:12px;color:var(--text-tertiary)"></div>
     </div>
-  </div>
-
-  <!-- TAB: OBIETTIVI TESSERAMENTO -->
-  <div class="atab-content" id="atab-obiettivi">
-    <!-- Contenuto iniettato da obiettivi.js -->
   </div>
 
 </div>
@@ -1360,6 +1350,21 @@
 </div><!-- /tab-raggruppamenti -->
 
 <div class="page" id="tab-reportistica"><div class="tab-hero"><h2 class="tab-hero-title">Reportistica</h2><p class="tab-hero-desc">Generazione di report e stampe ufficiali per uso interno e istituzionale</p></div></div>
+
+<div class="page" id="tab-obiettivi">
+  <div class="tab-hero">
+    <div class="tab-hero-icon" style="background:rgba(124,58,237,.12)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+    </div>
+    <div>
+      <h2 class="tab-hero-title">Obiettivi Tesseramento</h2>
+      <p class="tab-hero-desc">Calcolo del raggiungimento degli obiettivi per funzionario e promotore</p>
+    </div>
+  </div>
+  <div id="ob-page-content">
+    <!-- Iniettato da obiettivi.js -->
+  </div>
+</div>
 
 <!-- TAB: CARICA DATI -->
 <div class="page" id="tab-import">
@@ -1830,26 +1835,26 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1789124524"></script>
-<script src="js/auth.js?v=1789124524"></script>
-<script src="js/dashboard.js?v=1789124524"></script>
-<script src="js/nav.js?v=1789124524"></script>
-<script src="js/admin.js?v=1789124524"></script>
-<script src="js/anagrafiche.js?v=1789124524"></script>
-<script src="js/contratti.js?v=1789124524"></script>
-<script src="js/consulenti.js?v=1789124524"></script>
-<script src="js/import.js?v=1789124524"></script>
-<script src="js/trasformatore.js?v=1789124524"></script>
-<script src="js/scheda.js?v=1789124524"></script>
-<script src="js/mestieri.js?v=1789124524"></script>
-<script src="js/ateco.js?v=1789124524"></script>
-<script src="js/raggruppamenti.js?v=1789124524"></script>
-<script src="js/storica.js?v=1789124524"></script>
-<script src="js/reportistica.js?v=1789124524"></script>
-<script src="js/ricerca.js?v=1789124524"></script>
-<script src="js/incassi.js?v=1789124524"></script>
-<script src="js/assistant.js?v=1789124524"></script>
-<script src="js/obiettivi.js?v=1789124524"></script>
+<script src="js/config.js?v=1789124768"></script>
+<script src="js/auth.js?v=1789124768"></script>
+<script src="js/dashboard.js?v=1789124768"></script>
+<script src="js/nav.js?v=1789124768"></script>
+<script src="js/admin.js?v=1789124768"></script>
+<script src="js/anagrafiche.js?v=1789124768"></script>
+<script src="js/contratti.js?v=1789124768"></script>
+<script src="js/consulenti.js?v=1789124768"></script>
+<script src="js/import.js?v=1789124768"></script>
+<script src="js/trasformatore.js?v=1789124768"></script>
+<script src="js/scheda.js?v=1789124768"></script>
+<script src="js/mestieri.js?v=1789124768"></script>
+<script src="js/ateco.js?v=1789124768"></script>
+<script src="js/raggruppamenti.js?v=1789124768"></script>
+<script src="js/storica.js?v=1789124768"></script>
+<script src="js/reportistica.js?v=1789124768"></script>
+<script src="js/ricerca.js?v=1789124768"></script>
+<script src="js/incassi.js?v=1789124768"></script>
+<script src="js/assistant.js?v=1789124768"></script>
+<script src="js/obiettivi.js?v=1789124768"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">

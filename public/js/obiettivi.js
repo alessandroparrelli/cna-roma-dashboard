@@ -750,7 +750,7 @@
 
   /* ═══════════ HTML PRINCIPALE ═══════════ */
   function renderObiettivi() {
-    var el = document.getElementById('atab-obiettivi');
+    var el = document.getElementById('ob-page-content');
     if (!el) return;
 
     el.innerHTML =
