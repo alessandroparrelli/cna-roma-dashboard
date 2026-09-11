@@ -70,6 +70,13 @@
     return '<span class="' + cls + '">' + sign + d + '</span>';
   }
 
+  function pctObjHtml(fatti, obj, calcolato) {
+    if (!calcolato || fatti == null || !obj) return '<span class="ob-nc">—</span>';
+    var p = (fatti / obj * 100).toFixed(1);
+    var cls = p >= 100 ? 'ob-pos' : p >= 70 ? 'ob-blue' : 'ob-neg';
+    return '<span class="' + cls + '">' + p + '%</span>';
+  }
+
   function progressBar(val, obj) {
     if (!obj) return '';
     var p = Math.min(100, Math.round((val / obj) * 100));
@@ -256,11 +263,12 @@
       thSort('Fatti', 'fatti', 'f') +
       thSort('% su tot.', 'pct', 'f') +
       thSort('+/−', 'delta', 'f') +
+      thSort('% obj.', 'pct', 'f') +
       '<th class="ob-col-bar">Progresso</th>' +
       '<th class="ob-col-act"></th></tr>';
 
     if (!obF.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="ob-empty">Nessun funzionario aggiunto. Usa il form qui sotto.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="ob-empty">Nessun funzionario aggiunto. Usa il form qui sotto.</td></tr>';
       tfoot.innerHTML = '';
       return;
     }
@@ -288,6 +296,7 @@
         '<td class="ob-col-num">' + fattiCell + '</td>' +
         '<td class="ob-col-num">' + pctTot + '</td>' +
         '<td class="ob-col-num">' + dHtml + '</td>' +
+        '<td class="ob-col-num">' + pctObjHtml(fatti, row.obiettivo, calcolatoF) + '</td>' +
         '<td class="ob-col-bar">' + barHtml + '</td>' +
         '<td class="ob-col-act"><button class="ob-btn-del" data-id="' + row.id + '" data-kind="f" title="Rimuovi">' +
           '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>' +
@@ -302,6 +311,7 @@
         '<td class="ob-col-num"><strong>' + totF2 + '</strong></td>' +
         '<td class="ob-col-num">' + (totOb ? pct(totF2, totOb) : '—') + '</td>' +
         '<td class="ob-col-num">' + deltaHtml(totF2, totOb) + '</td>' +
+        '<td class="ob-col-num">' + pctObjHtml(totF2, totOb, calcolatoF) + '</td>' +
         '<td class="ob-col-bar">' + progressBar(totF2, totOb) + '</td>' +
         '<td></td></tr>';
     } else {
@@ -358,11 +368,12 @@
       thSort('Fatti', 'fatti', 'p') +
       thSort('% su tot.', 'pct', 'p') +
       thSort('+/−', 'delta', 'p') +
+      thSort('% obj.', 'pct', 'p') +
       '<th class="ob-col-bar">Progresso</th>' +
       '<th class="ob-col-act"></th></tr>';
 
     if (!obP.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="ob-empty">Nessun promotore aggiunto. Usa il form qui sotto.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="ob-empty">Nessun promotore aggiunto. Usa il form qui sotto.</td></tr>';
       tfoot.innerHTML = '';
       return;
     }
@@ -389,6 +400,7 @@
         '<td class="ob-col-num">' + fattiCell + '</td>' +
         '<td class="ob-col-num">' + pctTot + '</td>' +
         '<td class="ob-col-num">' + dHtml + '</td>' +
+        '<td class="ob-col-num">' + pctObjHtml(fatti, row.obiettivo, calcolatoP) + '</td>' +
         '<td class="ob-col-bar">' + barHtml + '</td>' +
         '<td class="ob-col-act"><button class="ob-btn-del" data-id="' + row.id + '" data-kind="p" title="Rimuovi">' +
           '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>' +
@@ -403,6 +415,7 @@
         '<td class="ob-col-num"><strong>' + totF2 + '</strong></td>' +
         '<td class="ob-col-num">' + (totOb ? pct(totF2, totOb) : '—') + '</td>' +
         '<td class="ob-col-num">' + deltaHtml(totF2, totOb) + '</td>' +
+        '<td class="ob-col-num">' + pctObjHtml(totF2, totOb, calcolatoP) + '</td>' +
         '<td class="ob-col-bar">' + progressBar(totF2, totOb) + '</td>' +
         '<td></td></tr>';
     } else {
@@ -599,9 +612,9 @@
       alignment: { horizontal: align || 'left', vertical: 'center' }
     }); };
     var COLS = isFun
-      ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', 'Progresso', '% ragg.']
-      : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', 'Progresso', '% ragg.'];
-    var ALIGNS = ['left','center','center','center','center','left','center'];
+      ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.']
+      : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.'];
+    var ALIGNS = ['left','center','center','center','center','center','left','center'];
     COLS.forEach(function(h, c) { setCell(R, c, h, hStyle(ALIGNS[c])); });
     R++;
 
@@ -660,21 +673,29 @@
         alignment: { horizontal: 'center', vertical: 'center' }
       }));
 
-      // Col 5: Barra progresso (testo visuale con sfondo colorato proporzionale)
+      // Col 5: % obiettivo personale
+      setCell(R, 5, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
+        font: { sz: 10, bold: pctRagVal != null && pctRagVal >= 100,
+                color: { rgb: pctRagVal != null ? (pctRagVal >= 100 ? C_POS : pctRagVal >= 70 ? C_BLUE : C_NEG) : C_MUTED } },
+        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      }));
+
+      // Col 6: Barra progresso (testo visuale con sfondo colorato proporzionale)
       // Usiamo un carattere blocco ripetuto per simulare la barra
       var BAR_TOTAL = 20; // caratteri totali barra
       var filled = calcolato ? Math.round(barPct / 100 * BAR_TOTAL) : 0;
       var barText = calcolato
         ? ('█'.repeat(filled) + '░'.repeat(BAR_TOTAL - filled) + '  ' + barPct + '%')
         : '—';
-      setCell(R, 5, barText, borderAll({
+      setCell(R, 6, barText, borderAll({
         font: { sz: 9, color: { rgb: barColor }, name: 'Courier New' },
         fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
         alignment: { horizontal: 'left', vertical: 'center' }
       }));
 
-      // Col 6: % raggiungimento
-      setCell(R, 6, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
+      // Col 7: % raggiungimento (ridondante — già in col 5, la teniamo per chiarezza)
+      setCell(R, 7, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
         font: { sz: 10, bold: pctRagVal != null && pctRagVal >= 100,
                 color: { rgb: pctRagVal != null ? (pctRagVal >= 100 ? C_POS : pctRagVal >= 70 ? C_BLUE : C_NEG) : C_MUTED } },
         fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
@@ -706,17 +727,19 @@
     setCell(R, 3, totOb && calcolato ? (totF2/totOb*100).toFixed(1)+'%' : '—', totStyle('center'));
     setCell(R, 4, calcolato ? ((totDelta>=0?'+':'')+totDelta) : '—',
       totStyle('center', totDelta >= 0 ? C_POS : C_NEG));
-    setCell(R, 5, calcolato ? totBarText : '—', borderAll({
+    setCell(R, 5, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
+      totStyle('center', totPctRag != null ? (totPctRag >= 100 ? C_POS : totPctRag >= 70 ? C_BLUE : C_NEG) : C_TOTALE_FG));
+    setCell(R, 6, calcolato ? totBarText : '—', borderAll({
       font: { bold: true, sz: 9, color: { rgb: totBarColor }, name: 'Courier New' },
       fill: { patternType: 'solid', fgColor: { rgb: C_TOTALE_BG } },
       alignment: { horizontal: 'left', vertical: 'center' }
     }));
-    setCell(R, 6, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
+    setCell(R, 7, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
       totStyle('center', totPctRag != null ? (totPctRag >= 100 ? C_POS : totPctRag >= 70 ? C_BLUE : C_NEG) : C_TOTALE_FG));
 
     // ── Range e colonne ──
-    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: R, c: 6 } });
-    ws['!cols'] = [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 28 }, { wch: 12 }];
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: R, c: 7 } });
+    ws['!cols'] = [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 10 }, { wch: 28 }, { wch: 12 }];
     ws['!rows'] = [];
     for (var ri = 0; ri <= R; ri++) ws['!rows'].push({ hpt: 18 }); // altezza fissa righe
 
@@ -762,7 +785,7 @@
         '</div>' +
         '<div class="admin-card-body" style="padding:0">' +
           '<table class="ob-table"><thead id="ob-f-thead"></thead>' +
-          '<tbody id="ob-f-tbody"><tr><td colspan="7" class="ob-loading">Caricamento…</td></tr></tbody>' +
+          '<tbody id="ob-f-tbody"><tr><td colspan="8" class="ob-loading">Caricamento…</td></tr></tbody>' +
           '<tfoot id="ob-f-tfoot"></tfoot></table>' +
           '<div class="ob-add-row">' +
             '<div class="ob-add-inner">' +
@@ -815,7 +838,7 @@
         '</div>' +
         '<div class="admin-card-body" style="padding:0">' +
           '<table class="ob-table"><thead id="ob-p-thead"></thead>' +
-          '<tbody id="ob-p-tbody"><tr><td colspan="7" class="ob-loading">Caricamento…</td></tr></tbody>' +
+          '<tbody id="ob-p-tbody"><tr><td colspan="8" class="ob-loading">Caricamento…</td></tr></tbody>' +
           '<tfoot id="ob-p-tfoot"></tfoot></table>' +
           '<div class="ob-add-row">' +
             '<div class="ob-add-inner">' +

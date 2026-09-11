@@ -2896,8 +2896,9 @@ body.admin-open #admin-panel { display: block !important; margin-top: 0 !importa
 .ob-inline-input { width: 72px; text-align: right; }
 
 /* Colori stato */
-.ob-pos { color: #16a34a; font-weight: 600; }
-.ob-neg { color: #dc2626; font-weight: 600; }
+.ob-pos  { color: #16a34a; font-weight: 600; }
+.ob-neg  { color: #dc2626; font-weight: 600; }
+.ob-blue { color: #2563eb; font-weight: 600; }
 .ob-nc { color: var(--text-tertiary); }
 .ob-fatti-num { font-weight: 600; }
 
