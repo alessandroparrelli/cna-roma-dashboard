@@ -1,10 +1,10 @@
 async function doLogin(){
-  var email=G('inp-email').value.trim().toLowerCase();
+  var loginId=G('inp-email').value.trim().toLowerCase();
   var pwd=G('inp-pwd').value;
   var errEl=G('login-error');
   errEl.style.display='none';
-  if(!email||!pwd){
-    errEl.textContent='Inserisci email e password';
+  if(!loginId||!pwd){
+    errEl.textContent='Inserisci email/username e password';
     errEl.style.display='block';
     return;
   }
@@ -14,11 +14,16 @@ async function doLogin(){
   showLoad('Verifica credenziali…');
   try{
     var hash=await sha256hex(pwd);
-    // Login tramite Edge Function server-side — cna_users non è mai interrogata dal browser
+    // Determina se è email o username
+    var isEmail = loginId.indexOf('@') !== -1;
+    var body = isEmail
+      ? {email: loginId, password_sha256: hash}
+      : {username: loginId, password_sha256: hash};
+    // Login tramite Edge Function server-side
     var resp=await fetch(SB+'/functions/v1/cna-login',{
       method:'POST',
       headers:{'Content-Type':'application/json','apikey':KEY},
-      body:JSON.stringify({email:email,password_sha256:hash})
+      body:JSON.stringify(body)
     });
     var result=await resp.json();
     if(!resp.ok||!result.user){
@@ -316,7 +321,10 @@ function openProfilo() {
   if(inp('profilo-input-nome'))     inp('profilo-input-nome').value     = session.nome     || '';
   if(inp('profilo-input-cognome'))  inp('profilo-input-cognome').value  = session.cognome  || '';
   if(inp('profilo-input-email'))    inp('profilo-input-email').value    = session.email    || '';
+  if(inp('profilo-input-username'))  inp('profilo-input-username').value  = session.username  || '';
   if(inp('profilo-input-telefono')) inp('profilo-input-telefono').value = session.cellulare || '';
+  if(inp('profilo-input-telefono') && !inp('profilo-input-telefono').value)
+    inp('profilo-input-telefono').value = session.telefono || '';
   if(inp('profilo-ruolo'))          inp('profilo-ruolo').value          = session.ruolo    || '';
   if(inp('profilo-input-password'))  inp('profilo-input-password').value  = '';
   if(inp('profilo-input-password2')) inp('profilo-input-password2').value = '';
@@ -334,6 +342,7 @@ async function salvaProfiloUtente() {
   var nome     = inp('profilo-input-nome').trim();
   var cognome  = inp('profilo-input-cognome').trim();
   var email    = inp('profilo-input-email').trim();
+  var username  = inp('profilo-input-username').trim().toLowerCase().replace(/\s+/g,'');
   var cellulare = inp('profilo-input-telefono').trim();
   var pwd      = inp('profilo-input-password');
   var pwd2     = inp('profilo-input-password2');
@@ -354,7 +363,7 @@ async function salvaProfiloUtente() {
 
   showLoad('Salvataggio in corso…');
   try {
-    var patch = { nome: nome, cognome: cognome, email: email, cellulare: cellulare };
+    var patch = { nome: nome, cognome: cognome, email: email, cellulare: cellulare, telefono: cellulare, username: username || null };
 
     // Hash SHA-256 della password se fornita
     if (pwd) {
@@ -370,7 +379,7 @@ async function salvaProfiloUtente() {
 
     // Aggiorna sessione locale
     session.nome = nome; session.cognome = cognome;
-    session.email = email; session.cellulare = cellulare;
+    session.email = email; session.cellulare = cellulare; session.telefono = cellulare; session.username = username || '';
     saveSession(session);
 
     // Aggiorna UI
