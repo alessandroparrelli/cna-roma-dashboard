@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1789139413"></script>
+<script src="js/report-generator.js?v=1789139749"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1789139413">
-<link rel="stylesheet" href="css/assistant.css?v=1789139413">
+<link rel="stylesheet" href="css/main.css?v=1789139749">
+<link rel="stylesheet" href="css/assistant.css?v=1789139749">
 </head>
 <body>
 
@@ -794,57 +794,149 @@
 
   <!-- TAB: GESTIONE UTENTI -->
   <div class="atab-content active" id="atab-utenti">
-    <div class="admin-grid">
-      <div class="admin-card-new">
-        <div class="admin-card-head">
-          <div class="admin-card-head-icon" style="background:rgba(0,92,169,.1)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-          </div>
-          <span>Nuovo Utente</span>
+    <div class="admin-card-new">
+      <div class="admin-card-head">
+        <div class="admin-card-head-icon" style="background:rgba(16,185,129,.1)">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
         </div>
-        <div class="admin-card-body">
-          <div class="form-row">
-            <div class="fgs"><label>Nome *</label><input type="text" id="u-nome" placeholder="Mario"></div>
-            <div class="fgs"><label>Cognome *</label><input type="text" id="u-cognome" placeholder="Rossi"></div>
-          </div>
-          <div class="fgs"><label>Email *</label><input type="email" id="u-email" placeholder="mario@email.com"></div>
-          <div class="fgs"><label>Cellulare</label><input type="tel" id="u-cell" placeholder="+39 333 0000000"></div>
-          <div class="fgs">
-            <label>Password *</label>
-            <input type="password" id="u-pwd" placeholder="Min. 6 caratteri">
-          </div>
-          <span class="form-err" id="u-err"></span>
-          <button class="btn btn-primary" id="btn-crea-utente" onclick="createUser()" style="width:100%;justify-content:center;margin-top:4px">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-            Crea Utente
-          </button>
-        </div>
+        <span>Utenti Registrati</span>
+        <span id="users-count" class="admin-badge-count">–</span>
+        <button class="btn btn-primary btn-sm" onclick="openModalNuovoUtente()" style="margin-left:auto">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          Nuovo utente
+        </button>
       </div>
-      <div class="admin-card-new">
-        <div class="admin-card-head">
-          <div class="admin-card-head-icon" style="background:rgba(16,185,129,.1)">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+      <div style="overflow-x:auto">
+        <table class="users-table">
+          <thead>
+            <tr>
+              <th>Utente</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Cellulare</th>
+              <th>Ruolo</th>
+              <th>Stato</th>
+              <th>Ultimo accesso</th>
+              <th style="text-align:right">Azioni</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-tertiary)">Caricamento…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NUOVO UTENTE -->
+  <div id="modal-nuovo-utente" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+    <div class="gu-modal">
+      <div class="gu-modal-header">
+        <div>
+          <div class="gu-modal-title">Nuovo Utente</div>
+          <div class="gu-modal-sub">Crea un nuovo account</div>
+        </div>
+        <button class="profilo-close-btn" onclick="document.getElementById('modal-nuovo-utente').style.display='none'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="gu-modal-body">
+        <div class="profilo-row">
+          <div class="profilo-field"><label class="profilo-label">Nome *</label><input type="text" id="u-nome" class="profilo-input" placeholder="Mario"></div>
+          <div class="profilo-field"><label class="profilo-label">Cognome *</label><input type="text" id="u-cognome" class="profilo-input" placeholder="Rossi"></div>
+        </div>
+        <div class="profilo-field"><label class="profilo-label">Username <span style="font-size:10px;color:#94a3b8;font-weight:400">(per il login)</span></label><input type="text" id="u-username" class="profilo-input" placeholder="mrossi" spellcheck="false"></div>
+        <div class="profilo-field"><label class="profilo-label">Email *</label><input type="email" id="u-email" class="profilo-input" placeholder="mario@cnaroma.it"></div>
+        <div class="profilo-field"><label class="profilo-label">Cellulare</label><input type="tel" id="u-cell" class="profilo-input" placeholder="+39 333 0000000"></div>
+        <div class="profilo-field">
+          <label class="profilo-label">Ruolo</label>
+          <select id="u-ruolo" class="profilo-input">
+            <option value="utente">Utente</option>
+            <option value="supervisore">Supervisore</option>
+            <option value="commerciale">Commerciale</option>
+            <option value="operatore">Operatore</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="profilo-field"><label class="profilo-label">Password *</label><input type="password" id="u-pwd" class="profilo-input" placeholder="Min. 6 caratteri"></div>
+        <div class="profilo-field"><label class="profilo-label">Conferma password *</label><input type="password" id="u-pwd2" class="profilo-input" placeholder="Ripeti la password"></div>
+        <span class="form-err" id="u-err" style="display:none;margin-top:4px"></span>
+      </div>
+      <div class="profilo-footer">
+        <button onclick="document.getElementById('modal-nuovo-utente').style.display='none'" class="profilo-btn-cancel">Annulla</button>
+        <button onclick="createUser()" class="profilo-btn-save">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+          Crea Utente
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: SCHEDA UTENTE (modifica) -->
+  <div id="modal-scheda-utente" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center;backdrop-filter:blur(6px)">
+    <div class="gu-modal">
+      <div class="gu-modal-header">
+        <div class="gu-modal-avatar-wrap">
+          <div class="gu-modal-avatar" id="su-avatar-wrap">
+            <img id="su-avatar-img" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%" alt="">
+            <span id="su-avatar-initials" style="font-size:22px;font-weight:800;color:#fff"></span>
+            <div class="profilo-avatar-overlay" id="su-avatar-overlay">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
           </div>
-          <span>Utenti Registrati</span>
-          <span id="users-count" class="admin-badge-count">–</span>
+          <input type="file" id="su-avatar-file" accept="image/*" style="display:none">
+          <div>
+            <div class="gu-modal-title" id="su-nome-display">–</div>
+            <div class="gu-modal-sub" id="su-email-display">–</div>
+          </div>
         </div>
-        <div style="overflow-x:auto">
-          <table class="users-table">
-            <thead>
-              <tr>
-                <th>Utente</th>
-                <th>Email</th>
-                <th>Ruolo</th>
-                <th>Stato</th>
-                <th>Ultimo accesso</th>
-                <th style="text-align:right">Azioni</th>
-              </tr>
-            </thead>
-            <tbody id="users-tbody">
-              <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-tertiary)">Caricamento…</td></tr>
-            </tbody>
-          </table>
+        <button class="profilo-close-btn" onclick="document.getElementById('modal-scheda-utente').style.display='none'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="gu-modal-body">
+        <div class="profilo-section-label">Dati personali</div>
+        <div class="profilo-row">
+          <div class="profilo-field"><label class="profilo-label">Nome</label><input type="text" id="su-nome" class="profilo-input"></div>
+          <div class="profilo-field"><label class="profilo-label">Cognome</label><input type="text" id="su-cognome" class="profilo-input"></div>
         </div>
+        <div class="profilo-field"><label class="profilo-label">Username</label><input type="text" id="su-username" class="profilo-input" spellcheck="false"></div>
+        <div class="profilo-field"><label class="profilo-label">Email</label><input type="email" id="su-email" class="profilo-input"></div>
+        <div class="profilo-field"><label class="profilo-label">Cellulare</label><input type="tel" id="su-cell" class="profilo-input"></div>
+        <div class="profilo-field">
+          <label class="profilo-label">Ruolo</label>
+          <select id="su-ruolo" class="profilo-input">
+            <option value="utente">Utente</option>
+            <option value="supervisore">Supervisore</option>
+            <option value="commerciale">Commerciale</option>
+            <option value="operatore">Operatore</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="profilo-field">
+          <label class="profilo-label">Stato</label>
+          <select id="su-attivo" class="profilo-input">
+            <option value="true">Attivo</option>
+            <option value="false">Disattivato</option>
+          </select>
+        </div>
+        <div class="profilo-section-label" style="margin-top:16px">Reset password</div>
+        <div class="profilo-row">
+          <div class="profilo-field"><label class="profilo-label">Nuova password</label><input type="password" id="su-pwd" class="profilo-input" placeholder="Lascia vuoto per non cambiare"></div>
+          <div class="profilo-field"><label class="profilo-label">Conferma</label><input type="password" id="su-pwd2" class="profilo-input" placeholder="Ripeti"></div>
+        </div>
+        <div id="su-msg" style="display:none;margin-top:8px;padding:10px 14px;border-radius:8px;font-size:13px;font-weight:500"></div>
+      </div>
+      <div class="profilo-footer">
+        <button id="su-btn-elimina" class="profilo-btn-danger" onclick="eliminaUtenteDaModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>
+          Elimina
+        </button>
+        <button onclick="document.getElementById('modal-scheda-utente').style.display='none'" class="profilo-btn-cancel">Annulla</button>
+        <button onclick="salvaSchedaUtente()" class="profilo-btn-save">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2l11 0 5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          Salva modifiche
+        </button>
       </div>
     </div>
   </div>
@@ -1927,26 +2019,26 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1789139413"></script>
-<script src="js/auth.js?v=1789139413"></script>
-<script src="js/dashboard.js?v=1789139413"></script>
-<script src="js/nav.js?v=1789139413"></script>
-<script src="js/admin.js?v=1789139413"></script>
-<script src="js/anagrafiche.js?v=1789139413"></script>
-<script src="js/contratti.js?v=1789139413"></script>
-<script src="js/consulenti.js?v=1789139413"></script>
-<script src="js/import.js?v=1789139413"></script>
-<script src="js/trasformatore.js?v=1789139413"></script>
-<script src="js/scheda.js?v=1789139413"></script>
-<script src="js/mestieri.js?v=1789139413"></script>
-<script src="js/ateco.js?v=1789139413"></script>
-<script src="js/raggruppamenti.js?v=1789139413"></script>
-<script src="js/storica.js?v=1789139413"></script>
-<script src="js/reportistica.js?v=1789139413"></script>
-<script src="js/ricerca.js?v=1789139413"></script>
-<script src="js/incassi.js?v=1789139413"></script>
-<script src="js/assistant.js?v=1789139413"></script>
-<script src="js/obiettivi.js?v=1789139413"></script>
+<script src="js/config.js?v=1789139749"></script>
+<script src="js/auth.js?v=1789139749"></script>
+<script src="js/dashboard.js?v=1789139749"></script>
+<script src="js/nav.js?v=1789139749"></script>
+<script src="js/admin.js?v=1789139749"></script>
+<script src="js/anagrafiche.js?v=1789139749"></script>
+<script src="js/contratti.js?v=1789139749"></script>
+<script src="js/consulenti.js?v=1789139749"></script>
+<script src="js/import.js?v=1789139749"></script>
+<script src="js/trasformatore.js?v=1789139749"></script>
+<script src="js/scheda.js?v=1789139749"></script>
+<script src="js/mestieri.js?v=1789139749"></script>
+<script src="js/ateco.js?v=1789139749"></script>
+<script src="js/raggruppamenti.js?v=1789139749"></script>
+<script src="js/storica.js?v=1789139749"></script>
+<script src="js/reportistica.js?v=1789139749"></script>
+<script src="js/ricerca.js?v=1789139749"></script>
+<script src="js/incassi.js?v=1789139749"></script>
+<script src="js/assistant.js?v=1789139749"></script>
+<script src="js/obiettivi.js?v=1789139749"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">

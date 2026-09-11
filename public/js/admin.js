@@ -1,3 +1,24 @@
+// Avatar upload scheda utente
+document.addEventListener('DOMContentLoaded', function(){
+  var suFile = document.getElementById('su-avatar-file');
+  var suWrap = document.getElementById('su-avatar-wrap');
+  if(suWrap) suWrap.addEventListener('click', function(){if(suFile) suFile.click();});
+  if(suFile) suFile.addEventListener('change', async function(e){
+    var file = e.target.files[0]; if(!file) return;
+    if(file.size > 500000){ toast('Immagine max 500KB','error'); return; }
+    var reader = new FileReader();
+    reader.onload = function(){
+      var b64 = reader.result;
+      var img = document.getElementById('su-avatar-img');
+      var ini = document.getElementById('su-avatar-initials');
+      if(img){ img.src = b64; img.style.display = 'block'; img.dataset.newAvatar = b64; }
+      if(ini) ini.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  });
+});
+
 function showAdminPanel(){
   document.body.classList.add('admin-open');
   var nav = document.getElementById('sidebar');
@@ -13,32 +34,46 @@ function showAdminPanel(){
 // ADMIN USERS
 var modalUserId = null;
 
+// Cache utenti per i modal
+var _usersCache = [];
+
 async function loadUsers(){
   try{
-    var us=await sbGet('cna_users?select=id,nome,cognome,email,ruolo,attivo,last_login&order=created_at.asc');
+    var us=await sbGet('cna_users?select=id,nome,cognome,email,username,cellulare,ruolo,attivo,last_login,avatar_base64&order=cognome.asc');
+    _usersCache = us;
     var tb=G('users-tbody');
     var cnt=G('users-count');
     if(cnt) cnt.textContent=us.length+' utenti';
-    if(!us.length){tb.innerHTML='<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--gray-400)">Nessun utente</td></tr>';return;}
+    if(!us.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-tertiary)">Nessun utente</td></tr>';return;}
+    var badgesMap={
+      'admin':       '<span class="badge badge-admin">Admin</span>',
+      'supervisore': '<span class="badge badge-supervisore">Supervisore</span>',
+      'commerciale': '<span class="badge badge-commerciale">Commerciale</span>',
+      'operatore':   '<span class="badge badge-operatore">Operatore</span>'
+    };
     tb.innerHTML=us.map(function(u){
-      var badgesMap={'admin':'<span class="badge badge-admin">Admin</span>','supervisore':'<span class="badge badge-supervisore">Supervisore</span>','commerciale':'<span class="badge badge-commerciale">Commerciale</span>','operatore':'<span class="badge badge-operatore">Operatore</span>'};
       var rb=badgesMap[u.ruolo]||'<span class="badge badge-user">Utente</span>';
-      var sb=u.attivo?'<span class="badge badge-on">● Attivo</span>':'<span class="badge badge-off">● Inattivo</span>';
-      var ll=u.last_login?fmtDate(u.last_login):'<span style="color:var(--gray-400)">Mai</span>';
-      var actions='<div class="user-actions">';
-      // Cambio password (tutti)
-      actions+='<button class="btn btn-sm btn-secondary" onclick="openChangePwd(\''+u.id+'\',\''+escQ(u.nome+' '+u.cognome)+'\')" title="Cambia password"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Pwd</button>';
-      if(u.ruolo!=='admin'){
-        // Attiva/Disattiva
-        if(u.attivo) actions+='<button class="btn btn-sm btn-danger" onclick="toggleU(\''+u.id+'\',false)">Disattiva</button>';
-        else actions+='<button class="btn btn-sm btn-primary" onclick="toggleU(\''+u.id+'\',true)">Attiva</button>';
-        // Elimina
-        actions+='<button class="btn btn-sm btn-danger" onclick="deleteU(\''+u.id+'\',\''+escQ(u.nome+' '+u.cognome)+'\')" title="Elimina utente"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg></button>';
-      }
-      actions+='</div>';
-      return '<tr><td><b>'+escapeHtml(u.nome+' '+u.cognome)+'</b></td><td style="font-size:12px">'+escapeHtml(u.email)+'</td><td>'+rb+'</td><td>'+sb+'</td><td style="font-size:11px;white-space:nowrap">'+ll+'</td><td>'+actions+'</td></tr>';
+      var sb=u.attivo
+        ? '<span class="badge badge-on">● Attivo</span>'
+        : '<span class="badge badge-off">● Inattivo</span>';
+      var ll=u.last_login?fmtDate(u.last_login):'<span style="color:var(--text-tertiary)">Mai</span>';
+      var ini=((u.nome||'').charAt(0)+(u.cognome||'').charAt(0)).toUpperCase()||'?';
+      var avatarHtml = u.avatar_base64
+        ? '<img src="'+u.avatar_base64+'" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">'
+        : '<span class="gu-row-avatar">'+escapeHtml(ini)+'</span>';
+      var editBtn='<button class="btn btn-sm btn-secondary" onclick="event.stopPropagation();openSchedaUtente(&quot;'+u.id+'&quot;)" title="Modifica"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+      return '<tr style="cursor:pointer" onclick="openSchedaUtente(&quot;'+u.id+'&quot;)">'
+        +'<td><div style="display:flex;align-items:center;gap:10px">'+avatarHtml+'<b>'+escapeHtml(u.nome+' '+u.cognome)+'</b></div></td>'
+        +'<td style="font-size:12px;color:var(--text-secondary)">'+escapeHtml(u.username||'—')+'</td>'
+        +'<td style="font-size:12px">'+escapeHtml(u.email)+'</td>'
+        +'<td style="font-size:12px">'+escapeHtml(u.cellulare||'—')+'</td>'
+        +'<td>'+rb+'</td>'
+        +'<td>'+sb+'</td>'
+        +'<td style="font-size:11px;white-space:nowrap">'+ll+'</td>'
+        +'<td><div class="user-actions">'+editBtn+'</div></td>'
+        +'</tr>';
     }).join('');
-    // Aggiorna filtro utenti nei log
+    // Aggiorna filtro log
     var sel=G('log-filter-user');
     if(sel){
       var prev=sel.value;
@@ -46,6 +81,111 @@ async function loadUsers(){
       us.forEach(function(u){var o=document.createElement('option');o.value=u.email;o.textContent=u.nome+' '+u.cognome;if(u.email===prev)o.selected=true;sel.appendChild(o);});
     }
   }catch(e){toast('Errore utenti','error');console.error(e);}
+}
+
+function openModalNuovoUtente(){
+  ['u-nome','u-cognome','u-username','u-email','u-cell','u-pwd','u-pwd2'].forEach(function(id){
+    var el=G(id); if(el) el.value='';
+  });
+  var r=G('u-ruolo'); if(r) r.value='utente';
+  var err=G('u-err'); if(err){err.style.display='none';err.textContent='';}
+  G('modal-nuovo-utente').style.display='flex';
+  setTimeout(function(){var el=G('u-nome');if(el)el.focus();},100);
+}
+
+// Scheda utente (modal modifica)
+var _schedaUtenteId = null;
+
+function openSchedaUtente(id){
+  var u = _usersCache.find(function(x){return x.id===id;});
+  if(!u) return;
+  _schedaUtenteId = id;
+
+  // Header
+  var ini=((u.nome||'').charAt(0)+(u.cognome||'').charAt(0)).toUpperCase()||'?';
+  G('su-nome-display').textContent=(u.nome||'')+' '+(u.cognome||'');
+  G('su-email-display').textContent=u.email||'';
+  var img=G('su-avatar-img'), ini_el=G('su-avatar-initials');
+  if(u.avatar_base64){img.src=u.avatar_base64;img.style.display='block';ini_el.style.display='none';}
+  else{img.style.display='none';ini_el.style.display='block';ini_el.textContent=ini;}
+
+  // Campi form
+  G('su-nome').value    = u.nome     || '';
+  G('su-cognome').value = u.cognome  || '';
+  G('su-username').value= u.username || '';
+  G('su-email').value   = u.email    || '';
+  G('su-cell').value    = u.cellulare|| '';
+  G('su-ruolo').value   = u.ruolo    || 'utente';
+  G('su-attivo').value  = String(u.attivo !== false);
+  G('su-pwd').value     = '';
+  G('su-pwd2').value    = '';
+
+  // Nascondi messaggio
+  var msg=G('su-msg');if(msg){msg.style.display='none';msg.textContent='';}
+
+  // Pulsante elimina: non mostro per admin
+  var btnEl=G('su-btn-elimina');
+  if(btnEl) btnEl.style.display=(u.ruolo==='admin')?'none':'flex';
+
+  G('modal-scheda-utente').style.display='flex';
+}
+
+async function salvaSchedaUtente(){
+  var id=_schedaUtenteId; if(!id) return;
+  var nome    = G('su-nome').value.trim();
+  var cognome = G('su-cognome').value.trim();
+  var username= G('su-username').value.trim().toLowerCase().replace(/\s+/g,'');
+  var email   = G('su-email').value.trim().toLowerCase();
+  var cell    = G('su-cell').value.trim();
+  var ruolo   = G('su-ruolo').value;
+  var attivo  = G('su-attivo').value === 'true';
+  var pwd     = G('su-pwd').value;
+  var pwd2    = G('su-pwd2').value;
+
+  var msg=G('su-msg');
+  function showMsg(t,ok){msg.style.display='block';msg.style.background=ok?'#f0fdf4':'#fef2f2';msg.style.color=ok?'#16a34a':'#dc2626';msg.style.border='1px solid '+(ok?'#bbf7d0':'#fecaca');msg.textContent=t;}
+
+  if(!nome||!cognome||!email){showMsg('Nome, cognome ed email obbligatori.',false);return;}
+  if(pwd && pwd!==pwd2){showMsg('Le password non coincidono.',false);return;}
+  if(pwd && pwd.length<6){showMsg('Password minimo 6 caratteri.',false);return;}
+
+  showLoad('Salvataggio…');
+  try{
+    var patch={nome:nome,cognome:cognome,email:email,cellulare:cell||null,username:username||null,ruolo:ruolo,attivo:attivo};
+    if(pwd){
+      var hash=await sha256hex(pwd);
+      patch.password_sha256=hash;
+    }
+    await sbPatch('cna_users?id=eq.'+id, patch);
+
+    // Salva avatar se modificato
+    var imgEl=G('su-avatar-img');
+    if(imgEl && imgEl.dataset.newAvatar){
+      await sbPatch('cna_users?id=eq.'+id,{avatar_base64:imgEl.dataset.newAvatar});
+      delete imgEl.dataset.newAvatar;
+    }
+
+    showMsg('✓ Utente aggiornato con successo!',true);
+    toast('Utente aggiornato','success');
+    loadUsers();
+  }catch(e){
+    showMsg('Errore: '+e.message,false);
+  }finally{hideLoad();}
+}
+
+async function eliminaUtenteDaModal(){
+  var id=_schedaUtenteId; if(!id) return;
+  var u=_usersCache.find(function(x){return x.id===id;});
+  if(!u) return;
+  if(!confirm('Eliminare definitivamente '+u.nome+' '+u.cognome+'? Operazione non reversibile.')) return;
+  showLoad('Eliminazione…');
+  try{
+    await sbDel('cna_users?id=eq.'+id);
+    G('modal-scheda-utente').style.display='none';
+    toast('Utente eliminato','success');
+    loadUsers();
+  }catch(e){toast('Errore: '+e.message,'error');}
+  finally{hideLoad();}
 }
 
 function escQ(s){return escapeHtml(s);}
@@ -109,20 +249,33 @@ async function saveNewPwd(){
 }
 
 async function createUser(){
-  var nome=G('u-nome').value.trim(),cognome=G('u-cognome').value.trim();
-  var email=G('u-email').value.trim().toLowerCase(),cell=G('u-cell').value.trim(),pwd=G('u-pwd').value;
-  var errEl=G('u-err');errEl.style.display='none';
-  if(!nome||!cognome||!email||!pwd){errEl.textContent='Compila tutti i campi';errEl.style.display='block';return;}
-  if(pwd.length<6){errEl.textContent='Password min. 6 caratteri';errEl.style.display='block';return;}
+  var nome    = G('u-nome').value.trim();
+  var cognome = G('u-cognome').value.trim();
+  var username= (G('u-username').value||'').trim().toLowerCase().replace(/\s+/g,'');
+  var email   = G('u-email').value.trim().toLowerCase();
+  var cell    = G('u-cell').value.trim();
+  var ruolo   = G('u-ruolo').value || 'utente';
+  var pwd     = G('u-pwd').value;
+  var pwd2    = G('u-pwd2').value;
+  var errEl   = G('u-err'); errEl.style.display='none';
+
+  if(!nome||!cognome||!email||!pwd){errEl.textContent='Nome, cognome, email e password sono obbligatori.';errEl.style.display='block';return;}
+  if(pwd.length<6){errEl.textContent='Password minimo 6 caratteri.';errEl.style.display='block';return;}
+  if(pwd!==pwd2){errEl.textContent='Le password non coincidono.';errEl.style.display='block';return;}
+
   showLoad('Creazione utente…');
   try{
     var hash=await sha256hex(pwd);
-    await sbPost('cna_users',{nome:nome,cognome:cognome,email:email,cellulare:cell||null,password_sha256:hash,ruolo:'utente',attivo:true},{'Prefer':'return=minimal'});
+    await sbPost('cna_users',{
+      nome:nome, cognome:cognome, email:email,
+      username:username||null, cellulare:cell||null,
+      password_sha256:hash, ruolo:ruolo, attivo:true
+    },{'Prefer':'return=minimal'});
     toast('Utente '+nome+' '+cognome+' creato!','success');
-    G('u-nome').value='';G('u-cognome').value='';G('u-email').value='';G('u-cell').value='';G('u-pwd').value='';
+    G('modal-nuovo-utente').style.display='none';
     loadUsers();
   }catch(e){
-    errEl.textContent=(e.message.includes('unique')||e.message.includes('duplicate'))?'Email già registrata':'Errore: '+e.message;
+    errEl.textContent=(e.message.includes('unique')||e.message.includes('duplicate'))?'Email o username già registrati.':'Errore: '+e.message;
     errEl.style.display='block';
   }finally{hideLoad();}
 }
