@@ -390,18 +390,20 @@
       thSort('€/contr.', 'euroctr', 'p') +
       thSort('% obj.', 'pct', 'p') +
       '<th class="ob-col-bar">Progresso</th>' +
+      '<th class="ob-col-prev" colspan="2" id="ob-p-th-anno1">Anno prec.</th>' +
+      '<th class="ob-col-prev" colspan="2" id="ob-p-th-anno2">2 anni fa</th>' +
       '<th class="ob-col-act"></th></tr>';
 
     if (!obP.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="ob-empty">Nessun promotore aggiunto. Usa il form qui sotto.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="14" class="ob-empty">Nessun promotore aggiunto. Usa il form qui sotto.</td></tr>';
       tfoot.innerHTML = '';
       return;
     }
 
     var sorted = sortedRows(obP, sortP, calcolatoP, totFattiP);
     var totOb = 0, totF2 = 0;
-    var totImpP = 0;
-    obP.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoP){ totF2 += r._fatti||0; totImpP += r._importo||0; } });
+    var totImpP = 0, totA1nr = 0, totA1imp = 0, totA2nr = 0, totA2imp = 0;
+    obP.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoP){ totF2 += r._fatti||0; totImpP += r._importo||0; totA1nr += r._anno1_nr||0; totA1imp += r._anno1_imp||0; totA2nr += r._anno2_nr||0; totA2imp += r._anno2_imp||0; } });
 
     tbody.innerHTML = sorted.map(function(row) {
       var fatti = calcolatoP ? (row._fatti || 0) : null;
@@ -425,6 +427,10 @@
         '<td class="ob-col-num ob-euro">' + (calcolatoP && row._fatti ? fmtEuro(Math.round(row._importo / row._fatti)) : '<span class="ob-nc">—</span>') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(fatti, row.obiettivo, calcolatoP) + '</td>' +
         '<td class="ob-col-bar">' + barHtml + '</td>' +
+        '<td class="ob-col-prev ob-prev-nr">' + (calcolatoP && row._anno1_nr != null ? row._anno1_nr : '<span class="ob-nc">—</span>') + '</td>' +
+        '<td class="ob-col-prev ob-euro">'   + (calcolatoP && row._anno1_imp ? fmtEuro(row._anno1_imp) : '<span class="ob-nc">—</span>') + '</td>' +
+        '<td class="ob-col-prev ob-prev-nr">' + (calcolatoP && row._anno2_nr != null ? row._anno2_nr : '<span class="ob-nc">—</span>') + '</td>' +
+        '<td class="ob-col-prev ob-euro">'   + (calcolatoP && row._anno2_imp ? fmtEuro(row._anno2_imp) : '<span class="ob-nc">—</span>') + '</td>' +
         '<td class="ob-col-act"><button class="ob-btn-del" data-id="' + row.id + '" data-kind="p" title="Rimuovi">' +
           '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>' +
         '</button></td>' +
@@ -442,6 +448,10 @@
         '<td class="ob-col-num ob-euro">' + (calcolatoP && totF2 ? fmtEuro(Math.round(totImpP/totF2)) : '—') + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(totF2, totOb, calcolatoP) + '</td>' +
         '<td class="ob-col-bar">' + progressBar(totF2, totOb) + '</td>' +
+        '<td class="ob-col-prev ob-prev-nr"><strong>' + (calcolatoP ? totA1nr : '—') + '</strong></td>' +
+        '<td class="ob-col-prev ob-euro"><strong>' + (calcolatoP ? fmtEuro(totA1imp) : '—') + '</strong></td>' +
+        '<td class="ob-col-prev ob-prev-nr"><strong>' + (calcolatoP ? totA2nr : '—') + '</strong></td>' +
+        '<td class="ob-col-prev ob-euro"><strong>' + (calcolatoP ? fmtEuro(totA2imp) : '—') + '</strong></td>' +
         '<td></td></tr>';
     } else {
       tfoot.innerHTML = '';
@@ -545,6 +555,8 @@
         }).then(function(v){ return { id: row.id, res: v }; });
       }));
       totFattiF = 0;
+      var paramsF = getAnnoParams('f');
+      var annoFa  = paramsF.p_anno_a || new Date().getFullYear();
       results.forEach(function(r) {
         var row = obF.find(function(x){ return x.id === r.id; });
         if (row) {
@@ -555,6 +567,18 @@
       });
       calcolatoF = true;
       renderTableF();
+      // Salva cache su Supabase (fire and forget)
+      obF.forEach(function(row){
+        obFetch('obiettivi_funzionari?id=eq.' + row.id, {
+          method: 'PATCH',
+          body: {
+            cache_fatti: row._fatti, cache_importo: row._importo,
+            cache_anno_da: paramsF.p_anno_da, cache_anno_a: annoFa,
+            cache_at: new Date().toISOString()
+          },
+          prefer: 'return=minimal'
+        }).catch(function(){});
+      });
     } catch(e) {
       alert('Errore calcolo: ' + e.message);
     } finally {
@@ -577,16 +601,43 @@
         }).then(function(v){ return { id: row.id, res: v }; });
       }));
       totFattiP = 0;
+      var paramsP = getAnnoParams('p');
+      var annoPa  = paramsP.p_anno_a || new Date().getFullYear();
       results.forEach(function(r) {
         var row = obP.find(function(x){ return x.id === r.id; });
         if (row) {
-          row._fatti   = (r.res && r.res.nr)      ? r.res.nr      : 0;
-          row._importo = (r.res && r.res.importo) ? r.res.importo : 0;
+          row._fatti    = (r.res && r.res.nr)       ? r.res.nr       : 0;
+          row._importo  = (r.res && r.res.importo)  ? r.res.importo  : 0;
+          row._anno1_nr  = (r.res && r.res.anno1_nr)  ? r.res.anno1_nr  : 0;
+          row._anno1_imp = (r.res && r.res.anno1_imp) ? r.res.anno1_imp : 0;
+          row._anno2_nr  = (r.res && r.res.anno2_nr)  ? r.res.anno2_nr  : 0;
+          row._anno2_imp = (r.res && r.res.anno2_imp) ? r.res.anno2_imp : 0;
+          row._ref_anno  = (r.res && r.res.ref_anno)  ? r.res.ref_anno  : annoPa;
           totFattiP += row._fatti;
         }
       });
       calcolatoP = true;
+      // Aggiorna etichette colonne anni precedenti
+      var refAnno = obP.length && obP[0]._ref_anno ? obP[0]._ref_anno : annoPa;
+      var th1 = document.getElementById('ob-p-th-anno1');
+      var th2 = document.getElementById('ob-p-th-anno2');
+      if (th1) th1.textContent = String(refAnno - 1);
+      if (th2) th2.textContent = String(refAnno - 2);
       renderTableP();
+      // Salva cache su Supabase
+      obP.forEach(function(row){
+        obFetch('obiettivi_promotori?id=eq.' + row.id, {
+          method: 'PATCH',
+          body: {
+            cache_fatti: row._fatti, cache_importo: row._importo,
+            cache_anno1_nr: row._anno1_nr, cache_anno1_imp: row._anno1_imp,
+            cache_anno2_nr: row._anno2_nr, cache_anno2_imp: row._anno2_imp,
+            cache_anno_da: paramsP.p_anno_da, cache_anno_a: annoPa,
+            cache_at: new Date().toISOString()
+          },
+          prefer: 'return=minimal'
+        }).catch(function(){});
+      });
     } catch(e) {
       alert('Errore calcolo: ' + e.message);
     } finally {
@@ -921,12 +972,49 @@
 
     Promise.all([loadObF(), loadObP()]).then(async function(res) {
       obF = res[0]; obP = res[1];
-      calcolatoF = false; calcolatoP = false;
-      renderTableF();
-      renderTableP();
-      // Ricalcolo automatico iniziale (anno corrente già impostato nel select)
-      if (obF.length) await ricalcolaF();
-      if (obP.length) await ricalcolaP();
+      var annoCorrente = new Date().getFullYear();
+
+      // Usa cache se disponibile e aggiornata sull'anno corrente
+      var cacheF = obF.every(function(r){
+        return r.cache_fatti != null && r.cache_anno_a === annoCorrente;
+      });
+      var cacheP = obP.every(function(r){
+        return r.cache_fatti != null && r.cache_anno_a === annoCorrente;
+      });
+
+      if (cacheF && obF.length) {
+        obF.forEach(function(r){
+          r._fatti   = r.cache_fatti   || 0;
+          r._importo = r.cache_importo || 0;
+        });
+        totFattiF  = obF.reduce(function(s,r){ return s+r._fatti; }, 0);
+        calcolatoF = true;
+        renderTableF();
+      } else {
+        calcolatoF = false; renderTableF();
+        if (obF.length) await ricalcolaF();
+      }
+
+      if (cacheP && obP.length) {
+        obP.forEach(function(r){
+          r._fatti    = r.cache_fatti    || 0;
+          r._importo  = r.cache_importo  || 0;
+          r._anno1_nr  = r.cache_anno1_nr  || 0; r._anno1_imp = r.cache_anno1_imp || 0;
+          r._anno2_nr  = r.cache_anno2_nr  || 0; r._anno2_imp = r.cache_anno2_imp || 0;
+          r._ref_anno  = r.cache_anno_a    || annoCorrente;
+        });
+        totFattiP  = obP.reduce(function(s,r){ return s+r._fatti; }, 0);
+        calcolatoP = true;
+        var refAP = obP.length && obP[0]._ref_anno ? obP[0]._ref_anno : annoCorrente;
+        var th1c = document.getElementById('ob-p-th-anno1');
+        var th2c = document.getElementById('ob-p-th-anno2');
+        if (th1c) th1c.textContent = String(refAP - 1);
+        if (th2c) th2c.textContent = String(refAP - 2);
+        renderTableP();
+      } else {
+        calcolatoP = false; renderTableP();
+        if (obP.length) await ricalcolaP();
+      }
     }).catch(function(e) {
       console.error('Errore caricamento obiettivi:', e);
     });
