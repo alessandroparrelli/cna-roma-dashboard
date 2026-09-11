@@ -552,36 +552,174 @@
   /* ═══════════ EXPORT EXCEL ═══════════ */
   function exportExcel(tipo) {
     var isFun = tipo === 'funzionari';
+    var calcolato = isFun ? calcolatoF : calcolatoP;
     var rows = isFun ? obF : obP;
     var totFatti = isFun ? totFattiF : totFattiP;
+    var sort    = isFun ? sortF : sortP;
+    var sorted  = sortedRows(rows, sort, calcolato, totFatti);
+
     var XLSX = window.XLSXStyle || window.XLSX;
     if (!XLSX) { alert('Libreria Excel non disponibile.'); return; }
 
-    var headers = ['Nome', 'Obiettivo', 'Fatti', '% su totale', '+/-', '% raggiungimento'];
-    var data = rows.map(function(r) {
-      var f = (r._fatti != null) ? r._fatti : '';
-      var d = f !== '' ? f - r.obiettivo : '';
-      var pctTot = (f !== '' && totFatti) ? ((f / totFatti) * 100).toFixed(1) + '%' : '';
-      var pctRag = (f !== '' && r.obiettivo) ? ((f / r.obiettivo) * 100).toFixed(1) + '%' : '';
-      return [r.nome_display, r.obiettivo, f, pctTot, d !== '' ? (d >= 0 ? '+' + d : d) : '', pctRag];
+    // ── Colori identici alla tabella ──
+    var C_HEADER_BG  = '1D3557';   // header navy
+    var C_HEADER_FG  = 'FFFFFF';
+    var C_TOTALE_BG  = 'EFF6FF';   // riga totale azzurrina
+    var C_TOTALE_FG  = '1E3A5F';
+    var C_POS        = '16A34A';   // verde (raggiunto)
+    var C_NEG        = 'DC2626';   // rosso
+    var C_BLUE       = '2563EB';   // blu (parziale 70-99%)
+    var C_ROW_ALT    = 'F8FAFC';   // righe alternate
+    var C_BORDER     = 'E2E8F0';
+    var C_TEXT       = '1E293B';
+    var C_MUTED      = '94A3B8';
+
+    // ── Colonne: Nome | Obiettivo | Fatti | % su tot. | +/- | Progresso (barra) | % rag. ──
+    var ws = {};
+    var R = 0; // riga corrente (0-based)
+
+    function enc(r, c) { return XLSX.utils.encode_cell({ r: r, c: c }); }
+
+    function borderAll(extra) {
+      var b = { style: 'thin', color: { rgb: C_BORDER } };
+      return Object.assign({
+        border: { top: b, bottom: b, left: b, right: b }
+      }, extra || {});
+    }
+
+    function setCell(r, c, v, s) {
+      var t = typeof v === 'number' ? 'n' : 's';
+      ws[enc(r, c)] = { v: v, t: t, s: s || {} };
+    }
+
+    // ── Riga intestazione ──
+    var hStyle = function(align) { return borderAll({
+      font: { bold: true, color: { rgb: C_HEADER_FG }, sz: 10 },
+      fill: { patternType: 'solid', fgColor: { rgb: C_HEADER_BG } },
+      alignment: { horizontal: align || 'left', vertical: 'center' }
+    }); };
+    var COLS = isFun
+      ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', 'Progresso', '% ragg.']
+      : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', 'Progresso', '% ragg.'];
+    var ALIGNS = ['left','center','center','center','center','left','center'];
+    COLS.forEach(function(h, c) { setCell(R, c, h, hStyle(ALIGNS[c])); });
+    R++;
+
+    // ── Righe dati ──
+    var totOb = 0, totF2 = 0;
+    rows.forEach(function(r){ totOb += r.obiettivo||0; if(calcolato) totF2 += r._fatti||0; });
+
+    sorted.forEach(function(row, idx) {
+      var isAlt  = idx % 2 === 1;
+      var bgBase = isAlt ? C_ROW_ALT : 'FFFFFF';
+      var fatti  = calcolato ? (row._fatti || 0) : null;
+      var ob     = row.obiettivo || 0;
+
+      // calcoli
+      var pctTotVal  = (calcolato && fatti != null && totFatti) ? (fatti / totFatti * 100) : null;
+      var deltaVal   = (calcolato && fatti != null) ? (fatti - ob) : null;
+      var pctRagVal  = (calcolato && fatti != null && ob) ? (fatti / ob * 100) : null;
+      var barPct     = pctRagVal != null ? Math.min(100, Math.round(pctRagVal)) : 0;
+      var barColor   = barPct >= 100 ? C_POS : barPct >= 70 ? C_BLUE : (barPct > 0 ? C_NEG : C_BORDER);
+
+      function cellStyle(align, fgColor) {
+        return borderAll({
+          font: { sz: 10, color: { rgb: fgColor || C_TEXT } },
+          fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
+          alignment: { horizontal: align || 'left', vertical: 'center' }
+        });
+      }
+
+      // Col 0: Nome
+      setCell(R, 0, row.nome_display, cellStyle('left'));
+
+      // Col 1: Obiettivo
+      setCell(R, 1, ob, borderAll({
+        font: { sz: 10, bold: true, color: { rgb: C_TEXT } },
+        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      }));
+
+      // Col 2: Fatti
+      var fattiColor = (calcolato && fatti != null)
+        ? (fatti >= ob ? C_POS : C_TEXT) : C_MUTED;
+      setCell(R, 2, calcolato && fatti != null ? fatti : '—', borderAll({
+        font: { sz: 10, bold: calcolato, color: { rgb: fattiColor } },
+        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      }));
+
+      // Col 3: % su tot.
+      setCell(R, 3, pctTotVal != null ? (pctTotVal.toFixed(1) + '%') : '—', cellStyle('center'));
+
+      // Col 4: +/-
+      var dColor = deltaVal != null ? (deltaVal >= 0 ? C_POS : C_NEG) : C_MUTED;
+      setCell(R, 4, deltaVal != null ? ((deltaVal >= 0 ? '+' : '') + deltaVal) : '—', borderAll({
+        font: { sz: 10, bold: true, color: { rgb: dColor } },
+        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      }));
+
+      // Col 5: Barra progresso (testo visuale con sfondo colorato proporzionale)
+      // Usiamo un carattere blocco ripetuto per simulare la barra
+      var BAR_TOTAL = 20; // caratteri totali barra
+      var filled = calcolato ? Math.round(barPct / 100 * BAR_TOTAL) : 0;
+      var barText = calcolato
+        ? ('█'.repeat(filled) + '░'.repeat(BAR_TOTAL - filled) + '  ' + barPct + '%')
+        : '—';
+      setCell(R, 5, barText, borderAll({
+        font: { sz: 9, color: { rgb: barColor }, name: 'Courier New' },
+        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
+        alignment: { horizontal: 'left', vertical: 'center' }
+      }));
+
+      // Col 6: % raggiungimento
+      setCell(R, 6, pctRagVal != null ? (pctRagVal.toFixed(1) + '%') : '—', borderAll({
+        font: { sz: 10, bold: pctRagVal != null && pctRagVal >= 100,
+                color: { rgb: pctRagVal != null ? (pctRagVal >= 100 ? C_POS : pctRagVal >= 70 ? C_BLUE : C_NEG) : C_MUTED } },
+        fill: { patternType: 'solid', fgColor: { rgb: bgBase } },
+        alignment: { horizontal: 'center', vertical: 'center' }
+      }));
+
+      R++;
     });
 
-    var totOb = rows.reduce(function(s, r){ return s + (r.obiettivo || 0); }, 0);
-    var totF2 = rows.reduce(function(s, r){ return s + (r._fatti || 0); }, 0);
-    data.push(['TOTALE', totOb, totF2,
-      totOb ? ((totF2 / totOb) * 100).toFixed(1) + '%' : '',
-      (totF2 - totOb >= 0 ? '+' : '') + (totF2 - totOb),
-      totOb ? ((totF2 / totOb) * 100).toFixed(1) + '%' : '']);
+    // ── Riga TOTALE ──
+    var totPctRag = totOb ? (totF2 / totOb * 100) : null;
+    var totDelta  = totF2 - totOb;
+    var totBarPct = totPctRag != null ? Math.min(100, Math.round(totPctRag)) : 0;
+    var totBarColor = totBarPct >= 100 ? C_POS : totBarPct >= 70 ? C_BLUE : C_NEG;
+    var totBarText  = calcolato
+      ? ('█'.repeat(Math.round(totBarPct/100*20)) + '░'.repeat(20-Math.round(totBarPct/100*20)) + '  ' + totBarPct + '%')
+      : '—';
 
-    var ws = XLSX.utils.aoa_to_sheet([headers].concat(data));
-    ws['!cols'] = [{ wch: 32 }, { wch: 12 }, { wch: 10 }, { wch: 13 }, { wch: 8 }, { wch: 18 }];
-
-    // Stile intestazione
-    var range = XLSX.utils.decode_range(ws['!ref']);
-    for (var C = range.s.c; C <= range.e.c; C++) {
-      var cell = ws[XLSX.utils.encode_cell({ r: 0, c: C })];
-      if (cell) cell.s = { font: { bold: true, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '1D3557' } } };
+    function totStyle(align, fgColor) {
+      return borderAll({
+        font: { bold: true, sz: 10, color: { rgb: fgColor || C_TOTALE_FG } },
+        fill: { patternType: 'solid', fgColor: { rgb: C_TOTALE_BG } },
+        alignment: { horizontal: align || 'left', vertical: 'center' }
+      });
     }
+    setCell(R, 0, 'TOTALE', totStyle('left'));
+    setCell(R, 1, totOb, totStyle('center'));
+    setCell(R, 2, calcolato ? totF2 : '—', totStyle('center'));
+    setCell(R, 3, totOb && calcolato ? (totF2/totOb*100).toFixed(1)+'%' : '—', totStyle('center'));
+    setCell(R, 4, calcolato ? ((totDelta>=0?'+':'')+totDelta) : '—',
+      totStyle('center', totDelta >= 0 ? C_POS : C_NEG));
+    setCell(R, 5, calcolato ? totBarText : '—', borderAll({
+      font: { bold: true, sz: 9, color: { rgb: totBarColor }, name: 'Courier New' },
+      fill: { patternType: 'solid', fgColor: { rgb: C_TOTALE_BG } },
+      alignment: { horizontal: 'left', vertical: 'center' }
+    }));
+    setCell(R, 6, totPctRag != null && calcolato ? totPctRag.toFixed(1)+'%' : '—',
+      totStyle('center', totPctRag != null ? (totPctRag >= 100 ? C_POS : totPctRag >= 70 ? C_BLUE : C_NEG) : C_TOTALE_FG));
+
+    // ── Range e colonne ──
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: R, c: 6 } });
+    ws['!cols'] = [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 28 }, { wch: 12 }];
+    ws['!rows'] = [];
+    for (var ri = 0; ri <= R; ri++) ws['!rows'].push({ hpt: 18 }); // altezza fissa righe
+
     var wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, isFun ? 'Funzionari' : 'Promotori');
     XLSX.writeFile(wb, 'obiettivi_' + tipo + '_' + new Date().toISOString().slice(0, 10) + '.xlsx');
