@@ -276,10 +276,12 @@
       thSort('+/−', 'delta', 'f') +
       thSort('% obj.', 'pct', 'f') +
       '<th class="ob-col-bar">Progresso</th>' +
+      '<th class="ob-col-prev" id="ob-f-th-anno1">Anno prec.</th>' +
+      '<th class="ob-col-prev" id="ob-f-th-anno2">2 anni fa</th>' +
       '<th class="ob-col-act"></th></tr>';
 
     if (!obF.length) {
-      tbody.innerHTML = '<tr><td colspan="10" class="ob-empty">Nessun funzionario aggiunto. Usa il form qui sotto.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="12" class="ob-empty">Nessun funzionario aggiunto. Usa il form qui sotto.</td></tr>';
       tfoot.innerHTML = '';
       return;
     }
@@ -287,8 +289,8 @@
     var sorted = sortedRows(obF, sortF, calcolatoF, totFattiF);
     var totOb = 0, totF2 = 0;
     // totali sempre sul dataset originale (non sorted)
-    var totImpF = 0;
-    obF.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoF){ totF2 += r._fatti||0; totImpF += r._importo||0; } });
+    var totImpF = 0, totA1nrF = 0, totA2nrF = 0;
+    obF.forEach(function(r){ totOb += r.obiettivo||0; if(calcolatoF){ totF2 += r._fatti||0; totImpF += r._importo||0; totA1nrF += r._anno1_nr||0; totA2nrF += r._anno2_nr||0; } });
 
     tbody.innerHTML = sorted.map(function(row) {
       var fatti = calcolatoF ? (row._fatti || 0) : null;
@@ -310,6 +312,8 @@
         '<td class="ob-col-num">' + dHtml + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(fatti, row.obiettivo, calcolatoF) + '</td>' +
         '<td class="ob-col-bar">' + barHtml + '</td>' +
+        '<td class="ob-col-prev ob-prev-nr">' + (calcolatoF && row._anno1_nr != null ? row._anno1_nr : '<span class="ob-nc">—</span>') + '</td>' +
+        '<td class="ob-col-prev ob-prev-nr">' + (calcolatoF && row._anno2_nr != null ? row._anno2_nr : '<span class="ob-nc">—</span>') + '</td>' +
         '<td class="ob-col-act"><button class="ob-btn-del" data-id="' + row.id + '" data-kind="f" title="Rimuovi">' +
           '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/></svg>' +
         '</button></td>' +
@@ -325,6 +329,8 @@
         '<td class="ob-col-num">' + deltaHtml(totF2, totOb) + '</td>' +
         '<td class="ob-col-num">' + pctObjHtml(totF2, totOb, calcolatoF) + '</td>' +
         '<td class="ob-col-bar">' + progressBar(totF2, totOb) + '</td>' +
+        '<td class="ob-col-prev ob-prev-nr"><strong>' + (calcolatoF ? totA1nrF : '—') + '</strong></td>' +
+        '<td class="ob-col-prev ob-prev-nr"><strong>' + (calcolatoF ? totA2nrF : '—') + '</strong></td>' +
         '<td></td></tr>';
     } else {
       tfoot.innerHTML = '';
@@ -544,12 +550,20 @@
       results.forEach(function(r) {
         var row = obF.find(function(x){ return x.id === r.id; });
         if (row) {
-          row._fatti   = (r.res && r.res.nr)      ? r.res.nr      : 0;
-          row._importo = (r.res && r.res.importo) ? r.res.importo : 0;
+          row._fatti    = (r.res && r.res.nr)       ? r.res.nr       : 0;
+          row._importo  = (r.res && r.res.importo)  ? r.res.importo  : 0;
+          row._anno1_nr = (r.res && r.res.anno1_nr)  ? r.res.anno1_nr  : 0;
+          row._anno2_nr = (r.res && r.res.anno2_nr)  ? r.res.anno2_nr  : 0;
+          row._ref_anno = (r.res && r.res.ref_anno)  ? r.res.ref_anno  : annoFa;
           totFattiF += row._fatti;
         }
       });
       calcolatoF = true;
+      var refAnnoF = obF.length && obF[0]._ref_anno ? obF[0]._ref_anno : annoFa;
+      var thF1 = document.getElementById('ob-f-th-anno1');
+      var thF2 = document.getElementById('ob-f-th-anno2');
+      if (thF1) thF1.textContent = String(refAnnoF - 1);
+      if (thF2) thF2.textContent = String(refAnnoF - 2);
       renderTableF();
       // Salva cache su Supabase (fire and forget)
       obF.forEach(function(row){
@@ -557,6 +571,7 @@
           method: 'PATCH',
           body: {
             cache_fatti: row._fatti, cache_importo: row._importo,
+            cache_anno1_nr: row._anno1_nr, cache_anno2_nr: row._anno2_nr,
             cache_anno_da: paramsF.p_anno_da, cache_anno_a: annoFa,
             cache_at: new Date().toISOString()
           },
@@ -682,13 +697,12 @@
     // Colore header sfumato simulato: colonna nome più scuro, resto leggermente più chiaro
     var C_HEADER_LIGHT = isFun ? '2563EB' : '16A34A';
     var C_HEADER_PREV  = '64748B';  // colonne anni precedenti
-    var COLS = isFun
-      ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.']
-      : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.', String(annoRifP-1), String(annoRifP-2)];
+    var annoRifF = obF.length && obF[0]._ref_anno ? obF[0]._ref_anno : new Date().getFullYear();
     var annoRifP = obP.length && obP[0]._ref_anno ? obP[0]._ref_anno : new Date().getFullYear();
-    var ALIGNS = isFun
-      ? ['left','center','center','center','center','center','left','center']
-      : ['left','center','center','center','center','center','left','center','center','center'];
+    var COLS = isFun
+      ? ['Funzionario', 'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.', String(annoRifF-1), String(annoRifF-2)]
+      : ['Promotore',   'Obiettivo', 'Fatti', '% su tot.', '+/−', '% obj.', 'Progresso', '% ragg.', String(annoRifP-1), String(annoRifP-2)];
+    var ALIGNS = ['left','center','center','center','center','center','left','center','center','center'];
     COLS.forEach(function(h, c) {
       var isPrev = !isFun && c >= 8;
       var bg = isPrev ? C_HEADER_PREV : (c === 0 ? C_HEADER_BG : C_HEADER_LIGHT);
@@ -815,20 +829,17 @@
       totStyle('center', totPctRag != null ? (totPctRag >= 100 ? C_POS : totPctRag >= 70 ? C_BLUE : C_NEG) : C_TOTALE_FG));
 
     // ── Range e colonne ──
-    var maxCol = isFun ? 7 : 9;
-    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: R, c: maxCol } });
-    ws['!cols'] = isFun
-      ? [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 10 }, { wch: 28 }, { wch: 12 }]
-      : [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 10 }, { wch: 28 }, { wch: 12 }, { wch: 10 }, { wch: 10 }];
+    ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: R, c: 9 } });
+    ws['!cols'] = [{ wch: 30 }, { wch: 11 }, { wch: 9 }, { wch: 11 }, { wch: 8 }, { wch: 10 }, { wch: 28 }, { wch: 12 }, { wch: 10 }, { wch: 10 }];
     ws['!rows'] = [];
     for (var ri = 0; ri <= R; ri++) ws['!rows'].push({ hpt: 18 }); // altezza fissa righe
 
-    // Anni precedenti solo per promotori
-    if (!isFun && calcolato) {
+    // Anni precedenti (entrambe le tabelle)
+    if (calcolato) {
       var refA = annoRifP;
       sorted.forEach(function(row, idx) {
         var excelR = idx + 1; // +1 per header
-        setCell(excelR, 8, row._anno1_nr || 0, borderAll({
+        setCell(excelR, 8, (row._anno1_nr || 0), borderAll({
           font: { sz: 10, color: { rgb: C_TEXT } },
           fill: { patternType: 'solid', fgColor: { rgb: idx%2===1 ? C_ROW_ALT : 'FFFFFF' } },
           alignment: { horizontal: 'center', vertical: 'center' }
@@ -840,8 +851,8 @@
         }));
       });
       // tfoot anni
-      setCell(R, 8, obP.reduce(function(s,r){ return s+(r._anno1_nr||0); }, 0), totStyle('center'));
-      setCell(R, 9, obP.reduce(function(s,r){ return s+(r._anno2_nr||0); }, 0), totStyle('center'));
+      setCell(R, 8, rows.reduce(function(s,r){ return s+(r._anno1_nr||0); }, 0), totStyle('center'));
+      setCell(R, 9, rows.reduce(function(s,r){ return s+(r._anno2_nr||0); }, 0), totStyle('center'));
     }
 
     var wb = XLSX.utils.book_new();
@@ -886,7 +897,7 @@
         '</div>' +
         '<div class="admin-card-body" style="padding:0">' +
           '<table class="ob-table"><thead id="ob-f-thead"></thead>' +
-          '<tbody id="ob-f-tbody"><tr><td colspan="10" class="ob-loading">Caricamento…</td></tr></tbody>' +
+          '<tbody id="ob-f-tbody"><tr><td colspan="12" class="ob-loading">Caricamento…</td></tr></tbody>' +
           '<tfoot id="ob-f-tfoot"></tfoot></table>' +
           '<div class="ob-add-row">' +
             '<div class="ob-add-inner">' +
@@ -939,7 +950,7 @@
         '</div>' +
         '<div class="admin-card-body" style="padding:0">' +
           '<table class="ob-table"><thead id="ob-p-thead"></thead>' +
-          '<tbody id="ob-p-tbody"><tr><td colspan="10" class="ob-loading">Caricamento…</td></tr></tbody>' +
+          '<tbody id="ob-p-tbody"><tr><td colspan="12" class="ob-loading">Caricamento…</td></tr></tbody>' +
           '<tfoot id="ob-p-tfoot"></tfoot></table>' +
           '<div class="ob-add-row">' +
             '<div class="ob-add-inner">' +
@@ -983,11 +994,19 @@
 
       if (cacheF && obF.length) {
         obF.forEach(function(r){
-          r._fatti   = r.cache_fatti   || 0;
-          r._importo = r.cache_importo || 0;
+          r._fatti    = r.cache_fatti    || 0;
+          r._importo  = r.cache_importo  || 0;
+          r._anno1_nr = r.cache_anno1_nr || 0;
+          r._anno2_nr = r.cache_anno2_nr || 0;
+          r._ref_anno = r.cache_anno_a   || annoCorrente;
         });
         totFattiF  = obF.reduce(function(s,r){ return s+r._fatti; }, 0);
         calcolatoF = true;
+        var refAFC = obF.length && obF[0]._ref_anno ? obF[0]._ref_anno : annoCorrente;
+        var thF1c = document.getElementById('ob-f-th-anno1');
+        var thF2c = document.getElementById('ob-f-th-anno2');
+        if (thF1c) thF1c.textContent = String(refAFC - 1);
+        if (thF2c) thF2c.textContent = String(refAFC - 2);
         renderTableF();
       } else {
         calcolatoF = false; renderTableF();
