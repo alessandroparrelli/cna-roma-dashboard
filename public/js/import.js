@@ -863,7 +863,7 @@ async function resetTesseramentoDB(){
   finally{hideLoad();}
 }
 G('btn-reset').addEventListener('click',resetTesseramentoDB);
-G('btn-go-admin').addEventListener('click',showAdminPanel);
+var _btnGoAdmin=G('btn-go-admin'); if(_btnGoAdmin) _btnGoAdmin.addEventListener('click',showAdminPanel);
 G('btn-back').addEventListener('click',function(){if(allData.length)showDashboard();else{document.body.classList.remove('admin-open');G('sidebar').style.display='flex';G('upload-zone').style.display='flex';}});
 // IMPORT EVENTS - Drag and Drop + Click
 var uploadDirettiDrop = G('upload-diretti-drop');
