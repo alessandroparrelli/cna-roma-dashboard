@@ -22,9 +22,10 @@ function anaSetStatus(table, count, st){
   var el=G('ana-status-'+table);
   if(!el) return;
   var v=el.querySelector('.ana-sval');
-  if(st==='done'){ el.className='ana-status-row done'; v.textContent='✓ '+count.toLocaleString('it-IT'); }
-  else if(st==='loading'){ el.className='ana-status-row loading'; v.textContent='⏳ '+count.toLocaleString('it-IT')+'…'; }
-  else { el.className='ana-status-row'; if(v) v.textContent='In attesa…'; }
+  if(!v) return;
+  if(st==='done'){ el.className='ana-status-row done'; v.textContent='✓ '+(count||0).toLocaleString('it-IT'); }
+  else if(st==='loading'){ el.className='ana-status-row loading'; v.textContent='⏳ '+(count||0).toLocaleString('it-IT')+'…'; }
+  else { el.className='ana-status-row'; v.textContent='In attesa…'; }
 }
 
 function anaSetProgress(pct, msg){
