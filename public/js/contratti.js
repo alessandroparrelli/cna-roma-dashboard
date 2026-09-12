@@ -76,7 +76,7 @@ async function contrattiLoad(force) {
         ['SERVIZIO 730',              'c_730'],
         ['SICUREZZA',                 'c_sicurezza'],
         ['PEC',                       'c_pec'],
-        ['CONTABILITA'',             'c_contabilita'],
+        ["CONTABILITA'",             'c_contabilita'],
         ['PAGHE',                     'c_paghe'],
         ['RENTRI',                    'c_rentri'],
         ['PACCHETTO HACCP-SICUREZZA', 'c_haccp'],

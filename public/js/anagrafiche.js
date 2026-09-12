@@ -126,7 +126,7 @@ function anaJoin(ana, dir, cod){
 async function anaLoad(force){
   // CONTROLLO PERMESSI
   if (!hasPermission('interroga')) {
-    alert('❌ ACCESSO NEGATO: Non hai il permesso per interrogare l'archivio.\nContatta l'amministratore.');
+    alert('❌ ACCESSO NEGATO: Non hai il permesso per interrogare l\'archivio.\nContatta l\'amministratore.');
     return;
   }
   if(anaLoading) return;
