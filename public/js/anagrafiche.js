@@ -24,7 +24,7 @@ function anaSetStatus(table, count, st){
   var v=el.querySelector('.ana-sval');
   if(st==='done'){ el.className='ana-status-row done'; v.textContent='✓ '+count.toLocaleString('it-IT'); }
   else if(st==='loading'){ el.className='ana-status-row loading'; v.textContent='⏳ '+count.toLocaleString('it-IT')+'…'; }
-  else { el.className='ana-status-row'; v.textContent='In attesa…'; }
+  else { el.className='ana-status-row'; if(v) v.textContent='In attesa…'; }
 }
 
 function anaSetProgress(pct, msg){
@@ -141,13 +141,32 @@ async function anaLoad(force){
   try{
     // ── LEGGE DALLA CACHE — una sola query paginata ──────────────────────────
     anaSetProgress(20, 'Caricamento archivio da cache…');
-    var r = await fetch(
-      SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&limit=50000',
-      { headers: Object.assign({}, H(), { 'Accept-Profile': 'public', 'Prefer': 'count=none' }) }
+    // Carica tutta la cache con paginazione veloce (batch grandi, Promise.all)
+    var cacheRows = [];
+    var bSize = 5000, bOffset = 0;
+    anaSetProgress(15, 'Lettura cache…');
+    // Prima pagina per sapere quante ce ne sono
+    var r0 = await fetch(
+      SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset=0&limit=' + bSize,
+      { headers: Object.assign({}, H(), {'Prefer':'count=exact'}) }
     );
-    if(!r.ok) throw new Error('cache_archivio_imprese: HTTP ' + r.status);
-    var cacheRows = await r.json();
-    anaSetStatus('anagrafiche', 100, 'done');
+    if(!r0.ok) throw new Error('cache_archivio_imprese: HTTP ' + r0.status);
+    var totalCount = parseInt(r0.headers.get('content-range')?.split('/')[1] || '30000');
+    cacheRows = await r0.json();
+    anaSetProgress(30, 'Lettura cache (' + cacheRows.length + '/' + totalCount + ')…');
+    // Pagine restanti in parallelo
+    var fetches = [];
+    for(var off = bSize; off < totalCount; off += bSize){
+      fetches.push((function(o){
+        return fetch(SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset='+o+'&limit='+bSize,
+          {headers:H()}).then(function(r){return r.ok?r.json():[];});
+      })(off));
+    }
+    if(fetches.length){
+      var pages = await Promise.all(fetches);
+      pages.forEach(function(p){ cacheRows = cacheRows.concat(p); });
+    }
+    anaSetStatus('anagrafiche', cacheRows.length, 'done');
 
     anaSetProgress(70, 'Caricamento codici ATECO…');
     // ATECO serve ancora per le descrizioni nei filtri
