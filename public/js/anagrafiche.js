@@ -142,14 +142,24 @@ async function anaLoad(force){
   try{
     // ── LEGGE DALLA CACHE — una sola query paginata ──────────────────────────
     anaSetProgress(20, 'Caricamento archivio da cache…');
-    // Singola chiamata RPC — restituisce tutti i record senza limiti paginazione
-    anaSetProgress(20, 'Lettura cache…');
-    var rpcRes = await fetch(
-      SB + '/rest/v1/rpc/get_cache_archivio_imprese',
-      { method: 'POST', headers: Object.assign({}, H(), {'Content-Type':'application/json'}), body: '{}' }
-    );
-    if(!rpcRes.ok) throw new Error('get_cache_archivio_imprese: HTTP ' + rpcRes.status);
-    var cacheRows = await rpcRes.json();
+    // Keyset pagination via RPC — nessun offset, usa cursore su ragionesociale
+    var cacheRows = [], lastRS = '', bSize = 3000, pageN = 0;
+    anaSetProgress(15, 'Lettura cache…');
+    while(true){
+      var rr = await fetch(SB + '/rest/v1/rpc/get_cache_archivio_page', {
+        method: 'POST',
+        headers: Object.assign({}, H(), {'Content-Type':'application/json'}),
+        body: JSON.stringify({p_after_codice: lastRS, p_limit: bSize})
+      });
+      if(!rr.ok) throw new Error('get_cache_archivio_page: HTTP ' + rr.status);
+      var page = await rr.json();
+      if(!Array.isArray(page) || page.length === 0) break;
+      cacheRows = cacheRows.concat(page);
+      lastRS = page[page.length - 1].ragionesociale || '';
+      anaSetProgress(15 + Math.min(55, Math.round(cacheRows.length / 550)),
+        'Lettura cache (' + cacheRows.length + ' imprese)…');
+      if(page.length < bSize) break;
+    }
     anaSetProgress(70, 'Archivio caricato (' + cacheRows.length + ' imprese)…');
     anaSetStatus('anagrafiche', cacheRows.length, 'done');
 

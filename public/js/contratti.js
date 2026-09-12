@@ -35,13 +35,24 @@ async function contrattiLoad(force) {
 
   try {
     // ── LEGGE DALLA CACHE (una sola query paginata) ──────────────────────────
-    contrattiSetProgress(20, 'Lettura cache…');
-    var rpcRes = await fetch(
-      SB + '/rest/v1/rpc/get_cache_archivio_imprese',
-      { method: 'POST', headers: Object.assign({}, H(), {'Content-Type':'application/json'}), body: '{}' }
-    );
-    if(!rpcRes.ok) throw new Error('cache: HTTP ' + rpcRes.status);
-    var cacheRows = await rpcRes.json();
+    // Keyset pagination via RPC — cursore su ragionesociale
+    var cacheRows = [], lastRS = '', bSize = 3000;
+    contrattiSetProgress(15, 'Lettura cache…');
+    while(true){
+      var rr = await fetch(SB + '/rest/v1/rpc/get_cache_archivio_page', {
+        method: 'POST',
+        headers: Object.assign({}, H(), {'Content-Type':'application/json'}),
+        body: JSON.stringify({p_after_codice: lastRS, p_limit: bSize})
+      });
+      if(!rr.ok) throw new Error('get_cache_archivio_page: HTTP ' + rr.status);
+      var page = await rr.json();
+      if(!Array.isArray(page) || page.length === 0) break;
+      cacheRows = cacheRows.concat(page);
+      lastRS = page[page.length - 1].ragionesociale || '';
+      contrattiSetProgress(15 + Math.min(55, Math.round(cacheRows.length / 550)),
+        'Lettura cache (' + cacheRows.length + ')…');
+      if(page.length < bSize) break;
+    }
     contrattiSetProgress(70, 'Archivio caricato (' + cacheRows.length + ')…');
     contrattiSetProgress(75, 'Costruzione tabella…');
     ['contratti','anagrafiche','cciaa','diretti','join'].forEach(function(t) {
