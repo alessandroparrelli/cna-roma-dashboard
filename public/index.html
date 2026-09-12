@@ -25,12 +25,12 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="js/report-generator.js?v=1789139984"></script>
+<script src="js/report-generator.js?v=1789220646"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css?v=1789139984">
-<link rel="stylesheet" href="css/assistant.css?v=1789139984">
+<link rel="stylesheet" href="css/main.css?v=1789220646">
+<link rel="stylesheet" href="css/assistant.css?v=1789220646">
 </head>
 <body>
 
@@ -1166,9 +1166,9 @@
   <div class="tab-hero"><h2 class="tab-hero-title">Archivio Contratti</h2><p class="tab-hero-desc">Vista aggregata per impresa di tutti i contratti attivi, con tesseramento, tipo impresa, dipendenti, data stipula e consulente</p></div>
   <!-- Initial loader shown until data fetched -->
   <div class="ana-loader active" id="contratti-loader">
-    <div class="ana-loader-title">📋 CARICAMENTO ARCHIVIO CONTRATTI</div>
+    <div class="ana-loader-title">📋 ARCHIVIO CONTRATTI</div>
     <div class="ana-loader-spinner"></div>
-    <div class="ana-loader-msg" id="contratti-load-msg">Preparazione…</div>
+    <div class="ana-loader-msg" id="contratti-load-msg">Lettura cache…</div>
     <div class="ana-progress-bar"><div class="ana-progress-fill" id="contratti-progress"></div></div>
     <div class="ana-status-table">
       <div class="ana-status-row" id="contratti-status-contratti"><span class="ana-sname">Contratti Servizio</span><span class="ana-sval">In attesa…</span></div>
@@ -1182,6 +1182,15 @@
   <!-- Content shown after load -->
   <div id="contratti-content" style="display:none">
 
+    <!-- Cache info + refresh button -->
+    <div id="contratti-cache-info" style="display:flex;align-items:center;gap:10px;padding:8px 18px;background:var(--surface);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary)">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span id="contratti-cache-date">—</span>
+      <button onclick="contrattiRefreshCache()" id="contratti-btn-refresh-cache" class="btn" style="font-size:11px;padding:4px 10px;margin-left:4px;background:var(--surface);border:1px solid var(--border);color:var(--text-secondary);border-radius:4px;cursor:pointer">
+        🔄 Aggiorna cache
+      </button>
+      <span id="contratti-cache-status" style="color:var(--primary);font-weight:600"></span>
+    </div>
     <!-- KPI strip contratti -->
     <div id="contratti-kpi-strip" class="kpi-strip" style="margin-bottom:24px"></div>
 
@@ -1790,7 +1799,7 @@
       <div style="font-size:15px;font-weight:700;margin-bottom:8px">ERP CNA di Roma</div>
       <div><strong>Versione:</strong> v2026.98</div>
       <div><strong>Sviluppato per:</strong> CNA Roma - Confederazione Nazionale dell'Artigianato</div>
-      <div><strong>Data rilascio:</strong> 11 Settembre 2026</div>
+      <div><strong>Data rilascio:</strong> 12 Settembre 2026</div>
       <div><strong>Sviluppato da:</strong> Alessandro Parrelli</div>
     </div>
     
@@ -2019,26 +2028,26 @@
   </div>
 </div>
 
-<script src="js/config.js?v=1789139984"></script>
-<script src="js/auth.js?v=1789139984"></script>
-<script src="js/dashboard.js?v=1789139984"></script>
-<script src="js/nav.js?v=1789139984"></script>
-<script src="js/admin.js?v=1789139984"></script>
-<script src="js/anagrafiche.js?v=1789139984"></script>
-<script src="js/contratti.js?v=1789139984"></script>
-<script src="js/consulenti.js?v=1789139984"></script>
-<script src="js/import.js?v=1789139984"></script>
-<script src="js/trasformatore.js?v=1789139984"></script>
-<script src="js/scheda.js?v=1789139984"></script>
-<script src="js/mestieri.js?v=1789139984"></script>
-<script src="js/ateco.js?v=1789139984"></script>
-<script src="js/raggruppamenti.js?v=1789139984"></script>
-<script src="js/storica.js?v=1789139984"></script>
-<script src="js/reportistica.js?v=1789139984"></script>
-<script src="js/ricerca.js?v=1789139984"></script>
-<script src="js/incassi.js?v=1789139984"></script>
-<script src="js/assistant.js?v=1789139984"></script>
-<script src="js/obiettivi.js?v=1789139984"></script>
+<script src="js/config.js?v=1789220646"></script>
+<script src="js/auth.js?v=1789220646"></script>
+<script src="js/dashboard.js?v=1789220646"></script>
+<script src="js/nav.js?v=1789220646"></script>
+<script src="js/admin.js?v=1789220646"></script>
+<script src="js/anagrafiche.js?v=1789220646"></script>
+<script src="js/contratti.js?v=1789220646"></script>
+<script src="js/consulenti.js?v=1789220646"></script>
+<script src="js/import.js?v=1789220646"></script>
+<script src="js/trasformatore.js?v=1789220646"></script>
+<script src="js/scheda.js?v=1789220646"></script>
+<script src="js/mestieri.js?v=1789220646"></script>
+<script src="js/ateco.js?v=1789220646"></script>
+<script src="js/raggruppamenti.js?v=1789220646"></script>
+<script src="js/storica.js?v=1789220646"></script>
+<script src="js/reportistica.js?v=1789220646"></script>
+<script src="js/ricerca.js?v=1789220646"></script>
+<script src="js/incassi.js?v=1789220646"></script>
+<script src="js/assistant.js?v=1789220646"></script>
+<script src="js/obiettivi.js?v=1789220646"></script>
 
 <!-- ═══════════ FOOTER APP ═══════════ -->
 <footer id="app-footer">
