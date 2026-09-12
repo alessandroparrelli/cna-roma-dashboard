@@ -35,22 +35,13 @@ async function contrattiLoad(force) {
 
   try {
     // ── LEGGE DALLA CACHE (una sola query paginata) ──────────────────────────
-    var cacheRows = [];
-    var offset = 0, pageSize = 1000;
-    while (true) {
-      contrattiSetProgress(10 + Math.min(60, Math.round(cacheRows.length / 30)), 'Caricamento archivio (' + cacheRows.length + ')…');
-      var r = await fetch(
-        SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset=' + offset + '&limit=' + pageSize,
-        { headers: H() }
-      );
-      if (!r.ok) throw new Error('cache: HTTP ' + r.status);
-      var rows = await r.json();
-      if (!Array.isArray(rows) || rows.length === 0) break;
-      cacheRows = cacheRows.concat(rows);
-      if (rows.length < pageSize) break;
-      offset += pageSize;
-    }
-
+    contrattiSetProgress(20, 'Caricamento archivio da cache…');
+    var r = await fetch(
+      SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&limit=50000',
+      { headers: H() }
+    );
+    if (!r.ok) throw new Error('cache: HTTP ' + r.status);
+    var cacheRows = await r.json();
     contrattiSetProgress(75, 'Costruzione tabella…');
     ['contratti','anagrafiche','cciaa','diretti','join'].forEach(function(t) {
       contrattiSetStatus(t, 100, 'done');

@@ -140,23 +140,14 @@ async function anaLoad(force){
 
   try{
     // ── LEGGE DALLA CACHE — una sola query paginata ──────────────────────────
-    var cacheRows = [];
-    var offset = 0, pageSize = 1000;
-    while(true){
-      anaSetProgress(5 + Math.min(60, Math.round(cacheRows.length / 30)),
-        'Caricamento archivio (' + cacheRows.length + ' imprese)…');
-      var r = await fetch(
-        SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset=' + offset + '&limit=' + pageSize,
-        { headers: H() }
-      );
-      if(!r.ok) throw new Error('cache_archivio_imprese: HTTP ' + r.status);
-      var rows = await r.json();
-      if(!Array.isArray(rows) || rows.length === 0) break;
-      cacheRows = cacheRows.concat(rows);
-      if(rows.length < pageSize) break;
-      offset += pageSize;
-    }
-    ['anagrafiche','diretti','codiciateco','join'].forEach(function(t){ anaSetStatus(t,100,'done'); });
+    anaSetProgress(20, 'Caricamento archivio da cache…');
+    var r = await fetch(
+      SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&limit=50000',
+      { headers: Object.assign({}, H(), { 'Accept-Profile': 'public', 'Prefer': 'count=none' }) }
+    );
+    if(!r.ok) throw new Error('cache_archivio_imprese: HTTP ' + r.status);
+    var cacheRows = await r.json();
+    anaSetStatus('anagrafiche', 100, 'done');
 
     anaSetProgress(70, 'Caricamento codici ATECO…');
     // ATECO serve ancora per le descrizioni nei filtri
