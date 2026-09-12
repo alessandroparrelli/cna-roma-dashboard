@@ -124,202 +124,184 @@ function anaJoin(ana, dir, cod){
 // === GESTIONE LISTA ANAGRAFICHE ===
 
 async function anaLoad(force){
-  // CONTROLLO PERMESSI: verifica se l'utente può interrogare l'archivio
+  // CONTROLLO PERMESSI
   if (!hasPermission('interroga')) {
-    alert('❌ ACCESSO NEGATO: Non hai il permesso per interrogare l\'archivio.\nContatta l\'amministratore.');
+    alert('❌ ACCESSO NEGATO: Non hai il permesso per interrogare l'archivio.\nContatta l'amministratore.');
     return;
   }
-  
   if(anaLoading) return;
   if(anaLoaded && !force) return;
   anaLoading=true;
-  // reset UI
+
   G('ana-loader').classList.add('active');
   G('ana-content').style.display='none';
   ['anagrafiche','diretti','codiciateco','join'].forEach(function(t){ anaSetStatus(t,0,null); });
-  anaSetProgress(0, 'Connessione a Supabase…');
+  anaSetProgress(0, 'Lettura cache…');
+
   try{
-    // ── FASE 1: Caricamento parallelo delle 3 tabelle principali ──
-    anaSetProgress(5, 'Caricamento Anagrafiche, Diretti e ATECO…');
-    var phase1 = await Promise.all([
-      anaFetchAll('Anagrafiche'),
-      anaFetchAll('diretti'),
-      anaFetchAll('codiciateco')
-    ]);
-    var ana = phase1[0];
-    var dir = phase1[1];
-    allDiretti = dir; // Salva per schede anagrafiche
-    var cod = phase1[2];
-
-    // Calcola partite IVA uniche per il fetch CCIAA
-    var pivaSet = {};
-    ana.forEach(function(a){ if(a.partitaiva) pivaSet[String(a.partitaiva).trim()] = true; });
-    var pivaList = Object.keys(pivaSet);
-
-    anaSetProgress(55, 'Caricamento CCIAA e Contratti…');
-
-    // ── FASE 2: CCIAA (batch da 200, concorrenza max 10) + Contratti in parallelo ──
-    // Avvia subito il fetch contratti così procede in parallelo con CCIAA
-    var fetchContratti = anaFetchAllFiltered('contrattiservizio', 'select=codicecliente,tipocontratto,datastipulacontratto,nomeconsulente&datadisdetta=is.null');
-
-    var cciaaRows = [];
-    if (pivaList.length > 0) {
-      var batchSize = 200;
-      var batches = [];
-      for (var b = 0; b < pivaList.length; b += batchSize) batches.push(pivaList.slice(b, b + batchSize));
-      // Esegui batch con concorrenza limitata a 10 per non sovraccaricare Supabase
-      var concurrency = 10;
-      for (var ci = 0; ci < batches.length; ci += concurrency) {
-        var chunk = batches.slice(ci, ci + concurrency);
-        var chunkResults = await Promise.all(chunk.map(function(batch){
-          return fetch(SB+'/rest/v1/cciaa?select=partita_iva,num_addetti_sub,num_addetti_fam_ul,stato_attivita,art_com_tur&partita_iva=in.('+batch.join(',')+')', {headers:H()})
-            .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
-        }));
-        chunkResults.forEach(function(r){ cciaaRows = cciaaRows.concat(r); });
-      }
+    // ── LEGGE DALLA CACHE — una sola query paginata ──────────────────────────
+    var cacheRows = [];
+    var offset = 0, pageSize = 1000;
+    while(true){
+      anaSetProgress(5 + Math.min(60, Math.round(cacheRows.length / 30)),
+        'Caricamento archivio (' + cacheRows.length + ' imprese)…');
+      var r = await fetch(
+        SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset=' + offset + '&limit=' + pageSize,
+        { headers: H() }
+      );
+      if(!r.ok) throw new Error('cache_archivio_imprese: HTTP ' + r.status);
+      var rows = await r.json();
+      if(!Array.isArray(rows) || rows.length === 0) break;
+      cacheRows = cacheRows.concat(rows);
+      if(rows.length < pageSize) break;
+      offset += pageSize;
     }
+    ['anagrafiche','diretti','codiciateco','join'].forEach(function(t){ anaSetStatus(t,100,'done'); });
 
-    // Aspetta i contratti (probabilmente già completati durante i batch CCIAA)
-    var contrattiRows = await fetchContratti;
+    anaSetProgress(70, 'Caricamento codici ATECO…');
+    // ATECO serve ancora per le descrizioni nei filtri
+    var codRows = await anaFetchAll('codiciateco');
+    var codMap = {};
+    codRows.forEach(function(c){ if(c.codiceateco) codMap[String(c.codiceateco).trim()] = c.mestiere || ''; });
+    allDiretti = []; // non serve più, ma manteniamo la variabile
 
-    // Costruisci mappa CCIAA: partita_iva → {sub, fam}
-    anaCCIAAMap = {};
-    cciaaRows.forEach(function(cc){
-      if(cc.partita_iva) anaCCIAAMap[String(cc.partita_iva).trim()] = cc;
-    });
+    anaSetProgress(80, 'Costruzione archivio…');
 
-    // Costruisci mappa contratti: codiceanagrafica → {tipocontratto: {data, consulente}}
-    anaContratti = {};
+    // ── RIMAPPA nel formato atteso dal resto del codice ───────────────────────
+    var tc2tipo = function(tc){
+      if(!tc) return '';
+      var t = String(tc).trim().toUpperCase();
+      return t==='A'?'Artigiano':t==='C'?'Commerciante':(t||'');
+    };
+
+    anaContratti  = {};
     anaServiziSet = {};
-    contrattiRows.forEach(function(c){
-      if(!c.codicecliente) return;
-      if(!anaContratti[c.codicecliente]) anaContratti[c.codicecliente] = {};
-      if(c.tipocontratto){
-        anaServiziSet[c.tipocontratto] = true;
-        var existing = anaContratti[c.codicecliente][c.tipocontratto];
-        var dataC = c.datastipulacontratto ? new Date(c.datastipulacontratto) : new Date(0);
-        if(!existing || dataC > new Date(existing.data || 0)){
-          anaContratti[c.codicecliente][c.tipocontratto] = {
-            data: c.datastipulacontratto || null,
-            consulente: c.nomeconsulente || ''
-          };
+    anaCCIAAMap   = {};
+
+    anaAll = cacheRows.map(function(r){
+      // Ricostruisce contratti_attivi dai campi flat
+      var contratti = {};
+      var SERVIZI_MAP = [
+        ['SERVIZIO 730',              'c_730'],
+        ['SICUREZZA',                 'c_sicurezza'],
+        ['PEC',                       'c_pec'],
+        ["CONTABILITA'",              'c_contabilita'],
+        ['PAGHE',                     'c_paghe'],
+        ['RENTRI',                    'c_rentri'],
+        ['PACCHETTO HACCP-SICUREZZA', 'c_haccp'],
+        ['IGIENE DEGLI ALIMENTI',     'c_igiene'],
+        ['CATASTO RIFIUTI',           'c_rifiuti'],
+        ['R.S.P.P. ESTERNO',          'c_rspp'],
+      ];
+      SERVIZI_MAP.forEach(function(pair){
+        var nome = pair[0], campo = pair[1];
+        if(r[campo + '_data']){
+          contratti[nome] = { data: r[campo + '_data'], consulente: r[campo + '_consulente'] || '' };
+          anaServiziSet[nome] = true;
         }
+      });
+      if(r.c_altri){
+        r.c_altri.split(',').forEach(function(s){
+          var nome = s.trim();
+          if(nome){ contratti[nome] = { data:'', consulente:'' }; anaServiziSet[nome] = true; }
+        });
       }
+      anaContratti[r.codiceanagrafica] = contratti;
+
+      // Ricava mestiere da ATECO se non presente
+      var ateco = String(r.codiceateco || '').trim();
+      var mestiere = r.mestiere || codMap[ateco] || '';
+
+      // Servizi: iscritto + inps + contratti
+      var svSet = {};
+      if(r.iscritto) svSet['ISCRITTO'] = true;
+      if(r.inps)     svSet['TESSERAMENTO INPS'] = true;
+      Object.keys(contratti).forEach(function(k){ svSet[k] = true; });
+
+      return {
+        // Campi base (compatibili con il resto del codice)
+        codiceanagrafica:    r.codiceanagrafica,
+        ragionesociale:      r.ragionesociale,
+        indirizzo:           r.indirizzo,
+        cap:                 r.cap,
+        comune:              r.comune,
+        provincia:           r.provincia,
+        email:               r.email,
+        telefono:            r.telefono,
+        cellulare:           r.cellulare,
+        naturagiuridica:     r.naturagiuridica,
+        codiceateco:         r.codiceateco,
+        mestiere:            mestiere,
+        partitaiva:          r.partitaiva,
+        codicefiscale:       r.codicefiscale,
+        zonacliente:         r.zonacliente,
+        // CCIAA
+        addetti_sub:         r.addetti_sub || 0,
+        addetti_fam:         r.addetti_fam || 0,
+        totale_addetti:      r.addetti_tot || 0,
+        tipoimpresa:         tc2tipo(r.tipo_attivita),
+        // Stato associativo
+        servizio:            r.iscritto ? 'ISCRITTO' : (r.inps ? 'TESSERAMENTO INPS' : ''),
+        servizi_tutti:       Object.keys(svSet),
+        iscritto_data:       null,
+        iscritto_consulente: '',
+        // Contratti
+        contratti_attivi:    contratti,
+        // Pagante
+        isPagante:           r.aggiornato_at ? false : false, // verrà aggiornato sotto
+        // Cache meta
+        _aggiornato_at:      r.aggiornato_at || ''
+      };
     });
 
-    anaSetProgress(75, 'Unificazione dati…');
-    anaAll = anaJoin(ana, dir, cod);
-    
-    // Filtra: esclude anagrafiche dove TUTTI i servizi diretti sono NON ASSOCIABILE o CONTABILITA'
-    // (non eliminare se ne ha almeno uno valido, es. ISCRITTO)
-    anaAll = anaAll.filter(function(r) {
-      var tutti = r.servizi_tutti && r.servizi_tutti.length ? r.servizi_tutti : (r.servizio ? [r.servizio] : []);
-      if(tutti.length === 0) return true; // nessun servizio: tengo
+    // ── Filtra esclusioni (NON ASSOCIABILE, CONTABILITA') ──────────────────
+    anaAll = anaAll.filter(function(r){
+      var tutti = r.servizi_tutti;
+      if(!tutti || !tutti.length) return true;
       var esclusi = ['NON ASSOCIABILE', "CONTABILITA'"];
-      // Tieni se almeno un servizio NON è nella lista di esclusione
       return tutti.some(function(s){ return esclusi.indexOf((s||'').trim()) === -1; });
     });
-    
-    // Costruisci mappa iscritti da diretti: codiceanagrafica → {datastipula, acuradi}
-    var iscrittiMap = {};
-    dir.forEach(function(d){
-      if(!d.servizio || !d.codiceanagrafica) return;
-      var svc = String(d.servizio).trim().toUpperCase();
-      if(svc === 'ISCRITTO'){
-        // Mantieni quello con data più recente
-        var existing = iscrittiMap[d.codiceanagrafica];
-        var dataNew = d.datastipula ? new Date(d.datastipula) : new Date(0);
-        var dataOld = existing ? new Date(existing.datastipula || 0) : new Date(0);
-        if(!existing || dataNew >= dataOld){
-          iscrittiMap[d.codiceanagrafica] = {
-            datastipula: d.datastipula || null,
-            acuradi: d.acuradi || ''
-          };
-        }
-      }
-    });
 
-    // Arricchisce ogni record con dati CCIAA, iscritto e contratti attivi
-    anaAll.forEach(function(r){
-      var piva = String(r.partitaiva || '').trim();
-      var cc = anaCCIAAMap[piva] || null;
-      r.addetti_sub    = cc ? (parseInt(cc.num_addetti_sub)    || 0) : 0;
-      r.addetti_fam    = cc ? (parseInt(cc.num_addetti_fam_ul) || 0) : 0;
-      r.totale_addetti = r.addetti_sub + r.addetti_fam;
-      // Tipo impresa da CCIAA
-      if(cc && cc.art_com_tur){
-        var tc = String(cc.art_com_tur).trim().toUpperCase();
-        r.tipoimpresa = tc === 'A' ? 'Artigiano' : tc === 'C' ? 'Commerciante' : tc;
-      } else { r.tipoimpresa = ''; }
-      // Iscritto da diretti
-      var isc = iscrittiMap[r.codiceanagrafica] || null;
-      r.iscritto_data      = isc ? (isc.datastipula || null) : null;
-      r.iscritto_consulente = isc ? (isc.acuradi || '') : '';
-      // Contratti attivi: cerca per codiceanagrafica
-      r.contratti_attivi = anaContratti[r.codiceanagrafica] || {};
-
-      // Arricchisce servizi_tutti con i tipocontratto da contrattiservizio
-      // (alcune imprese hanno ISCRITTO/altri servizi in contrattiservizio invece che in diretti)
-      var svSet = {};
-      (r.servizi_tutti || []).forEach(function(s){ if(s) svSet[s] = true; });
-      Object.keys(r.contratti_attivi).forEach(function(tipo){ if(tipo) svSet[tipo] = true; });
-      r.servizi_tutti = Object.keys(svSet);
-      r.isPagante = false; // inizializzato, verrà aggiornato dopo
-    });
-
-    // ── Carica badge Pagante: codici che hanno pagato tessera negli ultimi 3 anni ──
+    // ── Badge Pagante: legge da cache_paganti (istantanea) ─────────────────
     anaSetProgress(88, 'Verifica paganti…');
-    try {
-      var annoMin = new Date().getFullYear() - 2;
-      var dataMin = annoMin + '-01-01';
-      // Legge i codici distinti pagati (saldo=0, data_fattura >= 3 anni fa) in batch da 50
-      var codiciAll = anaAll.map(function(r){ return r.codiceanagrafica; }).filter(Boolean);
-      var pagantiBatch = [];
-      for (var pb = 0; pb < codiciAll.length; pb += 50) {
-        var batch = codiciAll.slice(pb, pb + 50);
-        var rp = await fetch(
-          SB + '/rest/v1/incassipandora?select=codice_cliente&codice_azienda=eq.G1000001&pagato=eq.true&data_fattura=gte.' + dataMin + '&codice_cliente=in.(' + batch.join(',') + ')&limit=1000',
-          { headers: H() }
-        );
-        if (rp.ok) {
-          var dp = await rp.json();
-          dp.forEach(function(row){ if(row.codice_cliente) pagantiBatch.push(row.codice_cliente); });
-        }
+    try{
+      var rpag = await fetch(SB + '/rest/v1/cache_paganti?select=codiceanagrafica', { headers: H() });
+      if(rpag.ok){
+        var pagantiRows = await rpag.json();
+        var pagantiSet = {};
+        pagantiRows.forEach(function(p){ pagantiSet[p.codiceanagrafica] = true; });
+        anaAll.forEach(function(r){ r.isPagante = !!pagantiSet[r.codiceanagrafica]; });
       }
-      var pagantiSet = {};
-      pagantiBatch.forEach(function(c){ pagantiSet[c] = true; });
-      anaAll.forEach(function(r){ r.isPagante = !!pagantiSet[r.codiceanagrafica]; });
-    } catch(ep) {
-      console.warn('Errore caricamento paganti:', ep.message);
-    }
+    }catch(ep){ console.warn('Errore paganti:', ep.message); }
 
-    anaFiltered = [];  // Parte vuoto: mostra risultati solo dopo ricerca
+    anaFiltered = [];
     anaSelected.clear();
-    anaPage=0;
+    anaPage = 0;
     anaSetProgress(95, 'Popolamento filtri…');
     anaPopulateFilters();
-    // NON chiama anaRender() — la tabella parte vuota
     anaSetProgress(100, 'Completato.');
-    anaLoaded=true;
+    anaLoaded = true;
+
     setTimeout(function(){
       G('ana-loader').classList.remove('active');
-      G('ana-content').style.display='block';
+      G('ana-content').style.display = 'block';
       if(window.reInitFiltersToggle) reInitFiltersToggle();
-      // Messaggio placeholder nella tabella
-      var tb=G('ana-tbody');
-      if(tb) tb.innerHTML='<tr><td colspan="40" style="text-align:center;padding:48px 24px;color:var(--text-dim);font-size:14px;">'+
+      var tb = G('ana-tbody');
+      if(tb) tb.innerHTML = '<tr><td colspan="40" style="text-align:center;padding:48px 24px;color:var(--text-dim);font-size:14px;">' +
         '🔍 Usa i filtri sopra per cercare le imprese, poi clicca <strong>Applica</strong></td></tr>';
-      // Aggiorna contatori
+      anaShowCacheBar();
       G('ana-count').textContent = '0 record';
-      G('ana-info-text').textContent = 'DB: '+anaAll.length.toLocaleString('it-IT')+' imprese caricate — imposta i filtri e clicca Applica';
+      G('ana-info-text').textContent = 'Cache: ' + anaAll.length.toLocaleString('it-IT') +
+        ' imprese caricate — imposta i filtri e clicca Applica';
     }, 300);
+
   }catch(e){
     console.error(e);
-    G('ana-load-msg').textContent='❌ '+e.message;
-    G('ana-load-msg').style.color='var(--red)';
-    toast('Errore caricamento anagrafiche: '+e.message,'error');
+    G('ana-load-msg').textContent = '❌ ' + e.message;
+    G('ana-load-msg').style.color = 'var(--red)';
+    toast('Errore caricamento anagrafiche: ' + e.message, 'error');
   }finally{
-    anaLoading=false;
+    anaLoading = false;
   }
 }
 
@@ -928,3 +910,58 @@ function anaExport(){
 // ══════════════════════════════════════════════════════════════════════════════
 
 var importData = { diretti: null, anagrafiche: null };
+
+// ── REFRESH CACHE ARCHIVIO IMPRESE ─────────────────────────────────────────
+async function anaRefreshCache() {
+  var btn = G('ana-btn-refresh-cache');
+  var statusEl = G('ana-cache-status');
+  if(!btn || !statusEl) return;
+  btn.disabled = true;
+  statusEl.style.color = 'var(--primary)';
+
+  var steps = [
+    { fn: 'refresh_cache_step1_stato',    label: 'Step 1/3 — Stato associativo…' },
+    { fn: 'refresh_cache_step2_cciaa',    label: 'Step 2/3 — Dati CCIAA (~2 min)…' },
+    { fn: 'refresh_cache_step3_contratti',label: 'Step 3/3 — Contratti…' },
+  ];
+
+  try {
+    for(var i=0; i<steps.length; i++){
+      statusEl.textContent = '⏳ ' + steps[i].label;
+      var r = await fetch(SB + '/rest/v1/rpc/' + steps[i].fn, {
+        method: 'POST',
+        headers: Object.assign({}, H(), {'Content-Type':'application/json'}),
+        body: '{}'
+      });
+      if(!r.ok) throw new Error(steps[i].fn + ': HTTP ' + r.status);
+      var d = await r.json();
+      if(!d.ok) throw new Error(steps[i].fn + ' fallito');
+    }
+    statusEl.textContent = '✅ Cache aggiornata!';
+    statusEl.style.color = '#10b981';
+    // Ricarica
+    anaLoaded = false;
+    await anaLoad(true);
+  } catch(e) {
+    statusEl.textContent = '❌ ' + e.message;
+    statusEl.style.color = 'var(--red)';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function anaShowCacheBar() {
+  var bar = G('ana-cache-bar');
+  var dateEl = G('ana-cache-date');
+  if(!bar || !dateEl) return;
+  bar.style.display = 'flex';
+  if(anaAll.length > 0 && anaAll[0]._aggiornato_at){
+    var d = new Date(anaAll[0]._aggiornato_at);
+    var fmt = d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) +
+              ' ' + d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+    dateEl.textContent = 'Cache aggiornata il ' + fmt + ' · ' + anaAll.length.toLocaleString('it-IT') + ' imprese';
+  } else {
+    dateEl.textContent = anaAll.length.toLocaleString('it-IT') + ' imprese in cache';
+  }
+}
+
