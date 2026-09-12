@@ -142,24 +142,15 @@ async function anaLoad(force){
   try{
     // ── LEGGE DALLA CACHE — una sola query paginata ──────────────────────────
     anaSetProgress(20, 'Caricamento archivio da cache…');
-    // Carica tutta la cache — loop semplice finché non ci sono meno record del batch
-    var cacheRows = [];
-    var bSize = 5000, bOff = 0;
-    anaSetProgress(15, 'Lettura cache…');
-    while(true){
-      var rr = await fetch(
-        SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset='+bOff+'&limit='+bSize,
-        { headers: H() }
-      );
-      if(!rr.ok) throw new Error('cache_archivio_imprese: HTTP ' + rr.status);
-      var page = await rr.json();
-      if(!Array.isArray(page) || page.length === 0) break;
-      cacheRows = cacheRows.concat(page);
-      anaSetProgress(15 + Math.min(55, Math.round(cacheRows.length / 600)),
-        'Lettura cache (' + cacheRows.length + ' imprese)…');
-      if(page.length < bSize) break;
-      bOff += bSize;
-    }
+    // Singola chiamata RPC — restituisce tutti i record senza limiti paginazione
+    anaSetProgress(20, 'Lettura cache…');
+    var rpcRes = await fetch(
+      SB + '/rest/v1/rpc/get_cache_archivio_imprese',
+      { method: 'POST', headers: Object.assign({}, H(), {'Content-Type':'application/json'}), body: '{}' }
+    );
+    if(!rpcRes.ok) throw new Error('get_cache_archivio_imprese: HTTP ' + rpcRes.status);
+    var cacheRows = await rpcRes.json();
+    anaSetProgress(70, 'Archivio caricato (' + cacheRows.length + ' imprese)…');
     anaSetStatus('anagrafiche', cacheRows.length, 'done');
 
     anaSetProgress(70, 'Caricamento codici ATECO…');

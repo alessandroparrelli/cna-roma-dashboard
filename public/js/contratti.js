@@ -35,22 +35,14 @@ async function contrattiLoad(force) {
 
   try {
     // ── LEGGE DALLA CACHE (una sola query paginata) ──────────────────────────
-    contrattiSetProgress(15, 'Lettura cache…');
-    var bSize = 5000, bOff = 0;
-    while(true){
-      var rr = await fetch(
-        SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset='+bOff+'&limit='+bSize,
-        { headers: H() }
-      );
-      if(!rr.ok) throw new Error('cache: HTTP ' + rr.status);
-      var page = await rr.json();
-      if(!Array.isArray(page) || page.length === 0) break;
-      cacheRows = cacheRows.concat(page);
-      contrattiSetProgress(15 + Math.min(55, Math.round(cacheRows.length / 600)),
-        'Lettura cache (' + cacheRows.length + ')…');
-      if(page.length < bSize) break;
-      bOff += bSize;
-    }
+    contrattiSetProgress(20, 'Lettura cache…');
+    var rpcRes = await fetch(
+      SB + '/rest/v1/rpc/get_cache_archivio_imprese',
+      { method: 'POST', headers: Object.assign({}, H(), {'Content-Type':'application/json'}), body: '{}' }
+    );
+    if(!rpcRes.ok) throw new Error('cache: HTTP ' + rpcRes.status);
+    var cacheRows = await rpcRes.json();
+    contrattiSetProgress(70, 'Archivio caricato (' + cacheRows.length + ')…');
     contrattiSetProgress(75, 'Costruzione tabella…');
     ['contratti','anagrafiche','cciaa','diretti','join'].forEach(function(t) {
       contrattiSetStatus(t, 100, 'done');
