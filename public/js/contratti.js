@@ -24,123 +24,178 @@ async function contrattiLoad(force) {
   if (contrattiLoading) return;
   if (contrattiLoaded && !force) return;
   contrattiLoading = true;
-
+  
   G('contratti-loader').classList.add('active');
   G('contratti-content').style.display = 'none';
   ['contratti', 'anagrafiche', 'cciaa', 'diretti', 'join'].forEach(function(t) {
     contrattiSetStatus(t, 0, null);
   });
-
-  contrattiSetProgress(0, 'Lettura cache…');
-
+  
+  contrattiSetProgress(0, 'Connessione a Supabase…');
+  
   try {
-    // ── LEGGE DALLA CACHE (una sola query paginata) ──────────────────────────
-    // Keyset pagination via RPC — cursore su ragionesociale
-    var cacheRows = [], lastRS = '', bSize = 3000;
-    contrattiSetProgress(15, 'Lettura cache…');
-    while(true){
-      var rr = await fetch(SB + '/rest/v1/rpc/get_cache_archivio_page', {
-        method: 'POST',
-        headers: Object.assign({}, H(), {'Content-Type':'application/json'}),
-        body: JSON.stringify({p_after_codice: lastRS, p_limit: bSize})
+    // Carica contratti attivi con paginazione
+    contrattiSetProgress(10, 'Caricamento contratti attivi…');
+    contrattiSetStatus('contratti', 10, null);
+    var contratti = await contrattisFetchAll('contrattiservizio?datadisdetta=is.null');
+    
+    // Carica Anagrafiche
+    contrattiSetProgress(30, 'Caricamento Anagrafiche…');
+    contrattiSetStatus('anagrafiche', 30, null);
+    var anagrafiche = await contrattisFetchAll('Anagrafiche');
+    
+    // Carica Diretti in parallelo con costruzione anaMap
+    contrattiSetProgress(60, 'Caricamento Diretti…');
+    contrattiSetStatus('diretti', 60, null);
+    contrattiSetStatus('cciaa', 60, null);
+
+    // Costruisci anaMap subito
+    var anaMap = {};
+    anagrafiche.forEach(function(a) { anaMap[a.codiceanagrafica] = a; });
+
+    // Ricava le partite IVA uniche delle imprese con contratti
+    var pivaSet = {};
+    contratti.forEach(function(c) {
+      var ana = anaMap[c.codicecliente];
+      if (ana && ana.partitaiva) pivaSet[String(ana.partitaiva).trim()] = true;
+    });
+    var pivaList = Object.keys(pivaSet);
+
+    // Carica Diretti completi + CCIAA filtrata per partite IVA (via POST per evitare URL lungo)
+    var fetchDiretti = contrattisFetchAll('diretti?select=codiceanagrafica,servizio');
+
+    // Carica CCIAA a batch di 50 partite IVA (evita URL troppo lungo)
+    var fetchCciaa = Promise.resolve([]);
+    if (pivaList.length > 0) {
+      var batchSize = 50;
+      var batches = [];
+      for (var b = 0; b < pivaList.length; b += batchSize) {
+        batches.push(pivaList.slice(b, b + batchSize));
+      }
+      fetchCciaa = Promise.all(batches.map(function(batch) {
+        return fetch(
+          SB + '/rest/v1/cciaa?select=partita_iva,art_com_tur,num_addetti_sub,num_addetti_fam_ul&partita_iva=in.(' + batch.join(',') + ')',
+          { headers: H() }
+        ).then(function(r) { return r.ok ? r.json() : []; }).catch(function() { return []; });
+      })).then(function(results) {
+        return results.reduce(function(acc, rows) { return acc.concat(rows); }, []);
       });
-      if(!rr.ok) throw new Error('get_cache_archivio_page: HTTP ' + rr.status);
-      var page = await rr.json();
-      if(!Array.isArray(page) || page.length === 0) break;
-      cacheRows = cacheRows.concat(page);
-      lastRS = page[page.length - 1].ragionesociale || '';
-      contrattiSetProgress(15 + Math.min(55, Math.round(cacheRows.length / 550)),
-        'Lettura cache (' + cacheRows.length + ')…');
-      if(page.length < bSize) break;
     }
-    contrattiSetProgress(70, 'Archivio caricato (' + cacheRows.length + ')…');
-    contrattiSetProgress(75, 'Costruzione tabella…');
-    ['contratti','anagrafiche','cciaa','diretti','join'].forEach(function(t) {
-      contrattiSetStatus(t, 100, 'done');
+
+    var results = await Promise.all([fetchDiretti, fetchCciaa]);
+    var diretti  = results[0];
+    var cciaaAll = results[1];
+
+    contrattiSetStatus('diretti', 100, 'done');
+    contrattiSetStatus('cciaa', 100, 'done');
+
+    // Mappa CCIAA per partita_iva
+    var cciaaMap = {};
+    cciaaAll.forEach(function(cc) {
+      if (cc.partita_iva) cciaaMap[String(cc.partita_iva).trim()] = cc;
     });
-
-    // ── RIMAPPA nel formato atteso dal render ────────────────────────────────
-    var serviziSet = {};
-    // Solo imprese con almeno un contratto attivo
-    cacheRows = cacheRows.filter(function(r){
-      return r.c_730_data || r.c_sicurezza_data || r.c_pec_data ||
-             r.c_contabilita_data || r.c_paghe_data || r.c_rentri_data ||
-             r.c_haccp_data || r.c_igiene_data || r.c_rifiuti_data ||
-             r.c_rspp_data || r.c_altri || r.sedeerogazione;
+    
+    contrattiSetProgress(80, 'Unificazione dati…');
+    contrattiSetStatus('join', 80, null);
+    
+    // Crea array di imprese UNICHE con tutti i servizi
+    var impreseMap = {};
+    
+    // Raccoglie ISCRITTO e TESSERAMENTO INPS dalla tabella diretti
+    var iscritti = {};
+    var inps = {};
+    diretti.forEach(function(d) {
+      if (!d.servizio) return;
+      var servizio = String(d.servizio).trim().toUpperCase();
+      if (servizio === 'ISCRITTO') {
+        iscritti[d.codiceanagrafica] = true;
+      }
+      if (servizio === 'TESSERAMENTO INPS') {
+        inps[d.codiceanagrafica] = true;
+      }
     });
+    
+    console.log('CCIAA trovati:', Object.keys(cciaaMap).length);
+    
+    contratti.forEach(function(c) {
+      var ana = anaMap[c.codicecliente];
+      if (!ana) return;
 
-    contrattiAll = cacheRows.map(function(r) {
-      var tc = String(r.tipo_attivita || '').trim().toUpperCase();
-      var tipoImp = tc === 'A' ? 'Artigiano' : tc === 'C' ? 'Commerciante' : (tc ? 'Varie' : '');
-
-      // Ricostruisce oggetto servizi dai campi flat della cache
-      var servizi = {};
-      var SERVIZI_MAP = [
-        ['SERVIZIO 730',              'c_730'],
-        ['SICUREZZA',                 'c_sicurezza'],
-        ['PEC',                       'c_pec'],
-        ["CONTABILITA'",             'c_contabilita'],
-        ['PAGHE',                     'c_paghe'],
-        ['RENTRI',                    'c_rentri'],
-        ['PACCHETTO HACCP-SICUREZZA', 'c_haccp'],
-        ['IGIENE DEGLI ALIMENTI',     'c_igiene'],
-        ['CATASTO RIFIUTI',           'c_rifiuti'],
-        ['R.S.P.P. ESTERNO',          'c_rspp'],
-      ];
-      SERVIZI_MAP.forEach(function(pair) {
-        var nome = pair[0], campo = pair[1];
-        if (r[campo + '_data']) {
-          servizi[nome] = { data: r[campo + '_data'], consulente: r[campo + '_consulente'] || '' };
-          serviziSet[nome] = true;
-        }
-      });
-      // Altri contratti (stringa separata da virgola)
-      if (r.c_altri) {
-        r.c_altri.split(',').forEach(function(s) {
-          var nome = s.trim();
-          if (nome) { servizi[nome] = { data: '', consulente: '' }; serviziSet[nome] = true; }
-        });
+      // Dati CCIAA per questa impresa
+      var piva  = String(ana.partitaiva || '').trim();
+      var cciaa = cciaaMap[piva] || null;
+      var addSub  = cciaa ? (parseInt(cciaa.num_addetti_sub)    || 0) : 0;
+      var addFam  = cciaa ? (parseInt(cciaa.num_addetti_fam_ul) || 0) : 0;
+      var tipoImp = '';
+      if (cciaa && cciaa.art_com_tur) {
+        var tc = String(cciaa.art_com_tur).trim().toUpperCase();
+        tipoImp = tc === 'A' ? 'Artigiano' : tc === 'C' ? 'Commerciante' : 'Varie';
       }
 
-      return {
-        partitaiva:     r.partitaiva,
-        ragionesociale: r.ragionesociale,
-        codicecliente:  r.codiceanagrafica,
-        comune:         r.comune,
-        provincia:      r.provincia,
-        mestiere:       r.mestiere,
-        email:          r.email,
-        telefono:       r.telefono,
-        iscritto:       r.iscritto || false,
-        inps:           r.inps     || false,
-        tipoimpresa:    tipoImp,
-        addetti_sub:    r.addetti_sub || 0,
-        addetti_fam:    r.addetti_fam || 0,
-        totale_addetti: r.addetti_tot || 0,
-        servizi:        servizi,
-        sedeerogazione: r.sedeerogazione || '',
-        _aggiornato_at: r.aggiornato_at || ''
-      };
+      if (!impreseMap[c.codicecliente]) {
+        impreseMap[c.codicecliente] = {
+          partitaiva:     ana.partitaiva,
+          ragionesociale: ana.ragionesociale,
+          codicecliente:  c.codicecliente,
+          comune:         ana.comune,
+          provincia:      ana.provincia,
+          mestiere:       ana.mestiere,
+          email:          ana.email,
+          telefono:       ana.telefono,
+          iscritto:       iscritti[ana.codiceanagrafica] || false,
+          inps:           inps[ana.codiceanagrafica]     || false,
+          tipoimpresa:    tipoImp,
+          addetti_sub:    addSub,
+          addetti_fam:    addFam,
+          totale_addetti: addSub + addFam,
+          servizi: {}
+        };
+      }
+      // Aggiunge servizio — mantieni il contratto più recente per tipo
+      var dataC    = c.datastipulacontratto ? new Date(c.datastipulacontratto) : new Date(0);
+      var existing = impreseMap[c.codicecliente].servizi[c.tipocontratto];
+      if (!existing || dataC > new Date(existing.data || 0)) {
+        impreseMap[c.codicecliente].servizi[c.tipocontratto] = {
+          data:      c.datastipulacontratto || null,
+          consulente: c.nomeconsulente || ''
+        };
+      }
     });
-
+    
+    // Converte in array
+    contrattiAll = [];
+    var serviziSet = {};
+    for (var codice in impreseMap) {
+      var imp = impreseMap[codice];
+      for (var srv in imp.servizi) {
+        serviziSet[srv] = true;
+      }
+      contrattiAll.push(imp);
+    }
+    
+    // Ordina per ragione sociale
+    contrattiAll.sort(function(a, b) {
+      return (a.ragionesociale || '').localeCompare(b.ragionesociale || '');
+    });
+    
     contrattiFiltered = contrattiAll.slice();
     contrattiSelected.clear();
-
+    
     contrattiSetProgress(90, 'Popolamento filtri…');
     contrattiPopulateFilters(serviziSet);
-
+    
     contrattiSetProgress(100, 'Rendering…');
     contrattiRender();
     contrattiRenderKPI();
-    contrattiShowCacheDate();
-
+    
     contrattiLoaded = true;
+    
     setTimeout(function() {
       G('contratti-loader').classList.remove('active');
       G('contratti-content').style.display = 'block';
-      if (window.reInitFiltersToggle) reInitFiltersToggle();
+      if(window.reInitFiltersToggle) reInitFiltersToggle();
     }, 300);
-
+    
   } catch(e) {
     console.error('Errore caricamento contratti:', e);
     G('contratti-load-msg').textContent = '❌ ' + e.message;
@@ -149,7 +204,6 @@ async function contrattiLoad(force) {
     contrattiLoading = false;
   }
 }
-
 
 // Fetch con paginazione (come anaFetchAll)
 async function contrattisFetchAll(table) {
@@ -655,66 +709,3 @@ function contrattiRenderKPI() {
     homeCountUp('ck-' + i, serviziCount[srv], false);
   });
 }
-
-// ── REFRESH CACHE ARCHIVIO IMPRESE ──────────────────────────────────────────
-async function contrattiRefreshCache() {
-  var btn = G('contratti-btn-refresh-cache');
-  var statusEl = G('contratti-cache-status');
-  if (!btn || !statusEl) return;
-  btn.disabled = true;
-  statusEl.textContent = '⏳ Step 1/3 — Stato associativo…';
-
-  try {
-    // Step 1: anagrafica + diretti
-    var r1 = await fetch(SB + '/rest/v1/rpc/refresh_cache_step1_stato', {
-      method: 'POST', headers: Object.assign({}, H(), {'Content-Type':'application/json'}), body: '{}'
-    });
-    var d1 = await r1.json();
-    if (!d1.ok) throw new Error('Step 1 fallito');
-    statusEl.textContent = '⏳ Step 2/3 — Dati CCIAA (~2 min)…';
-
-    // Step 2: CCIAA (lento)
-    var r2 = await fetch(SB + '/rest/v1/rpc/refresh_cache_step2_cciaa', {
-      method: 'POST', headers: Object.assign({}, H(), {'Content-Type':'application/json'}), body: '{}'
-    });
-    var d2 = await r2.json();
-    if (!d2.ok) throw new Error('Step 2 fallito');
-    statusEl.textContent = '⏳ Step 3/3 — Contratti…';
-
-    // Step 3: contratti
-    var r3 = await fetch(SB + '/rest/v1/rpc/refresh_cache_step3_contratti', {
-      method: 'POST', headers: Object.assign({}, H(), {'Content-Type':'application/json'}), body: '{}'
-    });
-    var d3 = await r3.json();
-    if (!d3.ok) throw new Error('Step 3 fallito');
-
-    var tot = d1.ok ? '' : '';
-    statusEl.textContent = '✅ Cache aggiornata! (' + (d3.imprese_con_contratti||0) + ' imprese con contratti)';
-    statusEl.style.color = '#10b981';
-
-    // Ricarica dati
-    contrattiLoaded = false;
-    await contrattiLoad(true);
-
-  } catch(e) {
-    statusEl.textContent = '❌ ' + e.message;
-    statusEl.style.color = '#ef4444';
-  } finally {
-    btn.disabled = false;
-  }
-}
-
-// Mostra data aggiornamento cache nel banner
-function contrattiShowCacheDate() {
-  var el = G('contratti-cache-date');
-  if (!el) return;
-  if (contrattiAll.length > 0 && contrattiAll[0]._aggiornato_at) {
-    var d = new Date(contrattiAll[0]._aggiornato_at);
-    var fmt = d.toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}) +
-              ' ' + d.toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
-    el.textContent = 'Cache aggiornata il ' + fmt + ' — ' + contrattiAll.length + ' imprese';
-  } else {
-    el.textContent = 'Cache: ' + contrattiAll.length + ' imprese';
-  }
-}
-
