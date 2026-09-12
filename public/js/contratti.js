@@ -40,7 +40,7 @@ async function contrattiLoad(force) {
     while (true) {
       contrattiSetProgress(10 + Math.min(60, Math.round(cacheRows.length / 30)), 'Caricamento archivio (' + cacheRows.length + ')…');
       var r = await fetch(
-        SB + '/rest/v1/cache_archivio_imprese?iscritto=eq.true&order=ragionesociale.asc&offset=' + offset + '&limit=' + pageSize,
+        SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset=' + offset + '&limit=' + pageSize,
         { headers: H() }
       );
       if (!r.ok) throw new Error('cache: HTTP ' + r.status);
@@ -58,6 +58,14 @@ async function contrattiLoad(force) {
 
     // ── RIMAPPA nel formato atteso dal render ────────────────────────────────
     var serviziSet = {};
+    // Solo imprese con almeno un contratto attivo
+    cacheRows = cacheRows.filter(function(r){
+      return r.c_730_data || r.c_sicurezza_data || r.c_pec_data ||
+             r.c_contabilita_data || r.c_paghe_data || r.c_rentri_data ||
+             r.c_haccp_data || r.c_igiene_data || r.c_rifiuti_data ||
+             r.c_rspp_data || r.c_altri || r.sedeerogazione;
+    });
+
     contrattiAll = cacheRows.map(function(r) {
       var tc = String(r.tipo_attivita || '').trim().toUpperCase();
       var tipoImp = tc === 'A' ? 'Artigiano' : tc === 'C' ? 'Commerciante' : (tc ? 'Varie' : '');
