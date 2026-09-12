@@ -142,30 +142,23 @@ async function anaLoad(force){
   try{
     // ── LEGGE DALLA CACHE — una sola query paginata ──────────────────────────
     anaSetProgress(20, 'Caricamento archivio da cache…');
-    // Carica tutta la cache con paginazione veloce (batch grandi, Promise.all)
+    // Carica tutta la cache — loop semplice finché non ci sono meno record del batch
     var cacheRows = [];
-    var bSize = 5000, bOffset = 0;
+    var bSize = 5000, bOff = 0;
     anaSetProgress(15, 'Lettura cache…');
-    // Prima pagina per sapere quante ce ne sono
-    var r0 = await fetch(
-      SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset=0&limit=' + bSize,
-      { headers: Object.assign({}, H(), {'Prefer':'count=exact'}) }
-    );
-    if(!r0.ok) throw new Error('cache_archivio_imprese: HTTP ' + r0.status);
-    var totalCount = parseInt(r0.headers.get('content-range')?.split('/')[1] || '30000');
-    cacheRows = await r0.json();
-    anaSetProgress(30, 'Lettura cache (' + cacheRows.length + '/' + totalCount + ')…');
-    // Pagine restanti in parallelo
-    var fetches = [];
-    for(var off = bSize; off < totalCount; off += bSize){
-      fetches.push((function(o){
-        return fetch(SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset='+o+'&limit='+bSize,
-          {headers:H()}).then(function(r){return r.ok?r.json():[];});
-      })(off));
-    }
-    if(fetches.length){
-      var pages = await Promise.all(fetches);
-      pages.forEach(function(p){ cacheRows = cacheRows.concat(p); });
+    while(true){
+      var rr = await fetch(
+        SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset='+bOff+'&limit='+bSize,
+        { headers: H() }
+      );
+      if(!rr.ok) throw new Error('cache_archivio_imprese: HTTP ' + rr.status);
+      var page = await rr.json();
+      if(!Array.isArray(page) || page.length === 0) break;
+      cacheRows = cacheRows.concat(page);
+      anaSetProgress(15 + Math.min(55, Math.round(cacheRows.length / 600)),
+        'Lettura cache (' + cacheRows.length + ' imprese)…');
+      if(page.length < bSize) break;
+      bOff += bSize;
     }
     anaSetStatus('anagrafiche', cacheRows.length, 'done');
 

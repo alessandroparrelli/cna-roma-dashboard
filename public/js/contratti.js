@@ -36,26 +36,20 @@ async function contrattiLoad(force) {
   try {
     // ── LEGGE DALLA CACHE (una sola query paginata) ──────────────────────────
     contrattiSetProgress(15, 'Lettura cache…');
-    var cacheRows = [];
-    var bSize = 5000;
-    var r0 = await fetch(
-      SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset=0&limit=' + bSize,
-      { headers: Object.assign({}, H(), {'Prefer':'count=exact'}) }
-    );
-    if (!r0.ok) throw new Error('cache: HTTP ' + r0.status);
-    var totalCount = parseInt((r0.headers.get('content-range') || '0/30000').split('/')[1]);
-    cacheRows = await r0.json();
-    contrattiSetProgress(30, 'Lettura cache (' + cacheRows.length + '/' + totalCount + ')…');
-    var fetches = [];
-    for (var off = bSize; off < totalCount; off += bSize) {
-      fetches.push((function(o){
-        return fetch(SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset='+o+'&limit='+bSize,
-          {headers:H()}).then(function(r){return r.ok?r.json():[];});
-      })(off));
-    }
-    if (fetches.length) {
-      var pages = await Promise.all(fetches);
-      pages.forEach(function(p){ cacheRows = cacheRows.concat(p); });
+    var bSize = 5000, bOff = 0;
+    while(true){
+      var rr = await fetch(
+        SB + '/rest/v1/cache_archivio_imprese?order=ragionesociale.asc&offset='+bOff+'&limit='+bSize,
+        { headers: H() }
+      );
+      if(!rr.ok) throw new Error('cache: HTTP ' + rr.status);
+      var page = await rr.json();
+      if(!Array.isArray(page) || page.length === 0) break;
+      cacheRows = cacheRows.concat(page);
+      contrattiSetProgress(15 + Math.min(55, Math.round(cacheRows.length / 600)),
+        'Lettura cache (' + cacheRows.length + ')…');
+      if(page.length < bSize) break;
+      bOff += bSize;
     }
     contrattiSetProgress(75, 'Costruzione tabella…');
     ['contratti','anagrafiche','cciaa','diretti','join'].forEach(function(t) {
