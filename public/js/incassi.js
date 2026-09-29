@@ -101,13 +101,16 @@ async function incassiApply() {
   });
 
   // 2. Carica clienti unici con tutti i filtri attivi PRIMA del render (valore esatto)
+  // Nota: passiamo SEMPRE tutti e 5 i parametri (null se non usati) per evitare
+  // ambiguità di overloading con PostgREST che causa HTTP 500
   try {
-    var body = {};
-    if (f.annoDa)  body.p_anno_da = f.annoDa;
-    if (f.annoA)   body.p_anno_a  = f.annoA;
-    if (f.meseDa)  body.p_mese_da = f.meseDa;
-    if (f.meseA)   body.p_mese_a  = f.meseA;
-    if (f.societa) body.p_societa = f.societa;
+    var body = {
+      p_anno_da: f.annoDa || null,
+      p_anno_a:  f.annoA  || null,
+      p_mese_da: f.meseDa || null,
+      p_mese_a:  f.meseA  || null,
+      p_societa: f.societa || null
+    };
     var rCl = await fetch(SB+'/rest/v1/rpc/get_clienti_unici_range', {
       method:'POST', headers:H(), body:JSON.stringify(body)
     });
