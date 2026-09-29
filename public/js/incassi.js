@@ -100,11 +100,14 @@ async function incassiApply() {
     return true;
   });
 
-  // 2. Carica clienti unici con filtro anni PRIMA del render (valore esatto)
+  // 2. Carica clienti unici con tutti i filtri attivi PRIMA del render (valore esatto)
   try {
     var body = {};
-    if (f.annoDa) body.p_anno_da = f.annoDa;
-    if (f.annoA)  body.p_anno_a  = f.annoA;
+    if (f.annoDa)  body.p_anno_da = f.annoDa;
+    if (f.annoA)   body.p_anno_a  = f.annoA;
+    if (f.meseDa)  body.p_mese_da = f.meseDa;
+    if (f.meseA)   body.p_mese_a  = f.meseA;
+    if (f.societa) body.p_societa = f.societa;
     var rCl = await fetch(SB+'/rest/v1/rpc/get_clienti_unici_range', {
       method:'POST', headers:H(), body:JSON.stringify(body)
     });
