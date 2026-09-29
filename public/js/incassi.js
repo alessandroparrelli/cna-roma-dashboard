@@ -111,7 +111,7 @@ async function incassiApply() {
       p_mese_a:  f.meseA  || null,
       p_societa: f.societa || null
     };
-    var rCl = await fetch(SB+'/rest/v1/rpc/get_clienti_unici_range', {
+    var rCl = await fetch(SB+'/rest/v1/rpc/get_clienti_unici_filtrati', {
       method:'POST', headers:H(), body:JSON.stringify(body)
     });
     if (rCl.ok) {
