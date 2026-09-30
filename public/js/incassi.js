@@ -304,7 +304,7 @@ function incassiRenderStats() {
   var mmBody=G('inc-mese-stats-body');
   if(mmBody){
     var anniD={};filtrati.forEach(function(r){if(r.anno)anniD[r.anno]=true;});
-    var anniL=Object.keys(anniD).map(Number).sort(function(a,b){return b-a;}).slice(0,5);
+    var anniL=Object.keys(anniD).map(Number).sort(function(a,b){return b-a;});
     var byAM={};anniL.forEach(function(a){byAM[a]={};for(var m=1;m<=12;m++)byAM[a][m]=0;});
     filtrati.forEach(function(r){if(byAM[r.anno]&&r.mese)byAM[r.anno][r.mese]+=(parseFloat(r.avere)||0);});
     var c=['#005CA9','#059669','#D97706','#7C3AED','#DC2626'];
@@ -444,7 +444,7 @@ function chartTop() {
 function chartAnni() {
   var ctxEl=G('inc-chart-anni'); if(!ctxEl) return;
   var anniD={};filtrati.forEach(function(r){if(r.anno)anniD[r.anno]=true;});
-  var anniL=Object.keys(anniD).map(Number).sort(function(a,b){return a-b;}).slice(-6);
+  var anniL=Object.keys(anniD).map(Number).sort(function(a,b){return a-b;});
   if(!anniL.length) return;
 
   // Anno corrente = viola con sfumatura, anni passati = scala di grigi con sfumatura
