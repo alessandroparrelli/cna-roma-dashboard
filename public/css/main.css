@@ -27,7 +27,7 @@ header {
   top: auto !important;
 }
 /* ══════════════════════════════════════════════════════════════
-   CNA ROMA DASHBOARD — v2026.110 "cnaflow Design System"
+   CNA ROMA DASHBOARD — v2026.111 "cnaflow Design System"
    Aesthetic: frosted glass, soft shadows, pill shapes,
               luminous canvas, agile & frictionless.
    Drop-in replacement for main.css — no HTML changes required.
@@ -2108,8 +2108,11 @@ body.dark-mode .app-footer-copy {
 /* ── KPI GRID: 4 col desktop, 2 col mobile ── */
 .inc-kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
+}
+@media (max-width: 1200px) {
+  .inc-kpi-grid { grid-template-columns: repeat(4, 1fr); gap: 10px; }
 }
 @media (max-width: 900px) {
   .inc-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }

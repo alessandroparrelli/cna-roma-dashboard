@@ -224,7 +224,9 @@ function incassiRenderKPI() {
     kpi(SVG.users,  'Clienti unici CNA',        I(clG1), 'distinti nel periodo', '#059669')+
     kpi(SVG.users,  'Clienti unici CNA CAF Lazio', I(clG3), 'distinti nel periodo', '#7C3AED')+
     kpi(SVG.sepa,   'SEPA',              '€ '+N(totSepa),     pctSepa+'% del totale',                '#2563EB')+
-    kpi(SVG.cal,    'Mese Migliore',     mb?MESI[+mb[0]]:'—', mb?'€ '+N(mb[1]):'',                  '#059669');
+    kpi(SVG.cal,    'Mese Migliore',     mb?MESI[+mb[0]]:'—', mb?'€ '+N(mb[1]):'',                  '#059669')+
+    kpi(SVG.euro,   'Ticket Medio',      '€ '+N(nFat>0?tot/nFat:0), I(nFat)+' fatture',             '#8B5CF6')+
+    kpi(SVG.users,  'Media per Cliente', '€ '+N((clG1+clG3)>0?tot/(clG1+clG3):0), I(clG1+clG3)+' clienti', '#0D9488');
 }
 
 // ─── Stats ─────────────────────────────────────────────────
@@ -241,10 +243,35 @@ function incassiRenderStats() {
     filtrati.forEach(function(r){var m=r.metodo||'Cassa';if(!byM[m])byM[m]={tot:0,n:0};byM[m].tot+=(parseFloat(r.avere)||0);byM[m].n+=(parseInt(r.n)||0);});
     var byS={G1000001:{tot:0,n:0},G1000003:{tot:0,n:0}};
     filtrati.forEach(function(r){if(byS[r.codice_azienda]){byS[r.codice_azienda].tot+=(parseFloat(r.avere)||0);byS[r.codice_azienda].n+=(parseInt(r.n)||0);}});
-    mBody.innerHTML=
-      tbl(['Metodo','Importo','%','N°'],[['SEPA','#0284C7'],['Cassa','#059669'],['Bonifico','#7C3AED']].map(function(p,i){var d=byM[p[0]]||{tot:0,n:0};var pc=tot>0?(d.tot/tot*100).toFixed(1):0;return row(i,['<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:'+p[1]+';display:inline-block"></span><strong>'+p[0]+'</strong></span>','<span style="color:'+p[1]+';font-weight:600">€ '+N(d.tot)+'</span>',pc+'%',I(d.n)]);}))
-      +'<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-dim);margin:14px 0 6px">Per Società</div>'
-      +tbl(['Società','Importo','%','N°'],[['G1000001','CNA Roma','#2563EB'],['G1000003','CAF Lazio','#D97706']].map(function(t,i){var d=byS[t[0]]||{tot:0,n:0};var pc=tot>0?(d.tot/tot*100).toFixed(1):0;return row(i,['<span style="display:inline-flex;align-items:center;gap:6px"><span style="width:9px;height:9px;border-radius:50%;background:'+t[2]+';display:inline-block"></span><strong>'+t[1]+'</strong></span>','<span style="color:'+t[2]+';font-weight:600">€ '+N(d.tot)+'</span>',pc+'%',I(d.n)]);}));
+    var mHtml='<table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">'+
+      '<thead><tr style="background:linear-gradient(135deg,#f8fafc,#f1f5f9)">'+
+      '<th style="padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;font-weight:700">Metodo</th>'+
+      '<th style="padding:10px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;font-weight:700">Importo</th>'+
+      '<th style="padding:10px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;font-weight:700">Quota</th>'+
+      '<th style="padding:10px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;font-weight:700">N° Fatture</th>'+
+      '</tr></thead><tbody>';
+    [['SEPA','#0284C7'],['Cassa','#059669'],['Bonifico','#7C3AED']].forEach(function(p,i){
+      var d=byM[p[0]]||{tot:0,n:0};var pc=tot>0?(d.tot/tot*100).toFixed(1):0;
+      mHtml+='<tr style="border-bottom:1px solid var(--border)">'+
+        '<td style="padding:10px 12px"><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:3px;background:'+p[1]+'"></span><strong>'+p[0]+'</strong></span></td>'+
+        '<td style="padding:10px 10px;text-align:right;color:'+p[1]+';font-weight:600;font-variant-numeric:tabular-nums">€ '+N(d.tot)+'</td>'+
+        '<td style="padding:10px 10px;text-align:right"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px"><div style="width:50px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden"><div style="width:'+pc+'%;height:100%;background:'+p[1]+';border-radius:3px"></div></div><span style="font-weight:600;font-size:11px">'+pc+'%</span></div></td>'+
+        '<td style="padding:10px 10px;text-align:right;font-variant-numeric:tabular-nums">'+I(d.n)+'</td></tr>';
+    });
+    mHtml+='</tbody></table>';
+
+    mHtml+='<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#94a3b8;margin:0 0 8px;padding-top:4px;border-top:1px solid var(--border)">Per Società</div>';
+    mHtml+='<table style="width:100%;border-collapse:collapse;font-size:12px"><tbody>';
+    [['G1000001','CNA Roma','#2563EB'],['G1000003','CAF Lazio','#D97706']].forEach(function(t,i){
+      var d=byS[t[0]]||{tot:0,n:0};var pc=tot>0?(d.tot/tot*100).toFixed(1):0;
+      mHtml+='<tr style="border-bottom:1px solid var(--border)">'+
+        '<td style="padding:10px 12px"><span style="display:inline-flex;align-items:center;gap:8px"><span style="width:10px;height:10px;border-radius:3px;background:'+t[2]+'"></span><strong>'+t[1]+'</strong></span></td>'+
+        '<td style="padding:10px 10px;text-align:right;color:'+t[2]+';font-weight:600;font-variant-numeric:tabular-nums">€ '+N(d.tot)+'</td>'+
+        '<td style="padding:10px 10px;text-align:right"><div style="display:flex;align-items:center;justify-content:flex-end;gap:6px"><div style="width:50px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden"><div style="width:'+pc+'%;height:100%;background:'+t[2]+';border-radius:3px"></div></div><span style="font-weight:600;font-size:11px">'+pc+'%</span></div></td>'+
+        '<td style="padding:10px 10px;text-align:right;font-variant-numeric:tabular-nums">'+I(d.n)+'</td></tr>';
+    });
+    mHtml+='</tbody></table>';
+    mBody.innerHTML=mHtml;
   }
 
   // Riepilogo annuale
@@ -252,9 +279,25 @@ function incassiRenderStats() {
   if(aWrap){
     var byAnno={};filtrati.forEach(function(r){var a=r.anno||'?';if(!byAnno[a])byAnno[a]={tot:0,n:0};byAnno[a].tot+=(parseFloat(r.avere)||0);byAnno[a].n+=(parseInt(r.n)||0);});
     var anniS=Object.entries(byAnno).sort(function(a,b){return b[0]-a[0];});
-    aWrap.innerHTML=anniS.length>1?'<div class="inc-stat-card inc-full"><div class="inc-stat-header">'+SVG.cal+'<span>Riepilogo Annuale</span></div>'
-      +tbl(['Anno','Totale','Var. %','N°'],anniS.map(function(e,i){var prev=anniS[i+1];var vp=prev&&prev[1].tot>0?((e[1].tot-prev[1].tot)/prev[1].tot*100).toFixed(1):null;var vh=vp!=null?'<span style="color:'+(vp>=0?'var(--green)':'var(--red)')+'">'+( vp>=0?'▲':'▼')+' '+Math.abs(vp)+'%</span>':'—';return row(i,['<strong>'+e[0]+'</strong>','<span style="color:var(--blue);font-weight:600">€ '+N(e[1].tot)+'</span>',vh,I(e[1].n)]);}))
-      +'</div>':'';
+    if(anniS.length>1){
+      var aHtml='<table style="width:100%;border-collapse:collapse;font-size:12px">'+
+        '<thead><tr style="background:linear-gradient(135deg,#f8fafc,#f1f5f9)">'+
+        ['Anno','Totale','Variazione','N° Fatture'].map(function(h,i){return '<th style="padding:10px 10px;text-align:'+(i>0?'right':'left')+';font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;font-weight:700">'+h+'</th>';}).join('')+
+        '</tr></thead><tbody>';
+      anniS.forEach(function(e,i){
+        var prev=anniS[i+1];var vp=prev&&prev[1].tot>0?((e[1].tot-prev[1].tot)/prev[1].tot*100).toFixed(1):null;
+        var vpCol=vp!=null?(vp>=0?'#059669':'#DC2626'):'#94a3b8';
+        var vpBg=vp!=null?(vp>=0?'rgba(5,150,105,0.1)':'rgba(220,38,38,0.1)'):'transparent';
+        var vh=vp!=null?'<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;color:'+vpCol+';background:'+vpBg+'">'+(vp>=0?'▲ +':'▼ ')+vp+'%</span>':'<span style="color:#94a3b8">—</span>';
+        aHtml+='<tr style="border-bottom:1px solid var(--border)">'+
+          '<td style="padding:10px 10px;font-weight:700;font-size:13px">'+e[0]+'</td>'+
+          '<td style="padding:10px 10px;text-align:right;color:#2563EB;font-weight:600;font-variant-numeric:tabular-nums">€ '+N(e[1].tot)+'</td>'+
+          '<td style="padding:10px 10px;text-align:right">'+vh+'</td>'+
+          '<td style="padding:10px 10px;text-align:right;font-variant-numeric:tabular-nums">'+I(e[1].n)+'</td></tr>';
+      });
+      aHtml+='</tbody></table>';
+      aWrap.innerHTML=aHtml;
+    } else { aWrap.innerHTML='<p style="color:#94a3b8;font-size:12px;text-align:center;padding:16px">Seleziona un range multi-anno per il riepilogo</p>'; }
   }
 
   // Totale mensile per anno (ex "media" — ora totale effettivo)
@@ -268,22 +311,30 @@ function incassiRenderStats() {
     // Calcola totali per colonna anno
     var totAnno={};anniL.forEach(function(a){totAnno[a]=Object.values(byAM[a]).reduce(function(s,v){return s+v;},0);});
 
+    // Trova il valore massimo per heatmap
+    var maxVal=0;
+    anniL.forEach(function(a){for(var m=1;m<=12;m++){var v=(byAM[a]||{})[m]||0;if(v>maxVal)maxVal=v;}});
+
     var righe=[1,2,3,4,5,6,7,8,9,10,11,12].map(function(m,mi){
-      return '<tr style="border-bottom:1px solid var(--border)'+(mi%2?';background:var(--surface2)':'')+'">' +
-        '<td style="padding:5px 8px;font-weight:600">'+MESI[m]+'</td>'+
-        anniL.map(function(a,i){var v=(byAM[a]||{})[m]||0;return '<td style="padding:5px 8px;text-align:right;color:'+(v>0?c[i]:'var(--text-dim)')+'">'+( v>0?'€ '+N(v):'—')+'</td>';}).join('')+
+      return '<tr style="border-bottom:1px solid var(--border)">' +
+        '<td style="padding:8px 12px;font-weight:600;font-size:12px;white-space:nowrap">'+MESI[m]+'</td>'+
+        anniL.map(function(a,i){
+          var v=(byAM[a]||{})[m]||0;
+          var intensity=maxVal>0?Math.round(v/maxVal*100):0;
+          var bg=v>0?'rgba(37,99,235,'+(0.06+0.25*intensity/100).toFixed(2)+')':'transparent';
+          return '<td style="padding:8px 10px;text-align:right;font-size:12px;font-variant-numeric:tabular-nums;background:'+bg+';color:'+(v>0?c[i]:'var(--text-dim)')+'">'+( v>0?'€ '+N(v):'—')+'</td>';
+        }).join('')+
       '</tr>';
     }).join('');
 
-    // Riga totali in fondo
-    var rigaTot='<tr style="border-top:2px solid var(--border);background:var(--surface2)">'+
-      '<td style="padding:7px 8px;font-weight:800;font-size:12px">TOTALE</td>'+
-      anniL.map(function(a,i){return '<td style="padding:7px 8px;text-align:right;font-weight:800;font-size:12px;color:'+c[i]+'">€ '+N(totAnno[a])+'</td>';}).join('')+
+    var rigaTot='<tr style="border-top:2px solid var(--blue);background:rgba(37,99,235,0.04)">'+
+      '<td style="padding:10px 12px;font-weight:800;font-size:12px;letter-spacing:.3px">TOTALE</td>'+
+      anniL.map(function(a,i){return '<td style="padding:10px 10px;text-align:right;font-weight:800;font-size:12px;color:'+c[i]+';font-variant-numeric:tabular-nums">€ '+N(totAnno[a])+'</td>';}).join('')+
     '</tr>';
 
-    mmBody.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:11px">'+
-      '<thead><tr style="background:var(--surface2)"><th style="padding:6px 8px;text-align:left">Mese</th>'+
-      anniL.map(function(a,i){return '<th style="padding:6px 8px;text-align:right;color:'+c[i]+'">'+a+'</th>';}).join('')+
+    mmBody.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px">'+
+      '<thead><tr style="background:linear-gradient(135deg,#f8fafc,#f1f5f9)"><th style="padding:10px 12px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;font-weight:700">Mese</th>'+
+      anniL.map(function(a,i){return '<th style="padding:10px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:'+c[i]+';font-weight:700">'+a+'</th>';}).join('')+
       '</tr></thead>'+
       '<tbody>'+righe+rigaTot+'</tbody>'+
     '</table>';
@@ -302,7 +353,27 @@ function incassiRenderStats() {
       byAnnoT[t.anno].pag+=parseFloat(t.incassato)||0;
     });
     var tr2=Object.entries(byAnnoT).sort(function(a,b){return b[0]-a[0];});
-    tBody.innerHTML=tbl(['Anno','Fatturato','Incassato','Insoluto','Tasso %'],tr2.map(function(e,i){var fat=e[1].fat,pag=e[1].pag,ins=fat-pag,tasso=fat>0?(pag/fat*100).toFixed(1):0,col=tasso>=90?'var(--green)':tasso>=70?'#D97706':'var(--red)';return row(i,['<strong>'+e[0]+'</strong>','€ '+N(fat),'<span style="color:var(--green);font-weight:600">€ '+N(pag)+'</span>','<span style="color:var(--red)">€ '+N(ins)+'</span>','<div style="display:flex;align-items:center;justify-content:flex-end;gap:5px"><div style="width:50px;height:6px;background:var(--border);border-radius:3px;overflow:hidden"><div style="width:'+tasso+'%;height:100%;background:'+col+'"></div></div><strong style="color:'+col+'">'+tasso+'%</strong></div>']);}));
+    var tassoHtml='<table style="width:100%;border-collapse:collapse;font-size:12px">'+
+      '<thead><tr style="background:linear-gradient(135deg,#f8fafc,#f1f5f9)">'+
+      ['Anno','Fatturato','Incassato','Insoluto','Tasso'].map(function(h,i){return '<th style="padding:10px 10px;text-align:'+(i>0?'right':'left')+';font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:#64748b;font-weight:700">'+h+'</th>';}).join('')+
+      '</tr></thead><tbody>';
+    tr2.forEach(function(e,i){
+      var fat=e[1].fat,pag=e[1].pag,ins=fat-pag,tasso=fat>0?(pag/fat*100).toFixed(1):0;
+      var col=tasso>=90?'#059669':tasso>=70?'#D97706':'#DC2626';
+      var bgCol=tasso>=90?'rgba(5,150,105,0.1)':tasso>=70?'rgba(217,119,6,0.1)':'rgba(220,38,38,0.1)';
+      tassoHtml+='<tr style="border-bottom:1px solid var(--border)">'+
+        '<td style="padding:10px 10px;font-weight:700;font-size:13px">'+e[0]+'</td>'+
+        '<td style="padding:10px 10px;text-align:right;font-variant-numeric:tabular-nums">€ '+N(fat)+'</td>'+
+        '<td style="padding:10px 10px;text-align:right;color:#059669;font-weight:600;font-variant-numeric:tabular-nums">€ '+N(pag)+'</td>'+
+        '<td style="padding:10px 10px;text-align:right;color:#DC2626;font-variant-numeric:tabular-nums">€ '+N(ins)+'</td>'+
+        '<td style="padding:10px 10px;text-align:right"><div style="display:flex;align-items:center;justify-content:flex-end;gap:8px">'+
+          '<div style="width:70px;height:8px;background:#e2e8f0;border-radius:4px;overflow:hidden">'+
+            '<div style="width:'+tasso+'%;height:100%;background:'+col+';border-radius:4px;transition:width .3s"></div></div>'+
+          '<span style="display:inline-block;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;color:'+col+';background:'+bgCol+'">'+tasso+'%</span>'+
+        '</div></td></tr>';
+    });
+    tassoHtml+='</tbody></table>';
+    tBody.innerHTML=tassoHtml;
   }
 }
 
@@ -311,6 +382,7 @@ function incassiRenderCharts() {
   chartMensile();
   chartMetodo();
   chartAnni();
+  chartTop();
 }
 
 function chartMensile() {
