@@ -447,42 +447,55 @@ function chartAnni() {
   var anniL=Object.keys(anniD).map(Number).sort(function(a,b){return a-b;}).slice(-6);
   if(!anniL.length) return;
 
-  // Palette vivace — una per anno
-  var palette=[
-    {line:'rgba(94,196,210,0.95)',fill:'rgba(94,196,210,0.12)'},
-    {line:'rgba(99,179,148,0.95)',fill:'rgba(99,179,148,0.12)'},
-    {line:'rgba(159,122,234,0.95)',fill:'rgba(159,122,234,0.12)'},
-    {line:'rgba(246,173,85,0.95)',fill:'rgba(246,173,85,0.12)'},
-    {line:'rgba(252,129,129,0.95)',fill:'rgba(252,129,129,0.12)'},
-    {line:'rgba(99,155,234,0.95)',fill:'rgba(99,155,234,0.12)'}
+  // Anno corrente = viola con sfumatura, anni passati = scala di grigi con sfumatura
+  var annoCorrente = new Date().getFullYear();
+  var grigi = [
+    {line:'rgba(180,180,180,0.7)', fillTop:'rgba(180,180,180,0.15)', fillBot:'rgba(180,180,180,0.0)'},
+    {line:'rgba(155,155,155,0.6)', fillTop:'rgba(155,155,155,0.12)', fillBot:'rgba(155,155,155,0.0)'},
+    {line:'rgba(130,130,130,0.5)', fillTop:'rgba(130,130,130,0.10)', fillBot:'rgba(130,130,130,0.0)'},
+    {line:'rgba(110,110,110,0.4)', fillTop:'rgba(110,110,110,0.08)', fillBot:'rgba(110,110,110,0.0)'},
+    {line:'rgba(90,90,90,0.35)',   fillTop:'rgba(90,90,90,0.06)',    fillBot:'rgba(90,90,90,0.0)'}
   ];
+  var viola = {line:'rgba(124,58,237,0.95)', fillTop:'rgba(124,58,237,0.35)', fillBot:'rgba(124,58,237,0.0)'};
 
   var ctx2=ctxEl.getContext('2d');
-  var ds=anniL.map(function(anno,idx){
-    var col=palette[idx%palette.length];
+  var h2=ctxEl.offsetHeight||280;
+
+  // Ordina: anni passati prima (sotto), anno corrente ultimo (sopra)
+  var sorted=anniL.slice().sort(function(a,b){
+    if(a===annoCorrente) return 1;
+    if(b===annoCorrente) return -1;
+    return a-b;
+  });
+  var griIdx=0;
+
+  var ds=sorted.map(function(anno){
+    var isCurrent = anno===annoCorrente;
+    var col = isCurrent ? viola : grigi[griIdx++ % grigi.length];
+
     var mm={}; for(var m=1;m<=12;m++) mm[m]=null;
     filtrati.filter(function(r){return r.anno===anno;}).forEach(function(r){
       if(r.mese>=1&&r.mese<=12) mm[r.mese]=(mm[r.mese]||0)+(parseFloat(r.avere)||0);
     });
 
-    // Gradiente fill per ogni anno
-    var grad=ctx2.createLinearGradient(0,0,0,ctxEl.offsetHeight||280);
-    grad.addColorStop(0,col.fill.replace('0.08','0.22'));
-    grad.addColorStop(1,col.fill.replace('0.08','0.0'));
+    var grad=ctx2.createLinearGradient(0,0,0,h2);
+    grad.addColorStop(0, col.fillTop);
+    grad.addColorStop(1, col.fillBot);
 
     return {
       label: String(anno),
       data: Object.values(mm),
       borderColor: col.line,
-      borderWidth: 2.5,
-      backgroundColor: anniL.length===1 ? grad : 'transparent',
-      fill: anniL.length===1,
-      tension: 0.35,
+      borderWidth: isCurrent ? 2.5 : 1.5,
+      backgroundColor: grad,
+      fill: true,
+      tension: 0.4,
       pointRadius: 0,
-      pointHoverRadius: 4,
+      pointHoverRadius: isCurrent ? 5 : 3,
       pointHoverBackgroundColor: col.line,
       pointHoverBorderColor: '#fff',
-      pointHoverBorderWidth: 2
+      pointHoverBorderWidth: 2,
+      order: isCurrent ? 0 : 1   // anno corrente disegnato sopra
     };
   });
 
