@@ -447,8 +447,12 @@ async function openAnagraficaModal(anaIdx) {
   function pandoraBlock(rows, label, accentColor) {
     if (!rows.length) return '<p style="color:var(--text-dim);font-size:13px;font-style:italic;padding:8px 0">Nessun documento per ' + label + '</p>';
     var totFat = rows.reduce(function(s,r){ return s+(parseFloat(r.totale_fattura)||0); }, 0);
-    var totSal = rows.reduce(function(s,r){ return s+(parseFloat(r.saldo)||0); }, 0);
-    var nPag   = rows.filter(function(r){ return r.pagato; }).length;
+    var insAp0 = {};
+    insolutiG1.concat(insolutiG3).forEach(function(i){
+      if ((parseFloat(i.saldo)||0) > 0) insAp0[i.customer_trx_id + '|' + i.codice_azienda] = parseFloat(i.saldo);
+    });
+    var totSal = rows.reduce(function(s,r){ var k=r.customer_trx_id+'|'+r.codice_azienda; return s+(insAp0[k] || parseFloat(r.saldo)||0); }, 0);
+    var nPag   = rows.filter(function(r){ return r.pagato && !insAp0[r.customer_trx_id+'|'+r.codice_azienda]; }).length;
 
     var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">';
     html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#EFF6FF;color:#2563EB;border:1px solid #BFDBFE">' + rows.length + ' documenti</span>';
@@ -464,9 +468,15 @@ async function openAnagraficaModal(anaIdx) {
     html += '<table class="scheda-pay-table"><thead><tr>';
     html += '<th>Data</th><th>Scadenza</th><th>Riferimento</th><th>Tipo</th><th style="text-align:right">Importo</th><th style="text-align:right">Saldo</th><th>Stato</th>';
     html += '</tr></thead><tbody>';
+    // Fatture con insoluto aperto: l'incasso è stato annullato
+    var insAperti = {};
+    insolutiG1.concat(insolutiG3).forEach(function(i){
+      if ((parseFloat(i.saldo)||0) > 0) insAperti[i.customer_trx_id + '|' + i.codice_azienda] = parseFloat(i.saldo);
+    });
     rows.forEach(function(r) {
-      var pagato = r.pagato;
-      var saldo = parseFloat(r.saldo) || 0;
+      var insSaldo = insAperti[r.customer_trx_id + '|' + r.codice_azienda];
+      var pagato = r.pagato && !insSaldo;
+      var saldo = insSaldo ? insSaldo : (parseFloat(r.saldo) || 0);
       var rif = (r.riferimento || '').toLowerCase().replace(/\b\w/g, function(l){ return l; }); // tutto lowercase
       html += '<tr>';
       html += '<td style="white-space:nowrap;font-size:12px">' + fmtDate(r.data_fattura) + '</td>';
@@ -475,7 +485,7 @@ async function openAnagraficaModal(anaIdx) {
       html += '<td style="font-size:11px;color:var(--text-dim)">' + (r.tipo||'') + '</td>';
       html += '<td style="text-align:right;font-size:12px;font-weight:600">€ ' + (parseFloat(r.totale_fattura)||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</td>';
       html += '<td style="text-align:right;font-size:12px;font-weight:700;color:' + (saldo > 0 ? '#DC2626' : '#16A34A') + '">€ ' + saldo.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</td>';
-      html += '<td><span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;' + (pagato ? 'background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0' : 'background:#FEF2F2;color:#DC2626;border:1px solid #FECACA') + '">' + (pagato ? 'PAGATO' : 'APERTO') + '</span></td>';
+      html += '<td><span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;' + (pagato ? 'background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0' : 'background:#FEF2F2;color:#DC2626;border:1px solid #FECACA') + '">' + (pagato ? 'PAGATO' : (insSaldo ? 'INSOLUTO' : 'APERTO')) + '</span></td>';
       html += '</tr>';
     });
     html += '</tbody></table>';
