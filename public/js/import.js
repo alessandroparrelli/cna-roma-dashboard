@@ -1282,14 +1282,33 @@ function pandoraMapFat(row, codice_azienda, azienda) {
 
 async function pandoraLoadCodici() {
   var set = {};
-  var from = 0, PAGE = 1000;
+  var from = 0, PAGE = 1000, MAX_RETRIES = 3;
   while (true) {
     var to = from + PAGE - 1;
-    var r = await fetch(SB + '/rest/v1/Anagrafiche?select=codiceanagrafica', {
-      headers: Object.assign({}, H(), { 'Range': from+'-'+to, 'Range-Unit': 'items', 'Prefer': 'count=none' })
-    });
-    var data = await r.json();
-    if (!Array.isArray(data) || !data.length) break;
+    var data = null;
+    for (var attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        var r = await fetch(SB + '/rest/v1/Anagrafiche?select=codiceanagrafica', {
+          headers: Object.assign({}, H(), { 'Range': from+'-'+to, 'Range-Unit': 'items', 'Prefer': 'count=none' })
+        });
+        if (!r.ok) {
+          var errTxt = await r.text();
+          pandoraLog('⚠ Anagrafiche pagina ' + from + ' HTTP ' + r.status + ': ' + errTxt.substring(0,120), 'err');
+          if (attempt < MAX_RETRIES - 1) await new Promise(function(res){ setTimeout(res, 1500 * (attempt+1)); });
+          continue;
+        }
+        data = await r.json();
+        break;
+      } catch(e) {
+        pandoraLog('⚠ Anagrafiche pagina ' + from + ' errore rete: ' + e.message, 'err');
+        if (attempt < MAX_RETRIES - 1) await new Promise(function(res){ setTimeout(res, 1500 * (attempt+1)); });
+      }
+    }
+    if (!Array.isArray(data)) {
+      if (data !== null) pandoraLog('⚠ Risposta Anagrafiche non valida: ' + JSON.stringify(data).substring(0,120), 'err');
+      break;
+    }
+    if (!data.length) break;
     data.forEach(function(d){ if(d.codiceanagrafica) set[d.codiceanagrafica.trim()] = true; });
     if (data.length < PAGE) break;
     from += PAGE;
