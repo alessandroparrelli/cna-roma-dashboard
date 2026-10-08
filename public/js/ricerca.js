@@ -271,7 +271,9 @@ async function riApriScheda(ana) {
     }
 
     // Pagamenti Pandora
-    html += riPandoraSection(pandoraG1, pandoraG3, isPagante);
+    var insoluti = await riCaricaInsoluti(cod);
+    riMarcaInsoluti(pandoraG1.concat(pandoraG3), insoluti);
+    html += riPandoraSection(pandoraG1, pandoraG3, isPagante, insoluti);
 
     // Localizzazione mappa
     if(ana.comune || ana.indirizzo) {
@@ -308,11 +310,55 @@ function riSezione(color, icon, titolo, righe) {
   return html;
 }
 
+// ── Insoluti Pandora ──
+// Un insoluto (insolutipandora) ha lo stesso customer_trx_id della fattura in incassipandora:
+// se il suo saldo è > 0 l'incasso è stato annullato (es. RID respinto).
+async function riCaricaInsoluti(cod) {
+  try {
+    var r = await fetch(SB+'/rest/v1/insolutipandora?codice_cliente=eq.'+encodeURIComponent(cod)+'&order=data_fattura.desc&limit=400',{headers:H()});
+    return r.ok ? (await r.json() || []) : [];
+  } catch(e) { return []; }
+}
+function riMarcaInsoluti(rows, insoluti) {
+  var ap = {};
+  (insoluti||[]).forEach(function(i){ if((parseFloat(i.saldo)||0) > 0) ap[i.customer_trx_id+'|'+i.codice_azienda] = parseFloat(i.saldo); });
+  rows.forEach(function(r){ var k = r.customer_trx_id+'|'+r.codice_azienda; if(ap[k]) r._insSaldo = ap[k]; });
+}
+function riInsolutiSection(insoluti, g1, g3) {
+  if(!insoluti || !insoluti.length) return '';
+  var fatt = {};
+  g1.concat(g3).forEach(function(r){ fatt[r.customer_trx_id+'|'+r.codice_azienda] = r; });
+  var aperti = insoluti.filter(function(i){ return (parseFloat(i.saldo)||0) > 0; });
+  var residuo = aperti.reduce(function(s,i){ return s+(parseFloat(i.saldo)||0); },0);
+  var th = 'padding:8px 12px;font-size:10px;font-weight:700;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border)';
+  var html = '<div class="ri-card-section"><div class="ri-section-hdr" style="background:#FEF2F2;color:#DC2626">⚠ Insoluti</div><div style="padding:14px 16px">';
+  html += '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+  html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA">'+insoluti.length+' insoluti</span>';
+  if(aperti.length) html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA">Ancora aperti: '+aperti.length+' · Residuo '+_riEur(residuo)+'</span>';
+  else html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0">Tutti recuperati</span>';
+  html += '</div><div style="overflow-x:auto;border:1px solid var(--border);border-radius:8px"><table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:var(--surface2)">';
+  html += '<th style="'+th+';text-align:left">Data insoluto</th><th style="'+th+';text-align:left">Società</th><th style="'+th+';text-align:left">Fattura annullata</th><th style="'+th+';text-align:left">Tipo</th><th style="'+th+';text-align:right">Residuo</th><th style="'+th+';text-align:center">Stato</th></tr></thead><tbody>';
+  insoluti.forEach(function(i){
+    var sal = parseFloat(i.saldo)||0, f = fatt[i.customer_trx_id+'|'+i.codice_azienda];
+    var soc = i.codice_azienda==='G1000003' ? 'CAF Lazio' : 'CNA Roma';
+    var desc = f ? ('n. '+_riEsc(f.numero_fattura||'—')+' del '+_riFmt(f.data_fattura)+(f.riferimento?' · '+_riEsc(f.riferimento.toLowerCase()):'')) : 'trx '+i.customer_trx_id;
+    html += '<tr style="border-bottom:1px solid var(--border)">';
+    html += '<td style="padding:7px 12px;white-space:nowrap;font-family:monospace">'+_riFmt(i.data_fattura)+'</td>';
+    html += '<td style="padding:7px 12px">'+soc+'</td>';
+    html += '<td style="padding:7px 12px">'+desc+'</td>';
+    html += '<td style="padding:7px 12px;color:var(--text-dim)">'+_riEsc(i.tipo||'')+'</td>';
+    html += '<td style="padding:7px 12px;text-align:right;font-weight:700;color:'+(sal>0?'#DC2626':'#16A34A')+'">'+_riEur(sal)+'</td>';
+    html += '<td style="padding:7px 12px;text-align:center"><span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;'+(sal>0?'background:#FEF2F2;color:#DC2626;border:1px solid #FECACA':'background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0')+'">'+(sal>0?'APERTO':'RECUPERATO')+'</span></td></tr>';
+  });
+  html += '</tbody></table></div></div></div>';
+  return html;
+}
+
 // ── Sezione pagamenti Pandora ──
-function riPandoraSection(g1, g3, isPagante) {
+function riPandoraSection(g1, g3, isPagante, insoluti) {
   if(!g1.length && !g3.length) {
     return '<div class="ri-card-section"><div class="ri-section-hdr" style="background:#EFF6FF;color:#2563EB">💳 Pagamenti Pandora</div>'+
-      '<div style="padding:16px;color:var(--text-dim);font-size:13px;font-style:italic">Nessun dato di pagamento disponibile. Esegui l\'import da Pandora.</div></div>';
+      '<div style="padding:16px;color:var(--text-dim);font-size:13px;font-style:italic">Nessun dato di pagamento disponibile. Esegui l\'import da Pandora.</div></div>' + riInsolutiSection(insoluti, g1, g3);
   }
 
   var html = '<div class="ri-card-section">';
@@ -344,6 +390,7 @@ function riPandoraSection(g1, g3, isPagante) {
   html += '</div>';
 
   html += '</div>';
+  html += riInsolutiSection(insoluti, g1, g3);
   return html;
 }
 
@@ -351,8 +398,8 @@ function riPandoraBlock(rows, label) {
   if(!rows.length) return '<p style="color:var(--text-dim);font-size:13px;font-style:italic;padding:8px 0">Nessun documento per '+label+'</p>';
 
   var totFat = rows.reduce(function(s,r){ return s+(parseFloat(r.totale_fattura)||0); },0);
-  var totSal = rows.reduce(function(s,r){ return s+(parseFloat(r.saldo)||0); },0);
-  var nPag   = rows.filter(function(r){ return r.pagato; }).length;
+  var totSal = rows.reduce(function(s,r){ return s+(r._insSaldo||parseFloat(r.saldo)||0); },0);
+  var nPag   = rows.filter(function(r){ return r.pagato && !r._insSaldo; }).length;
 
   var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
   html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#EFF6FF;color:#2563EB;border:1px solid #BFDBFE">'+rows.length+' documenti</span>';
@@ -373,16 +420,17 @@ function riPandoraBlock(rows, label) {
   html += '</tr></thead><tbody>';
 
   rows.forEach(function(r){
-    var saldo = parseFloat(r.saldo)||0;
+    var saldo = r._insSaldo || parseFloat(r.saldo)||0;
+    var pag = r.pagato && !r._insSaldo;
     var rif = (r.riferimento||'').toLowerCase();
-    var statoStyle = r.pagato ? 'background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0' : 'background:#FEF2F2;color:#DC2626;border:1px solid #FECACA';
+    var statoStyle = pag ? 'background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0' : 'background:#FEF2F2;color:#DC2626;border:1px solid #FECACA';
     html += '<tr style="border-bottom:1px solid var(--border)">';
     html += '<td style="padding:7px 12px;white-space:nowrap;font-family:monospace">'+_riFmt(r.data_fattura)+'</td>';
     html += '<td style="padding:7px 12px;white-space:nowrap;font-family:monospace;color:var(--text-dim)">'+_riFmt(r.data_scadenza)+'</td>';
     html += '<td style="padding:7px 12px;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+_riEsc(r.riferimento||'')+'">'+_riEsc(rif)+'</td>';
     html += '<td style="padding:7px 12px;text-align:right;font-weight:600">'+_riEur(r.totale_fattura)+'</td>';
     html += '<td style="padding:7px 12px;text-align:right;font-weight:700;color:'+(saldo>0?'#DC2626':'#16A34A')+'">'+_riEur(saldo)+'</td>';
-    html += '<td style="padding:7px 12px;text-align:center"><span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;'+statoStyle+'">'+(r.pagato?'PAGATO':'APERTO')+'</span></td>';
+    html += '<td style="padding:7px 12px;text-align:center"><span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;'+statoStyle+'">'+(pag?'PAGATO':(r._insSaldo?'INSOLUTO':'APERTO'))+'</span></td>';
     html += '</tr>';
   });
 
@@ -601,7 +649,9 @@ async function hmCaricaScheda(ana) {
     // Categoria professionale
     if(ana.codiceateco||catPro){html+=riSezione('#059669','🏭','Categoria Professionale',[['Codice ATECO',(ana.codiceateco||'').trim()],['Mestiere',catPro?catPro.mestiere:(ana.mestiere||'')],['Unione',catPro?catPro.unione:null],['Settore',catPro?catPro.settore:null]]);}
     // Pagamenti Pandora
-    html+=riPandoraSection(pandoraG1,pandoraG3,isPagante);
+    var insoluti=await riCaricaInsoluti(cod);
+    riMarcaInsoluti(pandoraG1.concat(pandoraG3),insoluti);
+    html+=riPandoraSection(pandoraG1,pandoraG3,isPagante,insoluti);
     bodyEl.innerHTML=html;
   } catch(e){
     if(bodyEl) bodyEl.innerHTML='<div style="color:#DC2626;padding:20px">Errore: '+e.message+'</div>';
