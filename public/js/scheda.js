@@ -76,7 +76,7 @@ async function openAnagraficaModal(anaIdx) {
     cachedCCIAA = anaCCIAAMap[String(ana.partitaiva).trim()] || null;
   }
 
-  var [direttiRes, contrattiRes, incassiRes, pandoraG1Res, pandoraG3Res] = await Promise.allSettled([
+  var [direttiRes, contrattiRes, incassiRes, pandoraG1Res, pandoraG3Res, insolutiG1Res, insolutiG3Res] = await Promise.allSettled([
     // Diretti (tesseramento)
     fetch(SB + '/rest/v1/diretti?codiceanagrafica=eq.' + encodeURIComponent(ana.codiceanagrafica), { headers: H() }),
     // Contratti servizio attivi
@@ -89,7 +89,11 @@ async function openAnagraficaModal(anaIdx) {
     // Pandora — CNA Roma (G1000001)
     fetch(SB + '/rest/v1/incassipandora?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&codice_azienda=eq.G1000001&order=data_fattura.desc&limit=200', { headers: H() }),
     // Pandora — CNA CAF Lazio (G1000003)
-    fetch(SB + '/rest/v1/incassipandora?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&codice_azienda=eq.G1000003&order=data_fattura.desc&limit=200', { headers: H() })
+    fetch(SB + '/rest/v1/incassipandora?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&codice_azienda=eq.G1000003&order=data_fattura.desc&limit=200', { headers: H() }),
+    // Insoluti — CNA Roma (G1000001)
+    fetch(SB + '/rest/v1/insolutipandora?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&codice_azienda=eq.G1000001&order=data_fattura.desc&limit=200', { headers: H() }),
+    // Insoluti — CNA CAF Lazio (G1000003)
+    fetch(SB + '/rest/v1/insolutipandora?codice_cliente=eq.' + encodeURIComponent(ana.codiceanagrafica) + '&codice_azienda=eq.G1000003&order=data_fattura.desc&limit=200', { headers: H() })
   ]);
 
   // Estrai dati
@@ -137,6 +141,20 @@ async function openAnagraficaModal(anaIdx) {
   try {
     if (pandoraG3Res.status === 'fulfilled' && pandoraG3Res.value.ok) {
       pandoraG3 = await pandoraG3Res.value.json() || [];
+    }
+  } catch(e) {}
+
+  var insolutiG1 = [];
+  try {
+    if (insolutiG1Res.status === 'fulfilled' && insolutiG1Res.value.ok) {
+      insolutiG1 = await insolutiG1Res.value.json() || [];
+    }
+  } catch(e) {}
+
+  var insolutiG3 = [];
+  try {
+    if (insolutiG3Res.status === 'fulfilled' && insolutiG3Res.value.ok) {
+      insolutiG3 = await insolutiG3Res.value.json() || [];
     }
   } catch(e) {}
 
@@ -493,6 +511,74 @@ async function openAnagraficaModal(anaIdx) {
   }
 
   body += '</div>';
+
+  // ══════════════════════════════════════════════════════
+  // SEZIONE 6 — INSOLUTI PANDORA  (header: rosso)
+  // ══════════════════════════════════════════════════════
+  if (insolutiG1.length > 0 || insolutiG3.length > 0) {
+    function insolutiBlock(rows, label) {
+      if (!rows.length) return '<p style="color:var(--text-dim);font-size:13px;font-style:italic;padding:8px 0">Nessun insoluto per ' + label + '</p>';
+      var totSaldo = rows.reduce(function(s,r){ return s+(parseFloat(r.saldo)||0); }, 0);
+      var nOpen    = rows.filter(function(r){ return !r.pagato; }).length;
+
+      var html = '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">';
+      html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA">⚠ ' + rows.length + ' insoluti</span>';
+      if (nOpen > 0) {
+        html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA">Ancora aperti: ' + nOpen + '</span>';
+      }
+      if (totSaldo > 0) {
+        html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#FEF2F2;color:#DC2626;border:1px solid #FECACA">Residuo <span class="amt">€ ' + totSaldo.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</span></span>';
+      } else {
+        html += '<span style="font-size:12px;font-weight:600;padding:4px 12px;border-radius:6px;background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0">Tutti recuperati</span>';
+      }
+      html += '</div>';
+
+      html += '<table class="scheda-pay-table"><thead><tr>';
+      html += '<th>Data</th><th>Scadenza</th><th>Riferimento</th><th>Tipo</th><th style="text-align:right">Importo</th><th style="text-align:right">Residuo</th><th>Stato</th>';
+      html += '</tr></thead><tbody>';
+      rows.forEach(function(r) {
+        var pagato = r.pagato;
+        var saldo  = parseFloat(r.saldo) || 0;
+        var rif    = (r.riferimento || '').toLowerCase();
+        html += '<tr>';
+        html += '<td style="white-space:nowrap;font-size:12px">' + fmtDate(r.data_fattura) + '</td>';
+        html += '<td style="white-space:nowrap;font-size:12px">' + fmtDate(r.data_scadenza) + '</td>';
+        html += '<td style="font-size:12px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + (r.riferimento||'').replace(/"/g,'') + '">' + rif + '</td>';
+        html += '<td style="font-size:11px;color:var(--text-dim)">' + (r.tipo||'') + '</td>';
+        html += '<td style="text-align:right;font-size:12px;font-weight:600"><span class="amt">€ ' + (parseFloat(r.totale_fattura)||0).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</span></td>';
+        html += '<td style="text-align:right;font-size:12px;font-weight:700;color:' + (saldo > 0 ? '#DC2626' : '#16A34A') + '"><span class="amt">€ ' + saldo.toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}) + '</span></td>';
+        html += '<td><span style="font-size:10px;font-weight:700;padding:2px 9px;border-radius:20px;' + (pagato ? 'background:#F0FDF4;color:#16A34A;border:1px solid #BBF7D0' : 'background:#FEF2F2;color:#DC2626;border:1px solid #FECACA') + '">' + (pagato ? 'RECUPERATO' : 'APERTO') + '</span></td>';
+        html += '</tr>';
+      });
+      html += '</tbody></table>';
+      return html;
+    }
+
+    body += '<div class="scheda-section">';
+    body += secHdr('#DC2626', '⚠', 'Insoluti');
+
+    // CNA Roma
+    body += '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#FEF2F2;border-radius:8px;margin-bottom:12px;">';
+    body += '<span style="font-size:15px;">🏛</span>';
+    body += '<span style="font-size:14px;font-weight:700;color:#DC2626;">CNA Roma — Tesseramento</span>';
+    body += '<span style="font-family:monospace;font-size:11px;color:#6B7280;margin-left:auto">G1000001</span>';
+    body += '<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:#FECACA;color:#DC2626">' + insolutiG1.length + ' doc</span>';
+    body += '</div>';
+    body += insolutiBlock(insolutiG1, 'CNA Roma');
+
+    body += '<div style="height:1px;background:var(--border);margin:20px 0"></div>';
+
+    // CNA CAF Lazio
+    body += '<div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:#FFF7ED;border-radius:8px;margin-bottom:12px;">';
+    body += '<span style="font-size:15px;">📋</span>';
+    body += '<span style="font-size:14px;font-weight:700;color:#D97706;">CNA CAF Lazio — Servizi fiscali</span>';
+    body += '<span style="font-family:monospace;font-size:11px;color:#6B7280;margin-left:auto">G1000003</span>';
+    body += '<span style="font-size:11px;font-weight:600;padding:2px 9px;border-radius:20px;background:#FDE68A;color:#92400E">' + insolutiG3.length + ' doc</span>';
+    body += '</div>';
+    body += insolutiBlock(insolutiG3, 'CNA CAF Lazio');
+
+    body += '</div>';
+  }
 
   // ── SEZIONE: MAPPA ───────────────────────────────────────────────
   if (ana.indirizzo || ana.comune) {

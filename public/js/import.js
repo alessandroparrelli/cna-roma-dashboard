@@ -1121,14 +1121,18 @@ var PANDORA_EXPECTED = [
   'G1000001_scadenze',
   'G1000003_scadenze',
   'G1000001_serviziFatturazione',
-  'G1000003_serviziFatturazione'
+  'G1000003_serviziFatturazione',
+  'G1000001_scadenzeInsoluti',
+  'G1000003_scadenzeInsoluti'
 ];
 
 var PANDORA_AZIENDE = {
   'G1000001_scadenze':            { codice:'G1000001', azienda:'CNA ROMA ASSOCIAZIONE AREA METROPOLITANA', tipo:'sc' },
   'G1000003_scadenze':            { codice:'G1000003', azienda:'CNA CAF LAZIO SRL',                        tipo:'sc' },
   'G1000001_serviziFatturazione': { codice:'G1000001', azienda:'CNA ROMA ASSOCIAZIONE AREA METROPOLITANA', tipo:'fat' },
-  'G1000003_serviziFatturazione': { codice:'G1000003', azienda:'CNA CAF LAZIO SRL',                        tipo:'fat' }
+  'G1000003_serviziFatturazione': { codice:'G1000003', azienda:'CNA CAF LAZIO SRL',                        tipo:'fat' },
+  'G1000001_scadenzeInsoluti':    { codice:'G1000001', azienda:'CNA ROMA ASSOCIAZIONE AREA METROPOLITANA', tipo:'ins' },
+  'G1000003_scadenzeInsoluti':    { codice:'G1000003', azienda:'CNA CAF LAZIO SRL',                        tipo:'ins' }
 };
 
 var pandoraFiles = {};
@@ -1370,6 +1374,15 @@ async function pandoraStartImport() {
         var res = await pandoraUpsertBatch('incassipandora', mapped, 'customer_trx_id,codice_azienda');
         sum.sc.done += res.done; sum.sc.skip += skip; sum.sc.err += res.errs;
         pandoraLog('  ✓ ' + res.done.toLocaleString('it-IT') + ' record upserted', 'ok');
+      } else if (meta.tipo === 'ins') {
+        var rawIns = valid.map(function(r){ return pandoraMapSc(r, meta.codice, meta.azienda); }).filter(function(r){ return r.customer_trx_id !== null; });
+        var insMap = {};
+        rawIns.forEach(function(r){ insMap[r.customer_trx_id+'|'+r.codice_azienda] = r; });
+        var mappedIns = Object.values ? Object.values(insMap) : Object.keys(insMap).map(function(k){ return insMap[k]; });
+        pandoraLog('  Upsert insolutipandora (' + mappedIns.length.toLocaleString('it-IT') + ' record)…', 'info');
+        var resIns = await pandoraUpsertBatch('insolutipandora', mappedIns, 'customer_trx_id,codice_azienda');
+        sum.sc.done += resIns.done; sum.sc.skip += skip; sum.sc.err += resIns.errs;
+        pandoraLog('  ✓ ' + resIns.done.toLocaleString('it-IT') + ' record upserted', 'ok');
       } else {
         var rawFat = valid.map(function(r){ return pandoraMapFat(r, meta.codice, meta.azienda); });
         var fatMap = {};
