@@ -1157,17 +1157,25 @@ function pandoraSetProgress(pct, label) {
   if (lbl) lbl.textContent = label;
 }
 
+function pandoraNormName(name) {
+  return String(name || '')
+    .replace(/(\.csv)+$/i, '')          // .csv / .csv.csv
+    .replace(/\s*\(\d+\)\s*$/, '')      // " (1)" aggiunto dal browser
+    .replace(/\s*-\s*copia.*$/i, '')    // "- Copia"
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '');        // spazi / caratteri invisibili
+}
+
 function pandoraScanFiles(files) {
-  pandoraFiles = {};
-  var found = 0;
+  // NON azzera pandoraFiles: le selezioni successive si sommano a quelle precedenti
   var promises = [];
+  var ignorati = [];
 
   Array.from(files).forEach(function(file) {
-    var basename = file.name.replace(/\.csv$/i, '');
-    var key = PANDORA_EXPECTED.find(function(k) { return k.toLowerCase() === basename.toLowerCase(); });
-    if (!key) return;
+    var norm = pandoraNormName(file.name);
+    var key = PANDORA_EXPECTED.find(function(k) { return k.toLowerCase() === norm; });
+    if (!key) { ignorati.push(file.name); return; }
     pandoraFiles[key] = file;
-    found++;
 
     var card = document.getElementById('pfc-' + key);
     var meta = document.getElementById('pfm-' + key);
@@ -1197,7 +1205,15 @@ function pandoraScanFiles(files) {
     promises.push(p);
   });
 
+  if (ignorati.length && typeof toast === 'function') {
+    toast('File non riconosciuti: ' + ignorati.join(', '), 'error');
+  }
+  // permette di riselezionare lo stesso file
+  var inp = document.getElementById('pandora-input');
+  if (inp) inp.value = '';
+
   Promise.all(promises).then(function() {
+    var found = Object.keys(pandoraFiles).length;
     var btn = document.getElementById('pandora-btn-import');
     if (btn) { btn.disabled = found === 0; btn.style.opacity = found > 0 ? '1' : '.35'; }
   });
@@ -1373,9 +1389,11 @@ async function pandoraStartImport() {
     var codici = await pandoraLoadCodici();
     pandoraLog('✓ ' + Object.keys(codici).length.toLocaleString('it-IT') + ' codici caricati', 'ok');
 
+    var keysToRun = PANDORA_EXPECTED.filter(function(k){ return pandoraFiles[k]; });
+    pandoraLog('File da importare (' + keysToRun.length + '): ' + keysToRun.join(', '), 'info');
     var fi = 0;
-    for (var key in pandoraFiles) {
-      if (!pandoraFiles.hasOwnProperty(key)) continue;
+    for (var ki = 0; ki < keysToRun.length; ki++) {
+      var key = keysToRun[ki];
       fi++;
       var file = pandoraFiles[key];
       var meta = PANDORA_AZIENDE[key];
