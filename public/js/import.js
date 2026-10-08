@@ -1343,14 +1343,20 @@ async function pandoraLoadCodici() {
 }
 
 async function pandoraPostChunk(table, chunk, onConflict) {
+  var ctrl = new AbortController();
+  var timer = setTimeout(function(){ ctrl.abort(); }, 30000); // mai attese infinite
   try {
     var r = await fetch(SB + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
       method: 'POST',
       headers: Object.assign({}, H(), { 'Prefer': 'resolution=merge-duplicates,return=minimal', 'Content-Type': 'application/json' }),
-      body: JSON.stringify(chunk)
+      body: JSON.stringify(chunk),
+      signal: ctrl.signal
     });
-    return { ok: r.ok, text: r.ok ? '' : await r.text() };
-  } catch(e) { return { ok: false, text: '57014 rete: ' + e.message }; }
+    var txt = r.ok ? '' : await r.text();
+    return { ok: r.ok, text: txt };
+  } catch(e) {
+    return { ok: false, text: '57014 ' + (e.name === 'AbortError' ? 'nessuna risposta in 30s' : 'rete: ' + e.message) };
+  } finally { clearTimeout(timer); }
 }
 
 // Su timeout (57014) divide il blocco in pezzi più piccoli e riprova
