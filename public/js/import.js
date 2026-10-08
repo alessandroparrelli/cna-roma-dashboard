@@ -1389,38 +1389,78 @@ async function pandoraRpc(fn, args) {
   finally { clearTimeout(timer); }
 }
 
-// Nuovo import: carica in tabella di appoggio (senza indici) e fa unire al DB
-// solo le righe nuove o cambiate. Fallback al vecchio upsert se le funzioni non esistono.
-async function pandoraStageMerge(table, rows, onConflict, codiceAzienda) {
-  var reset = await pandoraRpc('pandora_stg_reset', { p_tab: table, p_azienda: codiceAzienda });
-  if (!reset.ok) {
-    if (reset.status === 404) { pandoraLog('  (staging non disponibile, uso import classico)', 'warn'); return pandoraUpsertBatch(table, rows, onConflict); }
-    pandoraLog('⚠ Reset appoggio fallito: ' + reset.text.substring(0,120), 'err');
-    return { done: 0, errs: rows.length };
-  }
-  // 1) caricamento veloce nell'appoggio
-  var BATCH = 2000, loaded = 0, errs = 0;
-  for (var i = 0; i < rows.length; i += BATCH) {
-    var chunk = rows.slice(i, i + BATCH);
-    var ok = false;
-    for (var a = 0; a < 3 && !ok; a++) {
-      var r = await pandoraPostChunk('stg_' + table, chunk, '');
-      ok = r.ok;
-      if (!ok) { if (a === 2) pandoraLog('⚠ Appoggio ' + i + ': ' + r.text.substring(0,100), 'err'); await new Promise(function(res){ setTimeout(res, 1000*(a+1)); }); }
+// ── Import "solo differenze" ─────────────────────────────────────────────
+// Per ogni riga si calcola un'impronta SHA-256 del contenuto. Il DB restituisce
+// le impronte delle righe salvate (calcolate al volo, sola lettura) e si inviano
+// SOLO le righe nuove o diverse. La formula DEVE restare identica a
+// supabase/migrations/20261009_pandora_impronte.sql
+var PANDORA_CAMPI = {
+  sc:  ['customer_trx_id','codice_cliente','cliente','numero_fattura','riferimento','tipo','unita_operativa',
+        'totale_fattura','totale_imponibile','totale_iva','tipo_pagamento','saldo','data_fattura','data_scadenza',
+        'sede','p_iva','codice_fiscale','indirizzo','cap','comune','prov','condiz_pagam','org_idi',
+        'codice_azienda','azienda','codicetipodoc','codicetipodocaz'],
+  fat: ['codice_cliente','p_iva','scadenza','codice','descrizione','importo','codice_azienda','azienda']
+};
+var PANDORA_SEP = String.fromCharCode(31);
+
+function pandoraVal(v) { return (v === null || v === undefined) ? '' : String(v); }
+
+function pandoraChiave(r, tipo) {
+  return tipo === 'fat'
+    ? [pandoraVal(r.codice_cliente), pandoraVal(r.scadenza), pandoraVal(r.codice)].join(PANDORA_SEP)
+    : pandoraVal(r.customer_trx_id);
+}
+
+async function pandoraImpronta(r, tipo) {
+  var txt = PANDORA_CAMPI[tipo].map(function(c){ return pandoraVal(r[c]); }).join(PANDORA_SEP);
+  var buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt));
+  return Array.from(new Uint8Array(buf)).map(function(b){ return b.toString(16).padStart(2,'0'); }).join('');
+}
+
+// Scarica le impronte esistenti a pagine; null se la funzione non è installata
+async function pandoraCaricaImpronte(table, codiceAzienda) {
+  var map = {}, after = 0, limit = 10000, n = 0;
+  while (true) {
+    var r = await pandoraRpc('pandora_impronte', { p_tab: table, p_azienda: codiceAzienda, p_after: after, p_limit: limit });
+    if (!r.ok) {
+      if (r.status === 404) return null;
+      if (limit > 1000) { limit = Math.floor(limit / 2); await new Promise(function(res){ setTimeout(res, 1500); }); continue; }
+      throw new Error('lettura impronte: ' + (r.text || '').substring(0, 120));
     }
-    if (ok) loaded += chunk.length; else errs += chunk.length;
+    var page = r.data || [];
+    page.forEach(function(x){ map[x.k] = x.h; });
+    n += page.length;
+    if (page.length < limit) break;
+    after = page[page.length - 1].id;
   }
-  pandoraLog('  Caricate ' + loaded.toLocaleString('it-IT') + ' righe in appoggio, confronto con i dati esistenti…', 'info');
-  // 2) merge a blocchi lato DB, il blocco si adatta se va in timeout
-  var limit = 5000, changed = 0, left = loaded, guard = 0;
-  while (left > 0 && guard++ < 500) {
-    var m = await pandoraRpc('pandora_merge', { p_tab: table, p_azienda: codiceAzienda, p_limit: limit });
-    if (m.ok && m.data) { changed += m.data.changed; left = m.data.left; if (limit < 5000) limit = Math.min(5000, limit * 2); }
-    else if (limit > 250) { limit = Math.floor(limit / 2); await new Promise(function(res){ setTimeout(res, 1000); }); }
-    else { pandoraLog('⚠ Merge fallito: ' + (m.text||'').substring(0,120), 'err'); errs += left; break; }
+  return map;
+}
+
+async function pandoraSyncDiff(table, rows, onConflict, codiceAzienda, tipo) {
+  pandoraLog('  Lettura impronte dal database…', 'info');
+  var esistenti;
+  try { esistenti = await pandoraCaricaImpronte(table, codiceAzienda); }
+  catch(e) { pandoraLog('⚠ ' + e.message + ' — file saltato, nessun dato modificato', 'err'); return { done: 0, errs: 0 }; }
+  if (esistenti === null) {
+    pandoraLog('⚠ Funzione pandora_impronte non installata su Supabase — file saltato (eseguire lo SQL 20261009)', 'err');
+    return { done: 0, errs: 0 };
   }
-  pandoraLog('  ' + changed.toLocaleString('it-IT') + ' righe nuove o modificate', 'info');
-  return { done: loaded - (left > 0 ? left : 0), errs: errs, changed: changed };
+  var daInviare = [], nuove = 0;
+  for (var i = 0; i < rows.length; i += 2000) {
+    var part = rows.slice(i, i + 2000);
+    var hs = await Promise.all(part.map(function(r){ return pandoraImpronta(r, tipo); }));
+    part.forEach(function(r, j){
+      var h0 = esistenti[pandoraChiave(r, tipo)];
+      if (h0 === undefined) { nuove++; daInviare.push(r); }
+      else if (h0 !== hs[j]) daInviare.push(r);
+    });
+  }
+  pandoraLog('  ' + rows.length.toLocaleString('it-IT') + ' righe nel file · ' + nuove.toLocaleString('it-IT') + ' nuove · ' +
+             (daInviare.length - nuove).toLocaleString('it-IT') + ' modificate · ' +
+             (rows.length - daInviare.length).toLocaleString('it-IT') + ' invariate', 'info');
+  if (!daInviare.length) return { done: 0, errs: 0 };
+  var res = await pandoraUpsertBatch(table, daInviare, onConflict);
+  return res;
 }
 
 async function pandoraUpsertBatch(table, rows, onConflict) {
@@ -1502,7 +1542,7 @@ async function pandoraStartImport() {
         rawSc.forEach(function(r){ scMap[r.customer_trx_id+'|'+r.codice_azienda] = r; });
         var mapped = Object.values ? Object.values(scMap) : Object.keys(scMap).map(function(k){ return scMap[k]; });
         pandoraLog('  Upsert incassipandora (' + mapped.length.toLocaleString('it-IT') + ' record)…', 'info');
-        var res = await pandoraStageMerge('incassipandora', mapped, 'customer_trx_id,codice_azienda', meta.codice);
+        var res = await pandoraSyncDiff('incassipandora', mapped, 'customer_trx_id,codice_azienda', meta.codice, 'sc');
         sum.sc.done += res.done; sum.sc.skip += skip; sum.sc.err += res.errs;
         pandoraLog('  ✓ ' + res.done.toLocaleString('it-IT') + ' record upserted', 'ok');
       } else if (meta.tipo === 'ins') {
@@ -1511,7 +1551,7 @@ async function pandoraStartImport() {
         rawIns.forEach(function(r){ insMap[r.customer_trx_id+'|'+r.codice_azienda] = r; });
         var mappedIns = Object.values ? Object.values(insMap) : Object.keys(insMap).map(function(k){ return insMap[k]; });
         pandoraLog('  Upsert insolutipandora (' + mappedIns.length.toLocaleString('it-IT') + ' record)…', 'info');
-        var resIns = await pandoraStageMerge('insolutipandora', mappedIns, 'customer_trx_id,codice_azienda', meta.codice);
+        var resIns = await pandoraSyncDiff('insolutipandora', mappedIns, 'customer_trx_id,codice_azienda', meta.codice, 'sc');
         sum.sc.done += resIns.done; sum.sc.skip += skip; sum.sc.err += resIns.errs;
         pandoraLog('  ✓ ' + resIns.done.toLocaleString('it-IT') + ' record upserted', 'ok');
       } else {
@@ -1520,7 +1560,7 @@ async function pandoraStartImport() {
         rawFat.forEach(function(r){ fatMap[(r.codice_cliente||'')+'|'+r.codice_azienda+'|'+r.scadenza+'|'+r.codice] = r; });
         var mapped2 = Object.values ? Object.values(fatMap) : Object.keys(fatMap).map(function(k){ return fatMap[k]; });
         pandoraLog('  Upsert fatturazionepandora (' + mapped2.length.toLocaleString('it-IT') + ' record)…', 'info');
-        var res2 = await pandoraStageMerge('fatturazionepandora', mapped2, 'codice_cliente,codice_azienda,scadenza,codice', meta.codice);
+        var res2 = await pandoraSyncDiff('fatturazionepandora', mapped2, 'codice_cliente,codice_azienda,scadenza,codice', meta.codice, 'fat');
         sum.fat.done += res2.done; sum.fat.skip += skip; sum.fat.err += res2.errs;
         pandoraLog('  ✓ ' + res2.done.toLocaleString('it-IT') + ' record upserted', 'ok');
       }
