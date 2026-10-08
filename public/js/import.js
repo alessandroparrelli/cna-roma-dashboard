@@ -1419,12 +1419,12 @@ async function pandoraImpronta(r, tipo) {
 
 // Scarica le impronte esistenti a pagine; null se la funzione non è installata
 async function pandoraCaricaImpronte(table, codiceAzienda) {
-  var map = {}, after = 0, limit = 10000, n = 0;
+  var map = {}, after = 0, limit = 3000, n = 0;
   while (true) {
     var r = await pandoraRpc('pandora_impronte', { p_tab: table, p_azienda: codiceAzienda, p_after: after, p_limit: limit });
     if (!r.ok) {
       if (r.status === 404) return null;
-      if (limit > 1000) { limit = Math.floor(limit / 2); await new Promise(function(res){ setTimeout(res, 1500); }); continue; }
+      if (limit > 500) { limit = Math.floor(limit / 2); await new Promise(function(res){ setTimeout(res, 1500); }); continue; }
       throw new Error('lettura impronte: ' + (r.text || '').substring(0, 120));
     }
     var page = r.data || [];
