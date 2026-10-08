@@ -1269,6 +1269,16 @@ function pandoraMapSc(row, codice_azienda, azienda) {
   };
 }
 
+// Per i file insoluti, CUSTOMER_TRX_ID è un numero batch condiviso da più righe.
+// La chiave univoca per documento è FATTURA_ID (l'ID della fattura originale).
+function pandoraMapIns(row, codice_azienda, azienda) {
+  var mapped = pandoraMapSc(row, codice_azienda, azienda);
+  // Usa FATTURA_ID come customer_trx_id (chiave univoca per documento)
+  var fatturaId = row.FATTURA_ID ? parseInt(row.FATTURA_ID) : null;
+  mapped.customer_trx_id = (!fatturaId || isNaN(fatturaId)) ? null : fatturaId;
+  return mapped;
+}
+
 function pandoraMapFat(row, codice_azienda, azienda) {
   var n = function(v){ if(!v||v==='NULL') return null; var x=parseFloat(String(v).replace(',','.')); return isNaN(x)?null:x; };
   var d = function(v){ if(!v||v==='NULL') return null; var x=new Date(v); return isNaN(x)?null:x.toISOString().split('T')[0]; };
@@ -1394,7 +1404,7 @@ async function pandoraStartImport() {
         sum.sc.done += res.done; sum.sc.skip += skip; sum.sc.err += res.errs;
         pandoraLog('  ✓ ' + res.done.toLocaleString('it-IT') + ' record upserted', 'ok');
       } else if (meta.tipo === 'ins') {
-        var rawIns = valid.map(function(r){ return pandoraMapSc(r, meta.codice, meta.azienda); }).filter(function(r){ return r.customer_trx_id !== null; });
+        var rawIns = valid.map(function(r){ return pandoraMapIns(r, meta.codice, meta.azienda); }).filter(function(r){ return r.customer_trx_id !== null; });
         var insMap = {};
         rawIns.forEach(function(r){ insMap[r.customer_trx_id+'|'+r.codice_azienda] = r; });
         var mappedIns = Object.values ? Object.values(insMap) : Object.keys(insMap).map(function(k){ return insMap[k]; });
