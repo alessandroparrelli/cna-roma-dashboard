@@ -1342,18 +1342,47 @@ async function pandoraLoadCodici() {
   return set;
 }
 
-async function pandoraUpsertBatch(table, rows, onConflict) {
-  var BATCH = 500, done = 0, errs = 0;
-  for (var i = 0; i < rows.length; i += BATCH) {
-    var chunk = rows.slice(i, i + BATCH);
+async function pandoraPostChunk(table, chunk, onConflict) {
+  try {
     var r = await fetch(SB + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
       method: 'POST',
       headers: Object.assign({}, H(), { 'Prefer': 'resolution=merge-duplicates,return=minimal', 'Content-Type': 'application/json' }),
       body: JSON.stringify(chunk)
     });
+    return { ok: r.ok, text: r.ok ? '' : await r.text() };
+  } catch(e) { return { ok: false, text: '57014 rete: ' + e.message }; }
+}
+
+// Su timeout (57014) divide il blocco in pezzi più piccoli e riprova
+async function pandoraUpsertSplit(table, chunk, onConflict, depth) {
+  var res = await pandoraPostChunk(table, chunk, onConflict);
+  if (res.ok) return { done: chunk.length, errs: 0 };
+  if (res.text.indexOf('57014') >= 0 && depth < 3) {
+    await new Promise(function(r){ setTimeout(r, 800 * (depth + 1)); });
+    var size = depth === 0 ? 100 : (depth === 1 ? 25 : 5);
+    var d = 0, e = 0;
+    for (var j = 0; j < chunk.length; j += size) {
+      var sub = await pandoraUpsertSplit(table, chunk.slice(j, j + size), onConflict, depth + 1);
+      d += sub.done; e += sub.errs;
+    }
+    return { done: d, errs: e };
+  }
+  return { done: 0, errs: chunk.length, text: res.text };
+}
+
+async function pandoraUpsertBatch(table, rows, onConflict) {
+  var BATCH = 300, done = 0, errs = 0;
+  for (var i = 0; i < rows.length; i += BATCH) {
+    var chunk = rows.slice(i, i + BATCH);
+    var r = await pandoraPostChunk(table, chunk, onConflict);
     if (r.ok) { done += chunk.length; }
+    else if (r.text.indexOf('57014') >= 0) {
+      var sp = await pandoraUpsertSplit(table, chunk, onConflict, 0);
+      done += sp.done; errs += sp.errs;
+      if (sp.errs) pandoraLog('⚠ Batch ' + i + '-' + (i+BATCH) + ': ' + sp.errs + ' righe non salvate dopo i tentativi', 'err');
+    }
     else {
-      var errText = await r.text();
+      var errText = r.text;
       if (errText.indexOf('21000') >= 0) {
         // Fallback riga per riga
         for (var ri = 0; ri < chunk.length; ri++) {
@@ -1389,7 +1418,9 @@ async function pandoraStartImport() {
     var codici = await pandoraLoadCodici();
     pandoraLog('✓ ' + Object.keys(codici).length.toLocaleString('it-IT') + ' codici caricati', 'ok');
 
-    var keysToRun = PANDORA_EXPECTED.filter(function(k){ return pandoraFiles[k]; });
+    // Insoluti per primi (piccoli), poi scadenze e fatturazione
+    var ORDER = ['G1000001_scadenzeInsoluti','G1000003_scadenzeInsoluti','G1000001_scadenze','G1000003_scadenze','G1000001_serviziFatturazione','G1000003_serviziFatturazione'];
+    var keysToRun = ORDER.filter(function(k){ return pandoraFiles[k]; });
     pandoraLog('File da importare (' + keysToRun.length + '): ' + keysToRun.join(', '), 'info');
     var fi = 0;
     for (var ki = 0; ki < keysToRun.length; ki++) {
