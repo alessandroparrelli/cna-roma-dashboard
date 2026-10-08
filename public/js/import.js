@@ -1346,9 +1346,11 @@ async function pandoraPostChunk(table, chunk, onConflict) {
   var ctrl = new AbortController();
   var timer = setTimeout(function(){ ctrl.abort(); }, 30000); // mai attese infinite
   try {
-    var r = await fetch(SB + '/rest/v1/' + table + '?on_conflict=' + onConflict, {
+    var url = SB + '/rest/v1/' + table + (onConflict ? '?on_conflict=' + onConflict : '');
+    var prefer = onConflict ? 'resolution=merge-duplicates,return=minimal' : 'return=minimal';
+    var r = await fetch(url, {
       method: 'POST',
-      headers: Object.assign({}, H(), { 'Prefer': 'resolution=merge-duplicates,return=minimal', 'Content-Type': 'application/json' }),
+      headers: Object.assign({}, H(), { 'Prefer': prefer, 'Content-Type': 'application/json' }),
       body: JSON.stringify(chunk),
       signal: ctrl.signal
     });
@@ -1374,6 +1376,51 @@ async function pandoraUpsertSplit(table, chunk, onConflict, depth) {
     return { done: d, errs: e };
   }
   return { done: 0, errs: chunk.length, text: res.text };
+}
+
+async function pandoraRpc(fn, args) {
+  var ctrl = new AbortController();
+  var timer = setTimeout(function(){ ctrl.abort(); }, 30000);
+  try {
+    var r = await fetch(SB + '/rest/v1/rpc/' + fn, { method:'POST', headers: H(), body: JSON.stringify(args), signal: ctrl.signal });
+    var txt = await r.text();
+    return { ok: r.ok, status: r.status, data: r.ok && txt ? JSON.parse(txt) : null, text: txt };
+  } catch(e) { return { ok:false, status:0, text: e.name === 'AbortError' ? 'nessuna risposta in 30s' : e.message }; }
+  finally { clearTimeout(timer); }
+}
+
+// Nuovo import: carica in tabella di appoggio (senza indici) e fa unire al DB
+// solo le righe nuove o cambiate. Fallback al vecchio upsert se le funzioni non esistono.
+async function pandoraStageMerge(table, rows, onConflict, codiceAzienda) {
+  var reset = await pandoraRpc('pandora_stg_reset', { p_tab: table, p_azienda: codiceAzienda });
+  if (!reset.ok) {
+    if (reset.status === 404) { pandoraLog('  (staging non disponibile, uso import classico)', 'warn'); return pandoraUpsertBatch(table, rows, onConflict); }
+    pandoraLog('⚠ Reset appoggio fallito: ' + reset.text.substring(0,120), 'err');
+    return { done: 0, errs: rows.length };
+  }
+  // 1) caricamento veloce nell'appoggio
+  var BATCH = 2000, loaded = 0, errs = 0;
+  for (var i = 0; i < rows.length; i += BATCH) {
+    var chunk = rows.slice(i, i + BATCH);
+    var ok = false;
+    for (var a = 0; a < 3 && !ok; a++) {
+      var r = await pandoraPostChunk('stg_' + table, chunk, '');
+      ok = r.ok;
+      if (!ok) { if (a === 2) pandoraLog('⚠ Appoggio ' + i + ': ' + r.text.substring(0,100), 'err'); await new Promise(function(res){ setTimeout(res, 1000*(a+1)); }); }
+    }
+    if (ok) loaded += chunk.length; else errs += chunk.length;
+  }
+  pandoraLog('  Caricate ' + loaded.toLocaleString('it-IT') + ' righe in appoggio, confronto con i dati esistenti…', 'info');
+  // 2) merge a blocchi lato DB, il blocco si adatta se va in timeout
+  var limit = 5000, changed = 0, left = loaded, guard = 0;
+  while (left > 0 && guard++ < 500) {
+    var m = await pandoraRpc('pandora_merge', { p_tab: table, p_azienda: codiceAzienda, p_limit: limit });
+    if (m.ok && m.data) { changed += m.data.changed; left = m.data.left; if (limit < 5000) limit = Math.min(5000, limit * 2); }
+    else if (limit > 250) { limit = Math.floor(limit / 2); await new Promise(function(res){ setTimeout(res, 1000); }); }
+    else { pandoraLog('⚠ Merge fallito: ' + (m.text||'').substring(0,120), 'err'); errs += left; break; }
+  }
+  pandoraLog('  ' + changed.toLocaleString('it-IT') + ' righe nuove o modificate', 'info');
+  return { done: loaded - (left > 0 ? left : 0), errs: errs, changed: changed };
 }
 
 async function pandoraUpsertBatch(table, rows, onConflict) {
@@ -1455,7 +1502,7 @@ async function pandoraStartImport() {
         rawSc.forEach(function(r){ scMap[r.customer_trx_id+'|'+r.codice_azienda] = r; });
         var mapped = Object.values ? Object.values(scMap) : Object.keys(scMap).map(function(k){ return scMap[k]; });
         pandoraLog('  Upsert incassipandora (' + mapped.length.toLocaleString('it-IT') + ' record)…', 'info');
-        var res = await pandoraUpsertBatch('incassipandora', mapped, 'customer_trx_id,codice_azienda');
+        var res = await pandoraStageMerge('incassipandora', mapped, 'customer_trx_id,codice_azienda', meta.codice);
         sum.sc.done += res.done; sum.sc.skip += skip; sum.sc.err += res.errs;
         pandoraLog('  ✓ ' + res.done.toLocaleString('it-IT') + ' record upserted', 'ok');
       } else if (meta.tipo === 'ins') {
@@ -1464,7 +1511,7 @@ async function pandoraStartImport() {
         rawIns.forEach(function(r){ insMap[r.customer_trx_id+'|'+r.codice_azienda] = r; });
         var mappedIns = Object.values ? Object.values(insMap) : Object.keys(insMap).map(function(k){ return insMap[k]; });
         pandoraLog('  Upsert insolutipandora (' + mappedIns.length.toLocaleString('it-IT') + ' record)…', 'info');
-        var resIns = await pandoraUpsertBatch('insolutipandora', mappedIns, 'customer_trx_id,codice_azienda');
+        var resIns = await pandoraStageMerge('insolutipandora', mappedIns, 'customer_trx_id,codice_azienda', meta.codice);
         sum.sc.done += resIns.done; sum.sc.skip += skip; sum.sc.err += resIns.errs;
         pandoraLog('  ✓ ' + resIns.done.toLocaleString('it-IT') + ' record upserted', 'ok');
       } else {
@@ -1473,7 +1520,7 @@ async function pandoraStartImport() {
         rawFat.forEach(function(r){ fatMap[(r.codice_cliente||'')+'|'+r.codice_azienda+'|'+r.scadenza+'|'+r.codice] = r; });
         var mapped2 = Object.values ? Object.values(fatMap) : Object.keys(fatMap).map(function(k){ return fatMap[k]; });
         pandoraLog('  Upsert fatturazionepandora (' + mapped2.length.toLocaleString('it-IT') + ' record)…', 'info');
-        var res2 = await pandoraUpsertBatch('fatturazionepandora', mapped2, 'codice_cliente,codice_azienda,scadenza,codice');
+        var res2 = await pandoraStageMerge('fatturazionepandora', mapped2, 'codice_cliente,codice_azienda,scadenza,codice', meta.codice);
         sum.fat.done += res2.done; sum.fat.skip += skip; sum.fat.err += res2.errs;
         pandoraLog('  ✓ ' + res2.done.toLocaleString('it-IT') + ' record upserted', 'ok');
       }
