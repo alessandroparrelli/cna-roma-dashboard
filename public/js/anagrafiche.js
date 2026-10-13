@@ -2,19 +2,53 @@ var anaContratti = {};   // codiceanagrafica → { tipocontratto: {data, consule
 var anaServiziSet = {}; // tutti i tipi di contratto trovati
 var anaCCIAAMap = {};   // partita_iva → {num_addetti_sub, num_addetti_fam_ul}
 
+// Fetch con retry: ritenta su errori di rete/5xx (timeout Supabase) con backoff
+async function anaFetchRetry(url, opts, tries){
+  tries = tries || 4;
+  var lastErr;
+  for(var t=0; t<tries; t++){
+    try{
+      var r = await fetch(url, opts || {headers:H()});
+      if(r.ok) return r;
+      lastErr = new Error('HTTP '+r.status);
+      if(r.status < 500 && r.status !== 429) throw lastErr; // errori 4xx: inutile ritentare
+    }catch(e){ lastErr = e; if(/HTTP 4/.test(e.message) && !/HTTP 429/.test(e.message)) throw e; }
+    await new Promise(function(res){ setTimeout(res, 400*Math.pow(2,t)); });
+  }
+  throw lastErr;
+}
+
+// Conteggio esatto lato DB per verificare che il caricamento sia completo
+async function anaExactCount(table, filterQuery){
+  var url = SB+'/rest/v1/'+table+'?select=*'+(filterQuery?'&'+filterQuery:'')+'&limit=1';
+  var h = Object.assign({}, H(), {'Prefer':'count=exact'});
+  var r = await anaFetchRetry(url, {headers:h});
+  var cr = r.headers.get('content-range') || '';
+  var n = parseInt(cr.split('/')[1], 10);
+  return isNaN(n) ? null : n;
+}
+
 async function anaFetchAll(table){
   var all=[], offset=0, size=1000;
+  var sid = table.toLowerCase();
   while(true){
-    anaSetStatus(table, all.length, 'loading');
-    var r=await fetch(SB+'/rest/v1/'+table+'?select=*&offset='+offset+'&limit='+size,{headers:H()});
-    if(!r.ok) throw new Error(table+': HTTP '+r.status);
+    anaSetStatus(sid, all.length, 'loading');
+    var r;
+    try{ r=await anaFetchRetry(SB+'/rest/v1/'+table+'?select=*&offset='+offset+'&limit='+size); }
+    catch(e){ throw new Error(table+': '+e.message); }
     var rows=await r.json();
-    if(!Array.isArray(rows)||rows.length===0){ anaSetStatus(table, all.length, 'done'); break; }
+    if(!Array.isArray(rows)||rows.length===0) break;
     all=all.concat(rows);
     offset+=size;
-    if(rows.length<size){ anaSetStatus(table, all.length, 'done'); break; }
+    if(rows.length<size) break;
     await new Promise(function(res){setTimeout(res,50);});
   }
+  // Verifica completezza: le righe ricevute devono coincidere con il conteggio DB
+  var exp = await anaExactCount(table, '');
+  if(exp !== null && exp !== all.length){
+    throw new Error(table+': caricamento incompleto ('+all.length+' righe su '+exp+'). Riprova.');
+  }
+  anaSetStatus(sid, all.length, 'done');
   return all;
 }
 
@@ -158,29 +192,38 @@ async function anaLoad(force){
 
     anaSetProgress(55, 'Caricamento CCIAA e Contratti…');
 
-    // ── FASE 2: CCIAA (batch da 200, concorrenza max 10) + Contratti in parallelo ──
-    // Avvia subito il fetch contratti così procede in parallelo con CCIAA
-    var fetchContratti = anaFetchAllFiltered('contrattiservizio', 'select=codicecliente,tipocontratto,datastipulacontratto,nomeconsulente&datadisdetta=is.null');
+    // ── FASE 2a: Contratti servizio (prima, senza carico concorrente) ──
+    var contrattiRows = await anaFetchAllFiltered('contrattiservizio', 'select=id,codicecliente,tipocontratto,datastipulacontratto,nomeconsulente&datadisdetta=is.null&order=id.asc');
 
-    var cciaaRows = [];
-    if (pivaList.length > 0) {
-      var batchSize = 200;
-      var batches = [];
-      for (var b = 0; b < pivaList.length; b += batchSize) batches.push(pivaList.slice(b, b + batchSize));
-      // Esegui batch con concorrenza limitata a 10 per non sovraccaricare Supabase
-      var concurrency = 10;
-      for (var ci = 0; ci < batches.length; ci += concurrency) {
-        var chunk = batches.slice(ci, ci + concurrency);
-        var chunkResults = await Promise.all(chunk.map(function(batch){
-          return fetch(SB+'/rest/v1/cciaa?select=partita_iva,num_addetti_sub,num_addetti_fam_ul,stato_attivita,art_com_tur&partita_iva=in.('+batch.join(',')+')', {headers:H()})
-            .then(function(r){ return r.ok ? r.json() : []; }).catch(function(){ return []; });
-        }));
-        chunkResults.forEach(function(r){ cciaaRows = cciaaRows.concat(r); });
+    // ── FASE 2b: CCIAA ──
+    // Fonte preferita: cache precalcolata archivio_cciaa_cache (una riga per P.IVA, record più recente).
+    // Se la cache non esiste o è vuota, ricade sulle query a batch sulla tabella cciaa.
+    var cciaaRows = null;
+    try {
+      var cacheRows = await anaFetchAllFiltered('archivio_cciaa_cache', 'select=partita_iva,num_addetti_sub,num_addetti_fam_ul,stato_attivita,art_com_tur&order=partita_iva.asc');
+      if (cacheRows.length > 0) cciaaRows = cacheRows;
+    } catch(eCache) { console.warn('Cache CCIAA non disponibile, uso query dirette:', eCache.message); }
+
+    if (cciaaRows === null) {
+      cciaaRows = [];
+      if (pivaList.length > 0) {
+        var batchSize = 100;
+        var batches = [];
+        for (var b = 0; b < pivaList.length; b += batchSize) batches.push(pivaList.slice(b, b + batchSize));
+        var concurrency = 4;
+        for (var ci = 0; ci < batches.length; ci += concurrency) {
+          anaSetProgress(55 + Math.round(15 * ci / batches.length), 'Caricamento CCIAA… ' + Math.min(ci + concurrency, batches.length) + '/' + batches.length);
+          var chunk = batches.slice(ci, ci + concurrency);
+          // Nessun errore ignorato: se un batch fallisce dopo i retry, il caricamento si ferma
+          var chunkResults = await Promise.all(chunk.map(function(batch){
+            return anaFetchRetry(SB+'/rest/v1/cciaa?select=partita_iva,num_addetti_sub,num_addetti_fam_ul,stato_attivita,art_com_tur&partita_iva=in.('+batch.join(',')+')')
+              .then(function(r){ return r.json(); })
+              .catch(function(e){ throw new Error('CCIAA: '+e.message+' (dati non completi, riprova)'); });
+          }));
+          chunkResults.forEach(function(r){ cciaaRows = cciaaRows.concat(r); });
+        }
       }
     }
-
-    // Aspetta i contratti (probabilmente già completati durante i batch CCIAA)
-    var contrattiRows = await fetchContratti;
 
     // Costruisci mappa CCIAA: partita_iva → {sub, fam}
     anaCCIAAMap = {};
@@ -277,13 +320,14 @@ async function anaLoad(force){
       var pagantiBatch = [];
       for (var pb = 0; pb < codiciAll.length; pb += 50) {
         var batch = codiciAll.slice(pb, pb + 50);
-        var rp = await fetch(
-          SB + '/rest/v1/incassipandora?select=codice_cliente&codice_azienda=eq.G1000001&pagato=eq.true&data_fattura=gte.' + dataMin + '&codice_cliente=in.(' + batch.join(',') + ')&limit=1000',
-          { headers: H() }
-        );
-        if (rp.ok) {
+        // Paginazione per batch: senza, >1000 fatture nel batch farebbero perdere paganti
+        for (var po = 0; ; po += 1000) {
+          var rp = await anaFetchRetry(
+            SB + '/rest/v1/incassipandora?select=codice_cliente&codice_azienda=eq.G1000001&pagato=eq.true&data_fattura=gte.' + dataMin + '&codice_cliente=in.(' + batch.join(',') + ')&order=codice_cliente.asc,id.asc&offset=' + po + '&limit=1000'
+          );
           var dp = await rp.json();
           dp.forEach(function(row){ if(row.codice_cliente) pagantiBatch.push(row.codice_cliente); });
+          if (dp.length < 1000) break;
         }
       }
       var pagantiSet = {};
@@ -291,6 +335,7 @@ async function anaLoad(force){
       anaAll.forEach(function(r){ r.isPagante = !!pagantiSet[r.codiceanagrafica]; });
     } catch(ep) {
       console.warn('Errore caricamento paganti:', ep.message);
+      toast('⚠ Badge "Pagante" non affidabile: ' + ep.message + '. Ricarica l\'archivio.', 'error');
     }
 
     anaFiltered = [];  // Parte vuoto: mostra risultati solo dopo ricerca
@@ -328,14 +373,21 @@ async function anaFetchAllFiltered(tableName, filterQuery){
   var all=[], offset=0, size=1000;
   while(true){
     var url = SB+'/rest/v1/'+tableName+'?'+filterQuery+'&offset='+offset+'&limit='+size;
-    var r = await fetch(url, {headers:H()});
-    if(!r.ok) throw new Error(tableName+': HTTP '+r.status);
+    var r;
+    try{ r = await anaFetchRetry(url); }
+    catch(e){ throw new Error(tableName+': '+e.message); }
     var rows = await r.json();
     if(!Array.isArray(rows)||rows.length===0) break;
     all = all.concat(rows);
     offset += size;
     if(rows.length < size) break;
     await new Promise(function(res){setTimeout(res,50);});
+  }
+  // Verifica completezza rispetto al conteggio DB (stessi filtri, senza select/order)
+  var filt = filterQuery.split('&').filter(function(p){ return !/^(select|order)=/.test(p); }).join('&');
+  var exp = await anaExactCount(tableName, filt);
+  if(exp !== null && exp !== all.length){
+    throw new Error(tableName+': caricamento incompleto ('+all.length+' righe su '+exp+'). Riprova.');
   }
   return all;
 }
