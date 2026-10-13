@@ -318,6 +318,16 @@ async function anaLoad(force){
       // Legge i codici distinti pagati (saldo=0, data_fattura >= 3 anni fa) in batch da 50
       var codiciAll = anaAll.map(function(r){ return r.codiceanagrafica; }).filter(Boolean);
       var pagantiBatch = [];
+      // Fonte preferita: cache archivio_paganti_cache (ultima fattura pagata per cliente G1000001).
+      // Stessa regola: pagante se ultima data_fattura pagata >= 1 gennaio di (anno corrente - 2)
+      var pagCache = [];
+      try {
+        pagCache = await anaFetchAllFiltered('archivio_paganti_cache', 'select=codice_cliente,ultima_data_fattura&ultima_data_fattura=gte.' + dataMin + '&order=codice_cliente.asc');
+      } catch(ePc) { console.warn('Cache paganti non disponibile, uso query dirette:', ePc.message); pagCache = []; }
+      if (pagCache.length > 0) {
+        pagCache.forEach(function(row){ if(row.codice_cliente) pagantiBatch.push(row.codice_cliente); });
+        codiciAll = []; // salta il percorso a batch
+      }
       for (var pb = 0; pb < codiciAll.length; pb += 50) {
         var batch = codiciAll.slice(pb, pb + 50);
         // Paginazione per batch: senza, >1000 fatture nel batch farebbero perdere paganti
