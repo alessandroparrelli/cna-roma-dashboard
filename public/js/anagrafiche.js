@@ -823,6 +823,10 @@ function anaExport(){
   try{
     var servizi = Object.keys(anaServiziSet).sort();
     var indices = Array.from(anaSelected).sort(function(a,b){return a-b;});
+    // Ordine colonne base (36): dopo MESTIERE → RAGGR.ANALISI, STATO ATTIVITÀ, TIPO IMPRESA, ISCRITTO, PAGANTE,
+    // DATA STIPULA ISCR., CONSULENTE ISCR., DIP. SUB, DIP. FAM, TOT. DIP; i servizi restano in coda
+    var BASE_ORDER = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25, 28,27,26,30,29,31,32,33,34,35];
+    var reorderCols = function(arr){ return BASE_ORDER.map(function(i){ return arr[i]; }).concat(arr.slice(BASE_ORDER.length)); };
     var wsData = [];
 
     // Riga 1: Titolo
@@ -843,6 +847,7 @@ function anaExport(){
       headerRow.push('DATA STIPULA '+s.toUpperCase());
       headerRow.push('CONSULENTE '+s.toUpperCase());
     });
+    headerRow = reorderCols(headerRow);
     wsData.push(headerRow);
 
     // Righe dati
@@ -871,7 +876,7 @@ function anaExport(){
           row.push('Attivo'); row.push(dataStr); row.push(c.consulente||'');
         } else { row.push('','',''); }
       });
-      wsData.push(row);
+      wsData.push(reorderCols(row));
     });
 
     var ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -886,6 +891,7 @@ function anaExport(){
     colWidths.splice(27, 0, 18); // STATO ATTIVITÀ
     colWidths.push(10,12,14,25,13,12,13);
     servizi.forEach(function(){ colWidths.push(22,13,25); });
+    colWidths = reorderCols(colWidths);
     ws['!cols'] = colWidths.map(function(w){ return {wch:w}; });
 
     // ── ROW HEIGHT ──
