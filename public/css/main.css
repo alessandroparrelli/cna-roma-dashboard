@@ -1710,8 +1710,6 @@ body.dark-mode .home-nav-btn{background:var(--surface);}
 .home-nav-contratti::before{background:linear-gradient(90deg,#F59E0B,#FCD34D);}
 .home-nav-consulenti::before{background:linear-gradient(90deg,#7C3AED,#A78BFA);}
 .home-nav-storica::before{background:linear-gradient(90deg,#D97706,#F59E0B);}
-.home-nav-sito::before{background:linear-gradient(90deg,#005CA9,#0EA5E9);}
-a.home-nav-btn{text-decoration:none;color:inherit;}
 
 .home-nav-icon{
   width:44px;height:44px;border-radius:50%;
@@ -1725,7 +1723,6 @@ a.home-nav-btn{text-decoration:none;color:inherit;}
 .home-nav-contratti   .home-nav-icon{background:#F59E0B;}
 .home-nav-consulenti  .home-nav-icon{background:#7C3AED;}
 .home-nav-storica     .home-nav-icon{background:#D97706;}
-.home-nav-sito        .home-nav-icon{background:#005CA9;}
 
 .home-nav-label{font-family:var(--font-display);font-size:14px;font-weight:800;color:var(--text);letter-spacing:-0.02em;line-height:1.2;}
 .home-nav-desc{font-size:11px;color:var(--text-secondary);line-height:1.55;font-weight:500;flex:1;}
