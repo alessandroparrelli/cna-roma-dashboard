@@ -113,6 +113,8 @@ async function openAnagraficaModal(anaIdx) {
   try {
     if (direttiRes.status === 'fulfilled' && direttiRes.value.ok) {
       diretti = await direttiRes.value.json() || [];
+      // Escludi servizi con data cessazione (es. ISCRITTO disdettato = NON iscritto)
+      diretti = diretti.filter(function(d){ return !(d.datadisdetta && String(d.datadisdetta).trim()!==''); });
     }
   } catch(e) {}
 
@@ -913,7 +915,7 @@ async function loadContratti() {
       throw new Error('Diretti HTTP ' + resp3.status + ': ' + errText);
     }
     
-    var diretti = await resp3.json();
+    var diretti = (await resp3.json()).filter(function(d){ return !(d.datadisdetta && String(d.datadisdetta).trim()!==''); });
     console.log('Diretti caricati:', diretti.length);
     G('contratti-status-diretti').querySelector('.ana-sval').textContent = diretti.length + ' caricati';
     progressFill.style.width = '70%';
@@ -963,7 +965,7 @@ async function loadContratti() {
           var tesseramento = 'Non associato';
           var direttiAza = direttiMap[c.codicecliente] || [];
           if (direttiAza.length > 0) {
-            var hasIscritto = direttiAza.some(function(d) { return d.servizio && d.servizio.indexOf('Iscritto') !== -1; });
+            var hasIscritto = direttiAza.some(function(d) { return d.servizio && d.servizio.toUpperCase().indexOf('ISCRITTO') !== -1; });
             var hasInps = direttiAza.some(function(d) { return d.servizio && d.servizio.indexOf('INPS') !== -1; });
             
             if (hasIscritto) {
@@ -1084,7 +1086,7 @@ async function estraiBtnClick() {
     }
     
     var anagrafiche = await sbGetAll('Anagrafiche');
-    var diretti = await sbGetAll('diretti');
+    var diretti = (await sbGetAll('diretti')).filter(function(d){ return !(d.datadisdetta && String(d.datadisdetta).trim()!==''); });
     
     var anaMap = {};
     anagrafiche.forEach(function(a) {
@@ -1106,7 +1108,7 @@ async function estraiBtnClick() {
         var tesseramento = 'Non associato';
         var direttiAza = direttiMap[c.codicecliente] || [];
         if (direttiAza.length > 0) {
-          var hasIscritto = direttiAza.some(function(d) { return d.servizio && d.servizio.indexOf('Iscritto') !== -1; });
+          var hasIscritto = direttiAza.some(function(d) { return d.servizio && d.servizio.toUpperCase().indexOf('ISCRITTO') !== -1; });
           var hasInps = direttiAza.some(function(d) { return d.servizio && d.servizio.indexOf('INPS') !== -1; });
           
           if (hasIscritto) {

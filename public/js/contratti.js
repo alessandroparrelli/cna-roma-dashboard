@@ -62,7 +62,7 @@ async function contrattiLoad(force) {
     var pivaList = Object.keys(pivaSet);
 
     // Carica Diretti completi + CCIAA filtrata per partite IVA (via POST per evitare URL lungo)
-    var fetchDiretti = contrattisFetchAll('diretti?select=codiceanagrafica,servizio');
+    var fetchDiretti = contrattisFetchAll('diretti?select=codiceanagrafica,servizio,datadisdetta');
 
     // Carica CCIAA a batch di 50 partite IVA (evita URL troppo lungo)
     var fetchCciaa = Promise.resolve([]);
@@ -106,6 +106,8 @@ async function contrattiLoad(force) {
     var inps = {};
     diretti.forEach(function(d) {
       if (!d.servizio) return;
+      // Contratto con data cessazione = NON attivo
+      if (d.datadisdetta && String(d.datadisdetta).trim() !== '') return;
       var servizio = String(d.servizio).trim().toUpperCase();
       if (servizio === 'ISCRITTO') {
         iscritti[d.codiceanagrafica] = true;

@@ -267,6 +267,8 @@ async function anaLoad(force){
     var iscrittiMap = {};
     dir.forEach(function(d){
       if(!d.servizio || !d.codiceanagrafica) return;
+      // ISCRITTO con data cessazione = NON iscritto
+      if(d.datadisdetta && String(d.datadisdetta).trim()!=='') return;
       var svc = String(d.servizio).trim().toUpperCase();
       if(svc === 'ISCRITTO'){
         // Mantieni quello con data più recente

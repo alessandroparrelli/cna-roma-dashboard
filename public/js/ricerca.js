@@ -152,7 +152,7 @@ async function riApriScheda(ana) {
     var tipoImp = cciaa ? (cciaa.art_com_tur==='A'?'Artigiano':cciaa.art_com_tur==='C'?'Commerciante':null) : null;
 
     // Iscritto (da diretti + contrattiservizio)
-    var isIscritto = diretti.some(function(d){ return (d.servizio||'').toUpperCase()==='ISCRITTO'; }) ||
+    var isIscritto = diretti.some(function(d){ return (d.servizio||'').toUpperCase()==='ISCRITTO' && !(d.datadisdetta && String(d.datadisdetta).trim()!==''); }) ||
                      servizi.some(function(s){ return (s.tipocontratto||'').toUpperCase()==='ISCRITTO'; });
 
     // Pagante (pagato almeno una quota tessera negli ultimi 3 anni)
@@ -644,7 +644,7 @@ async function hmCaricaScheda(ana) {
     var tipoImp=cciaa?(cciaa.art_com_tur==='A'?'Artigiano':cciaa.art_com_tur==='C'?'Commerciante':null):null;
     var addSub=cciaa?(parseInt(cciaa.num_addetti_sub)||0):0;
     var addFam=cciaa?(parseInt(cciaa.num_addetti_fam_ul)||0):0;
-    var isIscritto=diretti.some(function(d){return(d.servizio||'').toUpperCase()==='ISCRITTO';});
+    var isIscritto=diretti.some(function(d){return(d.servizio||'').toUpperCase()==='ISCRITTO'&&!(d.datadisdetta && String(d.datadisdetta).trim()!=='');});
     if(!isIscritto) isIscritto=servizi.some(function(s){return(s.tipocontratto||'').toUpperCase()==='ISCRITTO';});
     var annoMin=new Date().getFullYear()-2;
     var isPagante=pandoraG1.some(function(p){return p.pagato&&p.data_fattura&&parseInt(p.data_fattura.substring(0,4))>=annoMin;});
