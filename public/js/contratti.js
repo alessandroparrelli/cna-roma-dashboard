@@ -119,6 +119,11 @@ async function contrattiLoad(force) {
     
     console.log('CCIAA trovati:', Object.keys(cciaaMap).length);
     
+    // ISCRITTO anche da contrattiservizio (già filtrati datadisdetta IS NULL)
+    contratti.forEach(function(c) {
+      if (String(c.tipocontratto || '').trim().toUpperCase() === 'ISCRITTO') iscritti[c.codicecliente] = true;
+    });
+
     contratti.forEach(function(c) {
       var ana = anaMap[c.codicecliente];
       if (!ana) return;
@@ -343,7 +348,7 @@ function contrattiRender() {
     
     var conteggio = 0;
     
-    html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.iscritto ? 'color:#fff;background:#10B981' : '') + '">' + (r.iscritto ? 'Attivo' : '') + '</td>');
+    html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.iscritto ? 'color:#fff;background:#10B981' : 'color:#fff;background:#DC2626') + ';white-space:nowrap">' + (r.iscritto ? 'Iscritto CNA' : 'Non iscritto CNA') + '</td>');
     html.push('<td style="text-align:center;font-size:11px;font-weight:700;' + (r.inps ? 'color:#fff;background:#10B981' : '') + '">' + (r.inps ? 'Attivo' : '') + '</td>');
     if (r.iscritto) conteggio++;
     if (r.inps) conteggio++;
@@ -525,7 +530,7 @@ function contrattiExportExcel() {
                r.tipoimpresa || '', r.addetti_sub || '', r.addetti_fam || '', r.totale_addetti || ''];
     
     var conteggio = 0;
-    row.push(r.iscritto ? 'Associato' : '');
+    row.push(r.iscritto ? 'ISCRITTO CNA' : 'NON ISCRITTO CNA');
     row.push(r.inps ? 'Abbinato' : '');
     if (r.iscritto) conteggio++;
     if (r.inps) conteggio++;
@@ -554,7 +559,7 @@ function contrattiExportExcel() {
   ws['!merges'] = [{s: {r: 0, c: 0}, e: {r: 0, c: colCount - 1}}];
   
   // --- COLONNE LARGHEZZE ---
-  var colWidths = [12.16, 60.83, 14.33, 19.33, 10.33, 40, 35, 18, 16, 14, 14, 14, 12, 18];
+  var colWidths = [12.16, 60.83, 14.33, 19.33, 10.33, 40, 35, 18, 16, 14, 14, 14, 20, 18];
   servizi.forEach(function() { colWidths.push(25, 14, 30); });
   colWidths.push(22);
   ws['!cols'] = colWidths.map(function(w) { return {wch: w}; });
@@ -610,6 +615,15 @@ function contrattiExportExcel() {
         fill: {patternType: 'solid', fgColor: {rgb: bgColor}},
         alignment: {horizontal: 'left', vertical: 'center'}
       };
+      // Colonna ISCRITTO (col 12): verde ISCRITTO CNA / rosso NON ISCRITTO CNA
+      if (dataCol === 12 && (ws[dataCellRef].v === 'ISCRITTO CNA' || ws[dataCellRef].v === 'NON ISCRITTO CNA')) {
+        var _isc = ws[dataCellRef].v === 'ISCRITTO CNA';
+        ws[dataCellRef].s = {
+          font: {name: 'Calibri', sz: 11, bold: true, color: {rgb: 'FFFFFFFF'}},
+          fill: {patternType: 'solid', fgColor: {rgb: _isc ? 'FF10B981' : 'FFDC2626'}},
+          alignment: {horizontal: 'center', vertical: 'center'}
+        };
+      }
     }
   }
   

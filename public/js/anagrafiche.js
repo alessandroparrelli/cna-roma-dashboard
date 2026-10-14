@@ -302,6 +302,10 @@ async function anaLoad(force){
       r.iscritto_consulente = isc ? (isc.acuradi || '') : '';
       // Contratti attivi: cerca per codiceanagrafica
       r.contratti_attivi = anaContratti[r.codiceanagrafica] || {};
+      // ISCRITTO anche da contrattiservizio (già filtrato datadisdetta IS NULL)
+      var iscCS = r.contratti_attivi['ISCRITTO'];
+      if(!isc && iscCS){ r.iscritto_data = iscCS.data || null; r.iscritto_consulente = iscCS.consulente || ''; }
+      r.iscritto = !!(isc || iscCS);
 
       // Arricchisce servizi_tutti con i tipocontratto da contrattiservizio
       // (alcune imprese hanno ISCRITTO/altri servizi in contrattiservizio invece che in diretti)
@@ -688,13 +692,13 @@ function anaRender(){
     var tipoCol = r.tipoimpresa === 'Artigiano' ? '#B91C1C' : r.tipoimpresa === 'Commerciante' ? '#92400E' : '#999';
     html.push('<td style="text-align:center;font-size:11px;font-weight:700;'+(r.tipoimpresa ? 'background:'+tipoBg+';color:'+tipoCol : 'color:#999')+'">'+(r.tipoimpresa || '-')+'</td>');
     // Colonne Iscritto (da diretti)
-    if(r.iscritto_data){
-      var iscDataStr = new Date(r.iscritto_data).toLocaleDateString('it-IT');
-      html.push('<td style="text-align:center;font-size:11px;font-weight:700;color:#fff;background:#10B981;border-left:2px solid #10B981">Attivo</td>');
+    if(r.iscritto){
+      var iscDataStr = r.iscritto_data ? new Date(r.iscritto_data).toLocaleDateString('it-IT') : '-';
+      html.push('<td style="text-align:center;font-size:11px;font-weight:700;color:#fff;background:#10B981;border-left:2px solid #10B981;white-space:nowrap">Iscritto CNA</td>');
       html.push('<td style="text-align:center;font-size:12px;white-space:nowrap">'+iscDataStr+'</td>');
       html.push('<td style="font-size:12px;border-right:2px solid #10B981">'+anaEsc(r.iscritto_consulente||'-')+'</td>');
     } else {
-      html.push('<td style="border-left:2px solid #10B981"></td><td></td><td style="border-right:2px solid #10B981"></td>');
+      html.push('<td style="text-align:center;font-size:11px;font-weight:700;color:#fff;background:#DC2626;border-left:2px solid #10B981;white-space:nowrap">Non iscritto CNA</td><td></td><td style="border-right:2px solid #10B981"></td>');
     }
     // Colonne dipendenti
     html.push('<td style="text-align:center;border-left:2px solid var(--border)">'+(r.addetti_sub > 0 ? r.addetti_sub : '-')+'</td>');
@@ -841,7 +845,7 @@ function anaExport(){
         r.raggruppamento||'', r.sedeerogazione||'', r.acuradi||'',
         r.motivoinizio||'', r.importo||'', r.unione||'', r.settore||'', r.mestiere||'',
         r.tipoimpresa||'', (r.raggAnalisi||[]).join(', '), r.isPagante ? 'Pagante' : '',
-        r.iscritto_data ? 'Attivo' : '', iscDataStr, r.iscritto_consulente||'',
+        r.iscritto ? 'ISCRITTO CNA' : 'NON ISCRITTO CNA', iscDataStr, r.iscritto_consulente||'',
         r.addetti_sub > 0 ? r.addetti_sub : '', r.addetti_fam > 0 ? r.addetti_fam : '', r.totale_addetti > 0 ? r.totale_addetti : ''
       ];
       var contratti = r.contratti_attivi || {};
@@ -950,10 +954,11 @@ function anaExport(){
           cellStyle.fill = {patternType:'solid', fgColor:{rgb:'FF16A34A'}};
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
-        // Colonna Iscritto stato (col 29) — verde se "Attivo"
-        if(dc === 29 && ws[dRef].v === 'Attivo'){
+        // Colonna Iscritto stato (col 29) — verde ISCRITTO CNA / rosso NON ISCRITTO CNA
+        if(dc === 29 && (ws[dRef].v === 'ISCRITTO CNA' || ws[dRef].v === 'NON ISCRITTO CNA')){
+          var _isc = ws[dRef].v === 'ISCRITTO CNA';
           cellStyle.font = {name:'Calibri', sz:11, bold:true, color:TEXT_WHITE};
-          cellStyle.fill = {patternType:'solid', fgColor:{rgb:CNA_GREEN}};
+          cellStyle.fill = {patternType:'solid', fgColor:{rgb: _isc ? CNA_GREEN : 'FFDC2626'}};
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
         // Colonne TOT DIPENDENTI (col 32) — blu

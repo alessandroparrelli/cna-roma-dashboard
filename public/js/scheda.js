@@ -284,13 +284,15 @@ async function openAnagraficaModal(anaIdx) {
   var badgeRow = '';
   if (cciaa && cciaa.stato_attivita !== null && cciaa.stato_attivita !== undefined) {
     var statoInfo = traduciStatoAttivita(cciaa.stato_attivita);
-    badgeRow += badgeStato(statoInfo.testo, statoInfo.color);
+    badgeRow += badgeStato('Infocamere: ' + statoInfo.testo, statoInfo.color);
   }
   if (cciaa && cciaa.art_com_tur) {
     var tipoInfo = traduciTipoImpresa(cciaa.art_com_tur);
     badgeRow += ' ' + badgeTipo(tipoInfo.testo, tipoInfo.bgColor, tipoInfo.textColor);
   }
-  if (isIscritto) badgeRow += ' ' + badge('✓ Iscritto CNA', '#059669', 'white', 'linear-gradient(135deg,#047857,#10B981)');
+  badgeRow += ' ' + (isIscritto
+    ? badge('✓ Iscritto CNA', '#059669', 'white', 'linear-gradient(135deg,#047857,#10B981)')
+    : badge('✗ Non iscritto CNA', '#DC2626', 'white', 'linear-gradient(135deg,#B91C1C,#EF4444)'));
   if (isInps)     badgeRow += ' ' + badge('INPS', '#0284C7', 'white', 'linear-gradient(135deg,#0369A1,#38BDF8)');
   if (isPagante)  badgeRow += ' ' + badge('✓ Pagante', '#16A34A', 'white', 'linear-gradient(135deg,#15803D,#4ADE80)');
 
@@ -962,14 +964,14 @@ async function loadContratti() {
       if (ana) {
         if (!impreseMap[c.codicecliente]) {
           // Determina tesseramento una sola volta per impresa
-          var tesseramento = 'Non associato';
+          var tesseramento = 'Non iscritto CNA';
           var direttiAza = direttiMap[c.codicecliente] || [];
           if (direttiAza.length > 0) {
             var hasIscritto = direttiAza.some(function(d) { return d.servizio && d.servizio.toUpperCase().indexOf('ISCRITTO') !== -1; });
             var hasInps = direttiAza.some(function(d) { return d.servizio && d.servizio.indexOf('INPS') !== -1; });
             
             if (hasIscritto) {
-              tesseramento = 'Iscritto';
+              tesseramento = 'Iscritto CNA';
             } else if (hasInps) {
               tesseramento = 'Tesseramento INPS';
             }
@@ -1045,7 +1047,7 @@ async function loadContratti() {
                       '<td>' + (r.tipocontratto || '-') + contrattiInfo + '</td>' +
                       '<td>' + (r.datastipulacontratto ? new Date(r.datastipulacontratto).toLocaleDateString('it-IT') : '-') + '</td>' +
                       '<td>' + (r.nomeconsulente || '-') + '</td>' +
-                      '<td><strong style="color:' + (r.tesseramento === 'Non associato' ? '#999' : '#005CA9') + '">' + r.tesseramento + '</strong></td>';
+                      '<td><strong style="color:' + (r.tesseramento === 'Iscritto CNA' ? '#059669' : r.tesseramento === 'Non iscritto CNA' ? '#DC2626' : '#005CA9') + '">' + r.tesseramento + '</strong></td>';
         tbody.appendChild(tr);
       });
     }
@@ -1105,14 +1107,14 @@ async function estraiBtnClick() {
     contrattiFiltered.forEach(function(c) {
       var ana = anaMap[c.codicecliente];
       if (ana) {
-        var tesseramento = 'Non associato';
+        var tesseramento = 'Non iscritto CNA';
         var direttiAza = direttiMap[c.codicecliente] || [];
         if (direttiAza.length > 0) {
           var hasIscritto = direttiAza.some(function(d) { return d.servizio && d.servizio.toUpperCase().indexOf('ISCRITTO') !== -1; });
           var hasInps = direttiAza.some(function(d) { return d.servizio && d.servizio.indexOf('INPS') !== -1; });
           
           if (hasIscritto) {
-            tesseramento = 'Iscritto';
+            tesseramento = 'Iscritto CNA';
           } else if (hasInps) {
             tesseramento = 'Tesseramento INPS';
           }
@@ -1144,7 +1146,7 @@ async function estraiBtnClick() {
                       '<td>' + (r.tipocontratto || '-') + '</td>' +
                       '<td>' + (r.datastipulacontratto ? new Date(r.datastipulacontratto).toLocaleDateString('it-IT') : '-') + '</td>' +
                       '<td>' + (r.nomeconsulente || '-') + '</td>' +
-                      '<td><strong style="color:' + (r.tesseramento === 'Non associato' ? '#999' : '#005CA9') + '">' + r.tesseramento + '</strong></td>';
+                      '<td><strong style="color:' + (r.tesseramento === 'Iscritto CNA' ? '#059669' : r.tesseramento === 'Non iscritto CNA' ? '#DC2626' : '#005CA9') + '">' + r.tesseramento + '</strong></td>';
         tbody.appendChild(tr);
       });
     }

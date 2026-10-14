@@ -183,7 +183,7 @@ async function riApriScheda(ana) {
     html += '<div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center">';
     // Stato
     html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap;background:'+statoGrad+';color:#fff">'+
-      (isAttivo?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'')+'&nbsp;'+_riEsc(statoLabel)+'</span>';
+      (isAttivo?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>':'')+'&nbsp;Infocamere: '+_riEsc(statoLabel)+'</span>';
     // Tipo impresa
     if(tipoImp){
       var tGrad=tipoImp==='Artigiano'?'linear-gradient(135deg,#B91C1C,#EF4444)':'linear-gradient(135deg,#D97706,#FBBF24)';
@@ -191,8 +191,8 @@ async function riApriScheda(ana) {
       html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap;background:'+tGrad+';color:'+tCol+'">'+_riEsc(tipoImp)+'</span>';
     }
     // Iscritto CNA
-    if(isIscritto) html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap;background:linear-gradient(135deg,#0369A1,#38BDF8);color:#fff">'+
-      '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>&nbsp;Iscritto CNA</span>';
+    html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap;background:'+(isIscritto?'linear-gradient(135deg,#15803D,#22C55E)':'linear-gradient(135deg,#B91C1C,#EF4444)')+';color:#fff">'+
+      (isIscritto?'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>&nbsp;Iscritto CNA':'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>&nbsp;Non iscritto CNA')+'</span>';
     // Pagante
     if(isPagante) html += '<span style="display:inline-flex;align-items:center;gap:5px;padding:8px 20px;border-radius:50px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;box-shadow:0 4px 16px rgba(0,0,0,.18);white-space:nowrap;background:linear-gradient(135deg,#15803D,#22C55E);color:#fff">'+
       '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>&nbsp;Pagante</span>';
@@ -660,9 +660,9 @@ async function hmCaricaScheda(ana) {
     html+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">';
     html+='<div><div style="font-size:20px;font-weight:800;color:var(--text);margin-bottom:3px">'+_riEsc(ana.ragionesociale||'—')+'</div>'+(titolare?'<div style="font-size:13px;color:var(--text-sub)">Titolare: '+_riEsc(titolare)+'</div>':'')+'</div>';
     html+='<div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">';
-    html+='<span style="'+bs+';background:'+statoGrad+';color:#fff">'+(isAttivo?ck:'')+_riEsc(statoLabel)+'</span>';
+    html+='<span style="'+bs+';background:'+statoGrad+';color:#fff">'+(isAttivo?ck:'')+'Infocamere: '+_riEsc(statoLabel)+'</span>';
     if(tipoImp){var tg=tipoImp==='Artigiano'?'linear-gradient(135deg,#B91C1C,#EF4444)':'linear-gradient(135deg,#D97706,#FBBF24)';var tc=tipoImp==='Artigiano'?'#fff':'#451A03';html+='<span style="'+bs+';background:'+tg+';color:'+tc+'">'+_riEsc(tipoImp)+'</span>';}
-    if(isIscritto) html+='<span style="'+bs+';background:linear-gradient(135deg,#0369A1,#38BDF8);color:#fff">'+ck+'Iscritto CNA</span>';
+    html+=isIscritto?'<span style="'+bs+';background:linear-gradient(135deg,#15803D,#22C55E);color:#fff">'+ck+'Iscritto CNA</span>':'<span style="'+bs+';background:linear-gradient(135deg,#B91C1C,#EF4444);color:#fff"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>&nbsp;Non iscritto CNA</span>';
     if(isPagante)  html+='<span style="'+bs+';background:linear-gradient(135deg,#15803D,#22C55E);color:#fff">'+ck+'Pagante</span>';
     html+='</div></div></div>';
     // Dati anagrafici
