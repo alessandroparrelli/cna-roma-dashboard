@@ -296,6 +296,12 @@ async function anaLoad(force){
         var tc = String(cc.art_com_tur).trim().toUpperCase();
         r.tipoimpresa = tc === 'A' ? 'Artigiano' : tc === 'C' ? 'Commerciante' : tc;
       } else { r.tipoimpresa = ''; }
+      // Stato attività da CCIAA (0 attiva, 1 liquidazione, 2 fallita, 3 sospesa, 4 inattiva, 5 cessata)
+      if(cc && cc.stato_attivita !== null && cc.stato_attivita !== undefined && String(cc.stato_attivita).trim() !== ''){
+        var _sa = String(cc.stato_attivita).trim();
+        r.stato_attivita = (typeof traduciStatoAttivita === 'function') ? traduciStatoAttivita(_sa).testo
+          : ({'0':'ATTIVA','1':'IN LIQUIDAZIONE','2':'FALLITA','3':'SOSPESA','4':'INATTIVA','5':'CESSATA'}[_sa] || 'SCONOSCIUTO');
+      } else { r.stato_attivita = ''; }
       // Iscritto da diretti
       var isc = iscrittiMap[r.codiceanagrafica] || null;
       r.iscritto_data      = isc ? (isc.datastipula || null) : null;
@@ -828,7 +834,7 @@ function anaExport(){
       'INDIRIZZO','CAP','COMUNE','SESSO','COGNOME','NOME','DATA NASCITA','LUOGO NASCITA',
       'COD. ATECO','SERVIZIO','DATA STIPULA','DATA DISDETTA','RAGGRUPPAMENTO',
       'SEDE EROGAZIONE','A CURA DI','MOTIVO INIZIO','IMPORTO','UNIONE','SETTORE','MESTIERE',
-      'TIPO IMPRESA','RAGGR. ANALISI','PAGANTE',
+      'TIPO IMPRESA','STATO ATTIVITÀ','RAGGR. ANALISI','PAGANTE',
       'ISCRITTO','DATA STIPULA ISCRITTO','CONSULENTE ISCRITTO',
       'DIP. SUBORDINATI','DIP. FAMILIARI','TOT. DIPENDENTI'
     ];
@@ -853,7 +859,7 @@ function anaExport(){
         r.servizio||'', r.datastipula||'', r.datadisdetta||'',
         r.raggruppamento||'', r.sedeerogazione||'', r.acuradi||'',
         r.motivoinizio||'', r.importo||'', r.unione||'', r.settore||'', r.mestiere||'',
-        r.tipoimpresa||'', (r.raggAnalisi||[]).join(', '), r.isPagante ? 'Pagante' : '',
+        r.tipoimpresa||'', r.stato_attivita||'', (r.raggAnalisi||[]).join(', '), r.isPagante ? 'Pagante' : '',
         r.iscritto ? 'ISCRITTO CNA' : 'NON ISCRITTO CNA', iscDataStr, r.iscritto_consulente||'',
         r.addetti_sub > 0 ? r.addetti_sub : '', r.addetti_fam > 0 ? r.addetti_fam : '', r.totale_addetti > 0 ? r.totale_addetti : ''
       ];
@@ -877,6 +883,7 @@ function anaExport(){
     // ── LARGHEZZE COLONNE ──
     var colWidths = [13,14,50,13,32,13,35,7,18,6,18,14,11,16,10,20,12,12,18,18,18,16,10,18,18,20,16,30];
     // iscritto+dip
+    colWidths.splice(27, 0, 18); // STATO ATTIVITÀ
     colWidths.push(10,12,14,25,13,12,13);
     servizi.forEach(function(){ colWidths.push(22,13,25); });
     ws['!cols'] = colWidths.map(function(w){ return {wch:w}; });
@@ -925,6 +932,18 @@ function anaExport(){
     }
 
     // Righe dati: righe alternate bianco / grigio chiaro, Calibri 11
+    var COL = function(n){ return headerRow.indexOf(n); };
+    var C_TIPO = COL('TIPO IMPRESA'), C_STATO = COL('STATO ATTIVITÀ'), C_PAG = COL('PAGANTE'),
+        C_ISC = COL('ISCRITTO'), C_SUB = COL('DIP. SUBORDINATI'), C_FAM = COL('DIP. FAMILIARI'),
+        C_TOT = COL('TOT. DIPENDENTI'), C_SRV = C_TOT + 1;
+    var STATO_COLORI = {
+      'ATTIVA':          ['FF065F46','FFD1FAE5'],
+      'IN LIQUIDAZIONE': ['FF92400E','FFFEF3C7'],
+      'SOSPESA':         ['FF92400E','FFFEF3C7'],
+      'FALLITA':         ['FFB91C1C','FFFEE2E2'],
+      'CESSATA':         ['FFB91C1C','FFFEE2E2'],
+      'INATTIVA':        ['FF4B5563','FFE5E7EB']
+    };
     var dataRowCount = wsData.length - 2; // -titolo -header
     for(var dr=0; dr<dataRowCount; dr++){
       var excelRow = dr + 3; // riga Excel (1-indexed), parte da riga 3
@@ -946,7 +965,7 @@ function anaExport(){
           cellStyle.font = {name:'Calibri', sz:11, bold:true, color:{rgb:'FF005CA9'}};
         }
         // Colonna Tipo Impresa (col 26) — colorata
-        if(dc === 26 && ws[dRef].v){
+        if(dc === C_TIPO && ws[dRef].v){
           var tipoVal = String(ws[dRef].v);
           if(tipoVal === 'Artigiano'){
             cellStyle.font = {name:'Calibri', sz:11, bold:true, color:{rgb:'FFB91C1C'}};
@@ -957,31 +976,38 @@ function anaExport(){
           }
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
-        // Colonna PAGANTE (col 28) — verde
-        if(dc === 28 && ws[dRef].v === 'Pagante'){
+        // Colonna STATO ATTIVITÀ (CCIAA)
+        if(dc === C_STATO && ws[dRef].v){
+          var _sc = STATO_COLORI[String(ws[dRef].v)] || ['FF4B5563','FFF3F4F6'];
+          cellStyle.font = {name:'Calibri', sz:11, bold:true, color:{rgb:_sc[0]}};
+          cellStyle.fill = {patternType:'solid', fgColor:{rgb:_sc[1]}};
+          cellStyle.alignment = {horizontal:'center', vertical:'center'};
+        }
+        // Colonna PAGANTE — verde
+        if(dc === C_PAG && ws[dRef].v === 'Pagante'){
           cellStyle.font = {name:'Calibri', sz:11, bold:true, color:TEXT_WHITE};
           cellStyle.fill = {patternType:'solid', fgColor:{rgb:'FF16A34A'}};
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
         // Colonna Iscritto stato (col 29) — verde ISCRITTO CNA / rosso NON ISCRITTO CNA
-        if(dc === 29 && (ws[dRef].v === 'ISCRITTO CNA' || ws[dRef].v === 'NON ISCRITTO CNA')){
+        if(dc === C_ISC && (ws[dRef].v === 'ISCRITTO CNA' || ws[dRef].v === 'NON ISCRITTO CNA')){
           var _isc = ws[dRef].v === 'ISCRITTO CNA';
           cellStyle.font = {name:'Calibri', sz:11, bold:true, color:TEXT_WHITE};
           cellStyle.fill = {patternType:'solid', fgColor:{rgb: _isc ? CNA_GREEN : 'FFDC2626'}};
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
         // Colonne TOT DIPENDENTI (col 32) — blu
-        if(dc === 33 && ws[dRef].v !== ''){
+        if(dc === C_TOT && ws[dRef].v !== ''){
           cellStyle.font = {name:'Calibri', sz:11, bold:true, color:{rgb:CNA_BLUE}};
           cellStyle.fill = {patternType:'solid', fgColor:{rgb:'FFE8F0FE'}};
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
         // Colonne Sub/Fam dipendenti (col 30, 31) — centrate
-        if(dc === 31 || dc === 32){
+        if(dc === C_SUB || dc === C_FAM){
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
         }
         // Colonne "Attivo" contratti (ogni 3° dal col 33+)
-        if(dc >= 34 && (dc - 34) % 3 === 0 && ws[dRef].v === 'Attivo'){
+        if(dc >= C_SRV && (dc - C_SRV) % 3 === 0 && ws[dRef].v === 'Attivo'){
           cellStyle.font = {name:'Calibri', sz:11, bold:true, color:TEXT_WHITE};
           cellStyle.fill = {patternType:'solid', fgColor:{rgb:CNA_GREEN}};
           cellStyle.alignment = {horizontal:'center', vertical:'center'};
