@@ -68,7 +68,7 @@ function buildReportisticaUI() {
     + '<span id="rep-status-text" style="font-size:13px;color:var(--text-secondary)">Caricamento…</span></div>'
     + '<div id="rep-anteprima" style="display:none">'
     + '<div style="font-size:12px;font-weight:700;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px">● Anteprima — <span id="rep-periodo-label" style="color:var(--primary)"></span></div>'
-    + '<div id="rep-pages-container"></div></div></div>';
+    + '<div id="rep-pages-container" style="overflow-x:auto"></div></div></div>';
 
   repCaricaEAnteprima();
 }
@@ -217,7 +217,7 @@ async function repCaricaEAnteprima() {
     var pages = repBuildAllPages(repAllData, anno, mese, repStoricaData, meseDA);
     pages.forEach(function(pageHtml, i) {
       var wrapper = document.createElement('div');
-      wrapper.style.cssText = 'margin-bottom:28px;box-shadow:0 4px 24px rgba(0,0,0,0.13);border-radius:4px;overflow:hidden;background:white';
+      wrapper.style.cssText = 'width:1060px;max-width:none;margin:0 auto 28px;box-shadow:0 4px 24px rgba(0,0,0,0.13);border-radius:4px;overflow:hidden;background:white';
       wrapper.setAttribute('data-page', i + 1);
       wrapper.innerHTML = pageHtml;
       G('rep-pages-container').appendChild(wrapper);
