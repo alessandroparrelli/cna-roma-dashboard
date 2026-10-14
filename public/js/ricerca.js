@@ -157,10 +157,7 @@ async function riApriScheda(ana) {
 
     // Pagante (pagato almeno una quota tessera negli ultimi 3 anni)
     var annoMin = new Date().getFullYear()-2;
-    var isPagante = pandoraG1.some(function(p){
-      if(!p.data_fattura||!p.pagato) return false;
-      return parseInt(p.data_fattura.substring(0,4))>=annoMin;
-    });
+    var isPagante = await cnaIsPagante(cod);
 
     // Addetti
     var addSub = cciaa ? (parseInt(cciaa.num_addetti_sub)||0) : 0;
@@ -647,7 +644,7 @@ async function hmCaricaScheda(ana) {
     var isIscritto=diretti.some(function(d){return(d.servizio||'').toUpperCase()==='ISCRITTO'&&!(d.datadisdetta && String(d.datadisdetta).trim()!=='');});
     if(!isIscritto) isIscritto=servizi.some(function(s){return(s.tipocontratto||'').toUpperCase()==='ISCRITTO';});
     var annoMin=new Date().getFullYear()-2;
-    var isPagante=pandoraG1.some(function(p){return p.pagato&&p.data_fattura&&parseInt(p.data_fattura.substring(0,4))>=annoMin;});
+    var isPagante=await cnaIsPagante(cod);
     var titolare=[ana.cognometitolare,ana.nometitolare].filter(Boolean).join(' ');
     var isAttivo=(ana.statogiuridico||'').toUpperCase()==='ATTIVO';
     var statoLabel=(ana.statogiuridico||'—').charAt(0).toUpperCase()+(ana.statogiuridico||'—').slice(1).toLowerCase();

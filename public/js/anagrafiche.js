@@ -348,7 +348,16 @@ async function anaLoad(force){
       }
       var pagantiSet = {};
       pagantiBatch.forEach(function(c){ pagantiSet[c] = true; });
-      anaAll.forEach(function(r){ r.isPagante = !!pagantiSet[r.codiceanagrafica]; });
+      // Regola unica PAGANTE: >= 50€ in 2 anni oppure fatture senza insoluti (RPC get_paganti_tesseramento)
+      var _pt = {};
+      try {
+        var _ptRows = await anaFetchAllFiltered('paganti_tesseramento_cache', 'select=codice_cliente&order=codice_cliente.asc');
+        _ptRows.forEach(function(x){ _pt[x.codice_cliente] = true; });
+        anaAll.forEach(function(r){ r.isPagante = !!_pt[r.codiceanagrafica]; });
+      } catch(ePt) {
+        console.warn('Cache paganti tesseramento non disponibile:', ePt.message);
+        anaAll.forEach(function(r){ r.isPagante = !!pagantiSet[r.codiceanagrafica]; });
+      }
     } catch(ep) {
       console.warn('Errore caricamento paganti:', ep.message);
       toast('⚠ Badge "Pagante" non affidabile: ' + ep.message + '. Ricarica l\'archivio.', 'error');

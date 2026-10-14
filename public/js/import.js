@@ -1619,4 +1619,6 @@ async function refreshIncassiCache() {
     method: 'POST', headers: H(), body: '{}'
   });
   if (!r.ok) throw new Error('HTTP ' + r.status);
+  // Aggiorna anche la cache PAGANTI tesseramento (>=50€ in 2 anni o nessun insoluto)
+  try { await fetch(SB + '/rest/v1/rpc/refresh_paganti_tesseramento_cache', { method:'POST', headers:H(), body:'{}' }); } catch(e) { console.warn('refresh paganti:', e); }
 }

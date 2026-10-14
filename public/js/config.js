@@ -85,3 +85,18 @@ function G(id){return document.getElementById(id);}
 function fmt(n,d){if(d===undefined)d=2;return Number(n).toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d});}
 
 // LOGIN
+// ── PAGANTE (regola unica, RPC get_paganti_tesseramento) ──
+// Pagante = pagato >= 50€ di tesseramento (CNA Roma G1000001) negli ultimi 2 anni
+//           oppure fatture tesseramento negli ultimi 2 anni senza insoluti aperti
+async function cnaPagantiMap(codici){
+  var map = {};
+  codici = (codici||[]).filter(Boolean);
+  for (var i = 0; i < codici.length; i += 500) {
+    try {
+      var r = await fetch(SB + '/rest/v1/rpc/get_paganti_tesseramento', { method:'POST', headers:H(), body: JSON.stringify({ p_codici: codici.slice(i, i+500) }) });
+      if (r.ok) (await r.json()).forEach(function(x){ map[x.codice_cliente] = !!x.pagante; });
+    } catch(e) { console.warn('cnaPagantiMap:', e); }
+  }
+  return map;
+}
+async function cnaIsPagante(cod){ if(!cod) return false; var m = await cnaPagantiMap([cod]); return !!m[cod]; }

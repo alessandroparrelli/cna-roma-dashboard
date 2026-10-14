@@ -265,11 +265,7 @@ async function openAnagraficaModal(anaIdx) {
 
   // ── Badge "Pagante" — ha pagato almeno una quota tessera negli ultimi 3 anni (incluso corrente) ──
   var annoCorrente = new Date().getFullYear();
-  var isPagante = pandoraG1.some(function(p){
-    if (!p.data_fattura || !p.pagato) return false;
-    var anno = parseInt(p.data_fattura.substring(0,4));
-    return anno >= annoCorrente - 2 && anno <= annoCorrente;
-  });
+  var isPagante = await cnaIsPagante(ana.codiceanagrafica);
 
   // ── HTML ──────────────────────────────────────────────────────────
   var body = '';
